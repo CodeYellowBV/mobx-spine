@@ -1,0 +1,31 @@
+{
+  "data": {
+    "color": "Dark as a sheep",
+    "name": "Woofer",
+    "kind": 4,
+    "id": 1,
+    "deleted": false
+  },
+  "with": {
+    "animal_breed": [
+      {
+        "name": "Good Pupper",
+        "id": 3
+      }
+    ],
+    "animal_kind": [
+      {
+        "name": "Good Dog",
+        "breed": 3,
+        "id": 4
+      }
+    ]
+  },
+  "meta": {
+
+  },
+  "with_mapping": {
+    "kind.breed": "animal_breed",
+    "kind": "animal_kind"
+  }
+}

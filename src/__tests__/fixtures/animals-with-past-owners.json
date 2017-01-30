@@ -1,0 +1,58 @@
+{
+  "data": [
+    {
+      "color": "Dark as a sheep",
+      "past_owners": [],
+      "name": "Woofer",
+      "kind": 4,
+      "id": 1,
+      "deleted": false
+    },
+    {
+      "color": "Brown",
+      "past_owners": [
+        2,
+        3
+      ],
+      "name": "Cat",
+      "kind": 2,
+      "id": 2,
+      "deleted": false
+    },
+    {
+      "color": "",
+      "past_owners": [
+        1
+      ],
+      "name": "qqq",
+      "kind": 3,
+      "id": 3,
+      "deleted": false
+    }
+  ],
+  "with": {
+    "animal_owner": [
+      {
+        "name": "Hassad",
+        "id": 1,
+        "kind": null
+      },
+      {
+        "name": "Bobbie",
+        "id": 2,
+        "kind": 2
+      },
+      {
+        "name": "Oessein",
+        "id": 3,
+        "kind": 1
+      }
+    ]
+  },
+  "meta": {
+    "total_records": 26
+  },
+  "with_mapping": {
+    "past_owners": "animal_owner"
+  }
+}
