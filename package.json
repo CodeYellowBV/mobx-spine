@@ -56,5 +56,18 @@
     "testPathIgnorePatterns": [
       "/fixtures/"
     ]
+  },
+  "babel": {
+    "presets": [
+      "stage-2"
+    ],
+    "plugins": [
+      "transform-decorators-legacy"
+    ],
+    "env": {
+      "test": {
+        "plugins": ["transform-es2015-modules-commonjs"]
+      }
+    }
   }
 }
