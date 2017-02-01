@@ -112,13 +112,15 @@ function parseBackendValidationErrors(response) {
 
 let Model = (_class = class Model {
     // Holds activated - nested - relations (e.g. `['animal', 'animal.breed']`)
+
+    // TODO: Find out why `static primaryKey` doesn't work. I WANT IT STATIC GODDAMMIT.
     get url() {
         const id = this[this.primaryKey];
         return `${this.urlRoot}${id ? `${id}/` : ''}`;
     }
     // Holds activated - non-nested - relations (e.g. `['animal']`)
 
-    // TODO: Find out why `static primaryKey` doesn't work. I WANT IT STATIC GODDAMMIT.
+    // Holds original attributes with values, so `clear()` knows what to reset to (quite ugly).
     get isNew() {
         return !this[this.primaryKey];
     }
@@ -130,6 +132,7 @@ let Model = (_class = class Model {
     constructor(data, options = {}) {
         this.primaryKey = 'id';
         this._attributes = [];
+        this._originalAttributes = {};
         this._activeRelations = [];
         this._activeCurrentRelations = [];
 
@@ -143,6 +146,7 @@ let Model = (_class = class Model {
         forIn(this, (value, key) => {
             if (!key.startsWith('_') && isObservable(this, key)) {
                 this._attributes.push(key);
+                this._originalAttributes[key] = value;
             }
         });
         if (options.relations) {
@@ -306,6 +310,16 @@ let Model = (_class = class Model {
             });
         }));
     }
+
+    clear() {
+        forIn(this._originalAttributes, (value, key) => {
+            this[key] = value;
+        });
+
+        this._activeCurrentRelations.forEach(currentRel => {
+            this[currentRel].clear();
+        });
+    }
 }, (_descriptor = _applyDecoratedDescriptor(_class.prototype, '_backendValidationErrors', [observable], {
     enumerable: true,
     initializer: function () {
@@ -316,7 +330,7 @@ let Model = (_class = class Model {
     initializer: function () {
         return 0;
     }
-}), _applyDecoratedDescriptor(_class.prototype, 'url', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'url'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'isNew', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'isNew'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'isLoading', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'isLoading'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'parseRelations', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'parseRelations'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fromBackend', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'fromBackend'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'parse', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'parse'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'save', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'save'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'backendValidationErrors', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'backendValidationErrors'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'delete', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'delete'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fetch', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'fetch'), _class.prototype)), _class);
+}), _applyDecoratedDescriptor(_class.prototype, 'url', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'url'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'isNew', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'isNew'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'isLoading', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'isLoading'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'parseRelations', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'parseRelations'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fromBackend', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'fromBackend'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'parse', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'parse'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'save', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'save'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'backendValidationErrors', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'backendValidationErrors'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'delete', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'delete'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fetch', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'fetch'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'clear', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'clear'), _class.prototype)), _class);
 
 var _class$1;
 var _descriptor$1;
