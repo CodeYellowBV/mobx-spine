@@ -106,6 +106,28 @@ test('remove multiple models', () => {
     expect(animalStore.map('id')).toEqual([2]);
 });
 
+test('add one model', () => {
+    const animalStore = new AnimalStore();
+    animalStore.replace({ data: simpleData });
+
+    animalStore.add({
+        id: 20,
+    });
+    expect(animalStore.map('id')).toEqual([2, 3, 10, 20]);
+});
+
+test('add multiple models', () => {
+    const animalStore = new AnimalStore();
+    animalStore.replace({ data: simpleData });
+
+    animalStore.add([{
+        id: 20,
+    }, {
+        id: 21,
+    }]);
+    expect(animalStore.map('id')).toEqual([2, 3, 10, 20, 21]);
+});
+
 test('clear models', () => {
     const animalStore = new AnimalStore();
     animalStore.replace({ data: simpleData });

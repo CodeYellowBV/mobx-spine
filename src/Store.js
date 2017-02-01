@@ -73,6 +73,7 @@ export default class Store {
         };
     }
 
+    // TODO: This doesn't match the api from `add()` and `remove()`. That's confusing AF.
     @action replace({ data, repos, relMapping }) {
         this.models.replace(data.map((record) => {
             // TODO: I'm not happy at all about how this looks.
@@ -88,6 +89,22 @@ export default class Store {
             });
             return model;
         }));
+    }
+
+    @action add(models) {
+        const singular = !isArray(models);
+        models = singular ? [models] : models.slice();
+
+        const modelInstances = models.map((model) => {
+            return new this.Model(model, {
+                store: this,
+                relations: this._activeRelations,
+            });
+        });
+
+        modelInstances.forEach(modelInstance => this.models.push(modelInstance));
+
+        return models;
     }
 
     @action remove(models) {
