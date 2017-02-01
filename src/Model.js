@@ -22,6 +22,8 @@ export default class Model {
     urlRoot;
 
     _attributes = [];
+    // Holds original attributes with values, so `clear()` knows what to reset to (quite ugly).
+    _originalAttributes = {};
     // Holds activated - nested - relations (e.g. `['animal', 'animal.breed']`)
     _activeRelations = [];
     // Holds activated - non-nested - relations (e.g. `['animal']`)
@@ -51,6 +53,7 @@ export default class Model {
         forIn(this, (value, key) => {
             if (!key.startsWith('_') && isObservable(this, key)) {
                 this._attributes.push(key);
+                this._originalAttributes[key] = value;
             }
         });
         if (options.relations) {
@@ -217,5 +220,15 @@ export default class Model {
                 relMapping: res.with_mapping,
             });
         }));
+    }
+
+    @action clear() {
+        forIn(this._originalAttributes, (value, key) => {
+            this[key] = value;
+        });
+
+        this._activeCurrentRelations.forEach((currentRel) => {
+            this[currentRel].clear();
+        });
     }
 }

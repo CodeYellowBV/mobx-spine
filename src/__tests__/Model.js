@@ -161,6 +161,31 @@ test('toBackend with relations', () => {
     });
 });
 
+test('clear with basic properties', () => {
+    const animal = new Animal({
+        id: 2,
+        name: 'Monkey',
+    });
+
+    animal.clear();
+
+    expect(animal.id).toBe(null);
+    expect(animal.name).toBe('');
+});
+
+test('clear with relations', () => {
+    const animal = new Animal({
+        id: 5,
+        name: 'Donkey kong',
+    }, { relations: ['kind', 'owner'] });
+
+    animal.kind.id = 8;
+
+    animal.clear();
+
+    expect(animal.kind.id).toBe(null);
+});
+
 describe('requests', () => {
     let mock;
     beforeEach(() => {
