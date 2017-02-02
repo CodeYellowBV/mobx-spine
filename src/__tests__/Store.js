@@ -152,3 +152,10 @@ test('One-level store relation', () => {
     expect(animalStore.get(2).past_owners.map('id')).toEqual([2, 3]);
     expect(animalStore.get(3).past_owners.map('id')).toEqual([1]);
 });
+
+test('toJS', () => {
+    const animalStore = new AnimalStore();
+    animalStore.replace({ data: [{ id: 2, name: 'Monkey' }] });
+    expect(animalStore.toJS()).toEqual([{ id: 2, name: 'Monkey' }]);
+});
+

@@ -139,6 +139,10 @@ export default class Store {
         }));
     }
 
+    toJS() {
+        return this.models.map(model => model.toJS());
+    }
+
     // Methods for pagination.
 
     getPageOffset() {

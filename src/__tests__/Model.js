@@ -217,6 +217,39 @@ test('clear with relations', () => {
     expect(animal.kind.id).toBe(null);
 });
 
+test('toJS with basic properties', () => {
+    const animal = new Animal({
+        id: 4,
+        name: 'japser',
+    });
+
+    expect(animal.toJS()).toEqual({
+        id: 4,
+        name: 'japser',
+    });
+});
+
+test('toJS with relations', () => {
+    const animal = new Animal({
+        id: 4,
+        name: 'japser',
+        kind: { id: 8, breed: { id: 10 } },
+    }, { relations: ['kind.breed'] });
+
+    expect(animal.toJS()).toEqual({
+        id: 4,
+        name: 'japser',
+        kind: {
+            id: 8,
+            name: '',
+            breed: {
+                id: 10,
+                name: '',
+            },
+        },
+    });
+});
+
 describe('requests', () => {
     let mock;
     beforeEach(() => {
