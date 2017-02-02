@@ -208,6 +208,21 @@ let Model = (_class = class Model {
         return output;
     }
 
+    toJS() {
+        const output = {};
+        this._attributes.forEach(attr => {
+            output[attr] = this[attr];
+        });
+
+        this._activeCurrentRelations.forEach(currentRel => {
+            const model = this[currentRel];
+            if (model) {
+                output[currentRel] = model.toJS();
+            }
+        });
+        return output;
+    }
+
     fromBackend({ data, repos, relMapping }) {
         // `data` contains properties for the current model.
         // `repos` is an object of "repositories". A repository is
@@ -514,6 +529,10 @@ let Store = (_class$1 = class Store {
                 relMapping: res.with_mapping
             });
         }));
+    }
+
+    toJS() {
+        return this.models.map(model => model.toJS());
     }
 
     // Methods for pagination.
