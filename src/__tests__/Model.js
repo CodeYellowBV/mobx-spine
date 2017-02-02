@@ -129,6 +129,19 @@ test('Parsing two-level relation', () => {
     expect(animal.kind.breed.name).toBe('Good Pupper');
 });
 
+test('Parsing two times', () => {
+    const animal = new Animal({
+        id: 2,
+    });
+
+    animal.fromBackend({
+        data: { name: 'Woofer' },
+    });
+
+    expect(animal.id).toBe(2);
+    expect(animal.name).toBe('Woofer');
+});
+
 test('toBackend with basic properties', () => {
     const animal = new Animal({
         id: 3,
@@ -237,7 +250,7 @@ describe('requests', () => {
         mock.onAny().replyOnce((config) => {
             expect(config.url).toBe('/api/animal/');
             expect(config.method).toBe('post');
-            expect(config.data).toBe('{"name":"Doggo"}');
+            expect(config.data).toBe('{"id":null,"name":"Doggo"}');
             return [201, { id: 10, name: 'Doggo' }];
         });
 

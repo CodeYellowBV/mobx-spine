@@ -151,7 +151,9 @@ export default class Model {
         const formattedData = mapKeys(data, (value, key) => camelCase(key));
 
         this._attributes.forEach((attr) => {
-            this[attr] = formattedData[attr];
+            if (formattedData[attr] !== undefined) {
+                this[attr] = formattedData[attr];
+            }
         });
 
         this._activeCurrentRelations.forEach((currentRel) => {
