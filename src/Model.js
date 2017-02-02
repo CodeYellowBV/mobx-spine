@@ -1,7 +1,7 @@
 import { observable, isObservable, extendObservable, computed, action } from 'mobx';
 import request from './request';
 import {
-    mapKeys, camelCase, snakeCase, forIn, mapValues, find, get,
+    mapKeys, camelCase, snakeCase, forIn, mapValues, find, get, isPlainObject,
 } from 'lodash';
 
 // TODO: need to find a good place for this
@@ -157,7 +157,13 @@ export default class Model {
         });
 
         this._activeCurrentRelations.forEach((currentRel) => {
-            this[currentRel].addFromRepository(data[currentRel]);
+            // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
+            // However, it can also be an object if there are nested relations (non flattened).
+            if (isPlainObject(data[currentRel])) {
+                this[currentRel].parse(data[currentRel]);
+            } else {
+                this[currentRel].addFromRepository(data[currentRel]);
+            }
         });
     }
 

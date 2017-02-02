@@ -91,6 +91,10 @@ export default class Store {
         }));
     }
 
+    @action parse(data) {
+        this.replace({ data });
+    }
+
     @action add(models) {
         const singular = !isArray(models);
         models = singular ? [models] : models.slice();

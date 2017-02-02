@@ -1,5 +1,6 @@
 import { Animal, Kind, Breed, Person, Location } from './fixtures/Animal';
 import animalKindBreedData from './fixtures/animal-with-kind-breed.json';
+import animalKindBreedDataNested from './fixtures/animal-with-kind-breed-nested.json';
 import saveFailData from './fixtures/save-fail.json';
 import axios from 'axios';
 import { toJS } from 'mobx';
@@ -140,6 +141,23 @@ test('Parsing two times', () => {
 
     expect(animal.id).toBe(2);
     expect(animal.name).toBe('Woofer');
+});
+
+test('Parsing two-level relation (nested)', () => {
+    const animal = new Animal(null, {
+        relations: ['kind.breed'],
+    });
+
+    animal.fromBackend({
+        data: animalKindBreedDataNested.data,
+    });
+
+    expect(animal.id).toBe(1);
+    expect(animal.name).toBe('Woofer');
+    expect(animal.kind.id).toBe(4);
+    expect(animal.kind.name).toBe('Good Dog');
+    expect(animal.kind.breed.id).toBe(3);
+    expect(animal.kind.breed.name).toBe('Good Pupper');
 });
 
 test('toBackend with basic properties', () => {

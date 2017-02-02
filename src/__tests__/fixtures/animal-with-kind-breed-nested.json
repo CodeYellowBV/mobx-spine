@@ -1,0 +1,16 @@
+{
+  "data": {
+    "color": "Dark as a sheep",
+    "name": "Woofer",
+    "id": 1,
+    "deleted": false,
+    "kind": {
+        "name": "Good Dog",
+        "breed": {
+            "name": "Good Pupper",
+            "id": 3
+        },
+        "id": 4
+    }
+  }
+}
