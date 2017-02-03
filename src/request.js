@@ -17,7 +17,7 @@ function request(method, url, data, options) {
 
     const axiosOptions = {
         method,
-        baseUrl,
+        baseURL: baseUrl,
         url,
         data: method !== 'get' && data,
         params: method === 'get' && data,
