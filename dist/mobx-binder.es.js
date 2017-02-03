@@ -3,6 +3,7 @@ import axios from 'axios';
 import { at, camelCase, extend, filter, find, forIn, get, isArray, isPlainObject, keyBy, map, mapKeys, mapValues, snakeCase } from 'lodash';
 
 let csrfToken = null;
+let baseUrl = '';
 
 // Function ripped from Django docs.
 // See: https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
@@ -18,6 +19,7 @@ function request(method, url, data, options) {
 
     const axiosOptions = {
         method,
+        baseUrl,
         url,
         data: method !== 'get' && data,
         params: method === 'get' && data,
@@ -52,6 +54,9 @@ var request$1 = {
     delete: (...args) => request.apply(undefined, ['delete', ...args]),
     setCsrfToken: token => {
         csrfToken = token;
+    },
+    setBaseUrl: url => {
+        baseUrl = url;
     }
 };
 
