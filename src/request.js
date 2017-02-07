@@ -57,4 +57,5 @@ export default {
     setBaseUrl: (url) => {
         baseUrl = url;
     },
+    getBaseUrl: () => baseUrl,
 };

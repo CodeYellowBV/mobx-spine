@@ -57,7 +57,8 @@ var request$1 = {
     },
     setBaseUrl: url => {
         baseUrl = url;
-    }
+    },
+    getBaseUrl: () => baseUrl
 };
 
 var _class;
