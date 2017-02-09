@@ -273,7 +273,7 @@ let Model = (_class = class Model {
         this._activeCurrentRelations.forEach(currentRel => {
             // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
             // However, it can also be an object if there are nested relations (non flattened).
-            if (isPlainObject(data[currentRel])) {
+            if (isPlainObject(data[currentRel]) || isPlainObject(get(data[currentRel], '[0]'))) {
                 this[currentRel].parse(data[currentRel]);
             } else {
                 this[currentRel].addFromRepository(data[currentRel]);

@@ -11,6 +11,16 @@
             "id": 3
         },
         "id": 4
-    }
+    },
+    "past_owners": [
+        {
+            "id": 50,
+            "name": "Good Boy"
+        },
+        {
+            "id": 51,
+            "name": "Mildly Good Boy"
+        }
+    ]
   }
 }
