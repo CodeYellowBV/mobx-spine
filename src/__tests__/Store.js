@@ -14,7 +14,7 @@ const simpleData = [{
 
 test('Initialize store with valid data', () => {
     const animalStore = new AnimalStore();
-    animalStore.replace({ data: simpleData });
+    animalStore.parse(simpleData);
 
     expect(animalStore.length).toBe(3);
     expect(animalStore.models[0].id).toBe(2);
@@ -22,7 +22,7 @@ test('Initialize store with valid data', () => {
 
 test('at model', () => {
     const animalStore = new AnimalStore();
-    animalStore.replace({ data: simpleData });
+    animalStore.parse(simpleData);
 
     const model = animalStore.at(1);
     expect(model.id).toBe(3);
@@ -30,7 +30,7 @@ test('at model', () => {
 
 test('at model (negative)', () => {
     const animalStore = new AnimalStore();
-    animalStore.replace({ data: simpleData });
+    animalStore.parse(simpleData);
 
     const model = animalStore.at(-1);
     expect(model.id).toBe(10);
@@ -40,7 +40,7 @@ test('Two level relation', () => {
     const animalStore = new AnimalStore(null, {
         relations: ['kind.breed'],
     });
-    animalStore.replace({ data: simpleData });
+    animalStore.parse(simpleData);
 
     const animal = animalStore.at(0);
     expect(animal.kind.breed).toBeInstanceOf(Breed);
@@ -49,7 +49,7 @@ test('Two level relation', () => {
 
 test('get specific model', () => {
     const animalStore = new AnimalStore();
-    animalStore.replace({ data: simpleData });
+    animalStore.parse(simpleData);
 
     const model = animalStore.get(3);
     expect(model.id).toBe(3);
@@ -57,7 +57,7 @@ test('get specific model', () => {
 
 test('get specific model (loose)', () => {
     const animalStore = new AnimalStore();
-    animalStore.replace({ data: simpleData });
+    animalStore.parse(simpleData);
 
     const model = animalStore.get('3');
     expect(model.id).toBe(3);
@@ -65,14 +65,14 @@ test('get specific model (loose)', () => {
 
 test('map models', () => {
     const animalStore = new AnimalStore();
-    animalStore.replace({ data: simpleData });
+    animalStore.parse(simpleData);
 
     expect(animalStore.map('id')).toEqual([2, 3, 10]);
 });
 
 test('filter models', () => {
     const animalStore = new AnimalStore();
-    animalStore.replace({ data: simpleData });
+    animalStore.parse(simpleData);
 
     const models = animalStore.filter(['id', 3]);
     expect(models.length).toBe(1);
@@ -80,7 +80,7 @@ test('filter models', () => {
 
 test('find model', () => {
     const animalStore = new AnimalStore();
-    animalStore.replace({ data: simpleData });
+    animalStore.parse(simpleData);
 
     const animal = animalStore.find({ name: 'Jojo' });
     expect(animal.id).toBe(10);
@@ -88,7 +88,7 @@ test('find model', () => {
 
 test('remove one model', () => {
     const animalStore = new AnimalStore();
-    animalStore.replace({ data: simpleData });
+    animalStore.parse(simpleData);
 
     const model = animalStore.get(3);
     animalStore.remove(model);
@@ -97,7 +97,7 @@ test('remove one model', () => {
 
 test('remove multiple models', () => {
     const animalStore = new AnimalStore();
-    animalStore.replace({ data: simpleData });
+    animalStore.parse(simpleData);
 
     expect(animalStore.map('id')).toEqual([2, 3, 10]);
     const model1 = animalStore.get(3);
@@ -108,7 +108,7 @@ test('remove multiple models', () => {
 
 test('add one model', () => {
     const animalStore = new AnimalStore();
-    animalStore.replace({ data: simpleData });
+    animalStore.parse(simpleData);
 
     animalStore.add({
         id: 20,
@@ -118,7 +118,7 @@ test('add one model', () => {
 
 test('add multiple models', () => {
     const animalStore = new AnimalStore();
-    animalStore.replace({ data: simpleData });
+    animalStore.parse(simpleData);
 
     animalStore.add([{
         id: 20,
@@ -130,7 +130,7 @@ test('add multiple models', () => {
 
 test('clear models', () => {
     const animalStore = new AnimalStore();
-    animalStore.replace({ data: simpleData });
+    animalStore.parse(simpleData);
 
     expect(animalStore.length).toBe(3);
     animalStore.clear();
@@ -142,7 +142,7 @@ test('One-level store relation', () => {
         relations: ['past_owners'],
     });
 
-    animalStore.replace({
+    animalStore.fromBackend({
         data: animalsWithPastOwnersData.data,
         repos: animalsWithPastOwnersData.with,
         relMapping: animalsWithPastOwnersData.with_mapping,
@@ -155,7 +155,7 @@ test('One-level store relation', () => {
 
 test('toJS', () => {
     const animalStore = new AnimalStore();
-    animalStore.replace({ data: [{ id: 2, name: 'Monkey' }] });
+    animalStore.parse([{ id: 2, name: 'Monkey' }]);
     expect(animalStore.toJS()).toEqual([{ id: 2, name: 'Monkey' }]);
 });
 

@@ -73,15 +73,11 @@ export default class Store {
         };
     }
 
-    // TODO: This doesn't match the api from `add()` and `remove()`. That's confusing AF.
-    @action replace({ data, repos, relMapping }) {
+    @action fromBackend({ data, repos, relMapping }) {
         this.models.replace(data.map((record) => {
             // TODO: I'm not happy at all about how this looks.
             // We'll need to finetune some things, but hey, for now it works.
-            const model = new this.Model(null, {
-                store: this,
-                relations: this._activeRelations,
-            });
+            const model = this._newModel();
             model.fromBackend({
                 data: record,
                 repos,
@@ -91,20 +87,22 @@ export default class Store {
         }));
     }
 
-    @action parse(data) {
-        this.replace({ data });
+    _newModel(model = null) {
+        return new this.Model(model, {
+            store: this,
+            relations: this._activeRelations,
+        });
+    }
+
+    @action parse(models) {
+        this.models.replace(models.map(this._newModel.bind(this)));
     }
 
     @action add(models) {
         const singular = !isArray(models);
         models = singular ? [models] : models.slice();
 
-        const modelInstances = models.map((model) => {
-            return new this.Model(model, {
-                store: this,
-                relations: this._activeRelations,
-            });
-        });
+        const modelInstances = models.map(this._newModel.bind(this));
 
         modelInstances.forEach(modelInstance => this.models.push(modelInstance));
 
@@ -131,7 +129,7 @@ export default class Store {
         .then(action((res) => {
             this._pendingRequestCount -= 1;
             this._state.totalRecords = res.meta.total_records;
-            this.replace({
+            this.fromBackend({
                 data: res.data,
                 repos: res.with,
                 relMapping: res.with_mapping,

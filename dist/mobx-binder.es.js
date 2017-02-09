@@ -472,15 +472,11 @@ let Store = (_class$1 = class Store {
         };
     }
 
-    // TODO: This doesn't match the api from `add()` and `remove()`. That's confusing AF.
-    replace({ data, repos, relMapping }) {
+    fromBackend({ data, repos, relMapping }) {
         this.models.replace(data.map(record => {
             // TODO: I'm not happy at all about how this looks.
             // We'll need to finetune some things, but hey, for now it works.
-            const model = new this.Model(null, {
-                store: this,
-                relations: this._activeRelations
-            });
+            const model = this._newModel();
             model.fromBackend({
                 data: record,
                 repos,
@@ -490,20 +486,22 @@ let Store = (_class$1 = class Store {
         }));
     }
 
-    parse(data) {
-        this.replace({ data });
+    _newModel(model = null) {
+        return new this.Model(model, {
+            store: this,
+            relations: this._activeRelations
+        });
+    }
+
+    parse(models) {
+        this.models.replace(models.map(this._newModel.bind(this)));
     }
 
     add(models) {
         const singular = !isArray(models);
         models = singular ? [models] : models.slice();
 
-        const modelInstances = models.map(model => {
-            return new this.Model(model, {
-                store: this,
-                relations: this._activeRelations
-            });
-        });
+        const modelInstances = models.map(this._newModel.bind(this));
 
         modelInstances.forEach(modelInstance => this.models.push(modelInstance));
 
@@ -529,7 +527,7 @@ let Store = (_class$1 = class Store {
         return request$1.get(this.url, params).then(action(res => {
             this._pendingRequestCount -= 1;
             this._state.totalRecords = res.meta.total_records;
-            this.replace({
+            this.fromBackend({
                 data: res.data,
                 repos: res.with,
                 relMapping: res.with_mapping
@@ -655,6 +653,6 @@ let Store = (_class$1 = class Store {
             totalRecords: 0
         };
     }
-}), _applyDecoratedDescriptor$1(_class$1.prototype, 'isLoading', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'length', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'length'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'replace', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'replace'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parse', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'add', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'add'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'remove', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'remove'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clear', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fetch', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'setLimit', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'setLimit'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'totalPages', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'totalPages'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'currentPage', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'currentPage'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'hasNextPage', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasNextPage'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'hasPreviousPage', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasPreviousPage'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'getNextPage', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'getNextPage'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'getPreviousPage', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'getPreviousPage'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'setPage', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'setPage'), _class$1.prototype)), _class$1);
+}), _applyDecoratedDescriptor$1(_class$1.prototype, 'isLoading', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'length', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'length'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fromBackend', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parse', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'add', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'add'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'remove', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'remove'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clear', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fetch', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'setLimit', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'setLimit'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'totalPages', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'totalPages'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'currentPage', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'currentPage'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'hasNextPage', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasNextPage'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'hasPreviousPage', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasPreviousPage'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'getNextPage', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'getNextPage'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'getPreviousPage', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'getPreviousPage'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'setPage', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'setPage'), _class$1.prototype)), _class$1);
 
 export { Model, Store, request$1 as request };
