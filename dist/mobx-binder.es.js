@@ -1,6 +1,6 @@
 import { action, computed, extendObservable, isObservable, observable, toJS } from 'mobx';
-import axios from 'axios';
 import { at, extend, filter, find, forIn, get, isArray, isPlainObject, keyBy, map, mapKeys, mapValues, snakeCase } from 'lodash';
+import axios from 'axios';
 
 let csrfToken = null;
 let baseUrl = '';
@@ -323,7 +323,7 @@ let Model = (_class = class Model {
                 this._pendingRequestCount -= 1;
             }));
         }
-        return null;
+        return Promise.resolve();
     }
 
     fetch(options = {}) {
@@ -437,7 +437,7 @@ let Store = (_class$1 = class Store {
         }
         // TODO: throw an error if it's not an array?
         if (data) {
-            this.replace({ data });
+            this.parse(data);
         }
         if (options.currentPage !== undefined) {
             this.setPage(options.currentPage, { fetch: false });
@@ -469,7 +469,7 @@ let Store = (_class$1 = class Store {
     buildParams() {
         const offset = this.getPageOffset();
         return {
-            with: this._activeRelations.join(','),
+            with: this._activeRelations.join(',') || null,
             limit: this._state.limit,
             // Hide offset if zero so the request looks cleaner in DevTools.
             offset: offset || null
@@ -580,7 +580,7 @@ let Store = (_class$1 = class Store {
             throw new Error('There is no next page.');
         }
         this._state.currentPage += 1;
-        this.fetch();
+        return this.fetch();
     }
 
     getPreviousPage() {
@@ -588,7 +588,7 @@ let Store = (_class$1 = class Store {
             throw new Error('There is no previous page.');
         }
         this._state.currentPage -= 1;
-        this.fetch();
+        return this.fetch();
     }
 
     setPage(page = 1, options = {}) {
@@ -600,8 +600,9 @@ let Store = (_class$1 = class Store {
         }
         this._state.currentPage = page;
         if (options.fetch === undefined || options.fetch) {
-            this.fetch();
+            return this.fetch();
         }
+        return Promise.resolve();
     }
 
     // Helper methods to read models.
