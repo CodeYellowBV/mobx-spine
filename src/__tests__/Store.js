@@ -140,7 +140,7 @@ test('clear models', () => {
     expect(animalStore.length).toBe(0);
 });
 
-test.only('One-level store relation', () => {
+test('One-level store relation', () => {
     const animalStore = new AnimalStore(null, {
         relations: ['pastOwners'],
     });
