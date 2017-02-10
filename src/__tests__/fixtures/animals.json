@@ -1,0 +1,15 @@
+{
+    "data": [
+        {
+            "id": 2,
+            "name": "Madagascar"
+        },
+        {
+            "id": 3,
+            "name": "Burhan"
+        }
+    ],
+    "meta": {
+        "total_records": 2
+    }
+}

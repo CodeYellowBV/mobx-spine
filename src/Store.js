@@ -31,7 +31,7 @@ export default class Store {
         }
         // TODO: throw an error if it's not an array?
         if (data) {
-            this.replace({ data });
+            this.parse(data);
         }
         if (options.currentPage !== undefined) {
             this.setPage(options.currentPage, { fetch: false });
@@ -66,7 +66,7 @@ export default class Store {
     buildParams() {
         const offset = this.getPageOffset();
         return {
-            with: this._activeRelations.join(','),
+            with: this._activeRelations.join(',') || null,
             limit: this._state.limit,
             // Hide offset if zero so the request looks cleaner in DevTools.
             offset: offset || null,
