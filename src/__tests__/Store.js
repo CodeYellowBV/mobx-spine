@@ -1,4 +1,4 @@
-import { AnimalStore, Breed, PersonStore } from './fixtures/Animal';
+import { Animal, AnimalStore, Breed, PersonStore } from './fixtures/Animal';
 import animalsWithPastOwnersData from './fixtures/animals-with-past-owners.json';
 
 const simpleData = [{
@@ -110,22 +110,25 @@ test('add one model', () => {
     const animalStore = new AnimalStore();
     animalStore.parse(simpleData);
 
-    animalStore.add({
+    const model = animalStore.add({
         id: 20,
     });
     expect(animalStore.map('id')).toEqual([2, 3, 10, 20]);
+    expect(model).toBeInstanceOf(Animal);
 });
 
 test('add multiple models', () => {
     const animalStore = new AnimalStore();
     animalStore.parse(simpleData);
 
-    animalStore.add([{
+    const models = animalStore.add([{
         id: 20,
     }, {
         id: 21,
     }]);
     expect(animalStore.map('id')).toEqual([2, 3, 10, 20, 21]);
+    expect(models).toBeInstanceOf(Array);
+    expect(models[0]).toBeInstanceOf(Animal);
 });
 
 test('clear models', () => {
