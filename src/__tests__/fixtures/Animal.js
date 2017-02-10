@@ -47,7 +47,7 @@ export class Animal extends Model {
         return {
             kind: Kind,
             owner: Person,
-            past_owners: PersonStore,
+            pastOwners: PersonStore,
         };
     }
 }

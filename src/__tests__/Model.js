@@ -162,7 +162,7 @@ test('Parsing two-level relation (nested)', () => {
 
 test('Parsing store relation (nested)', () => {
     const animal = new Animal(null, {
-        relations: ['past_owners'],
+        relations: ['pastOwners'],
     });
 
     animal.fromBackend({
@@ -170,8 +170,8 @@ test('Parsing store relation (nested)', () => {
     });
 
     expect(animal.id).toBe(1);
-    expect(animal.past_owners.length).toBe(2);
-    expect(animal.past_owners.map('id')).toEqual([50, 51]);
+    expect(animal.pastOwners.length).toBe(2);
+    expect(animal.pastOwners.map('id')).toEqual([50, 51]);
 });
 
 test('toBackend with basic properties', () => {

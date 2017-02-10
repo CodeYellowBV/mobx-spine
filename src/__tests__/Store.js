@@ -140,9 +140,9 @@ test('clear models', () => {
     expect(animalStore.length).toBe(0);
 });
 
-test('One-level store relation', () => {
+test.only('One-level store relation', () => {
     const animalStore = new AnimalStore(null, {
-        relations: ['past_owners'],
+        relations: ['pastOwners'],
     });
 
     animalStore.fromBackend({
@@ -151,9 +151,9 @@ test('One-level store relation', () => {
         relMapping: animalsWithPastOwnersData.with_mapping,
     });
 
-    expect(animalStore.at(0).past_owners).toBeInstanceOf(PersonStore);
-    expect(animalStore.get(2).past_owners.map('id')).toEqual([2, 3]);
-    expect(animalStore.get(3).past_owners.map('id')).toEqual([1]);
+    expect(animalStore.at(0).pastOwners).toBeInstanceOf(PersonStore);
+    expect(animalStore.get(2).pastOwners.map('id')).toEqual([2, 3]);
+    expect(animalStore.get(3).pastOwners.map('id')).toEqual([1]);
 });
 
 test('toJS', () => {

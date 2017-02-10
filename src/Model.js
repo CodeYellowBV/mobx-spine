@@ -1,14 +1,19 @@
 import { observable, isObservable, extendObservable, computed, action } from 'mobx';
 import request from './request';
 import {
-    mapKeys, camelCase, snakeCase, forIn, mapValues, find, get, isPlainObject,
+    mapKeys, snakeCase, forIn, mapValues, find, get, isPlainObject,
 } from 'lodash';
+
+// lodash's `camelCase` method removes dots from the string; this breaks mobx-binder
+function snakeToCamel(s) {
+    return s.replace(/_\w/g, m => m[1].toUpperCase());
+}
 
 // TODO: need to find a good place for this
 function parseBackendValidationErrors(response) {
     const valErrors = get(response, 'data.error.validation_errors');
     if (response.status === 400 && valErrors) {
-        const camelCasedErrors = mapKeys(valErrors, (value, key) => camelCase(key));
+        const camelCasedErrors = mapKeys(valErrors, (value, key) => snakeToCamel(key));
         return mapValues(camelCasedErrors, (valError) => {
             return valError.map(obj => obj.code);
         });
@@ -139,7 +144,7 @@ export default class Model {
             const repository = repos[repoName];
             // All nested models get a repository. At this time we don't know yet
             // what id the model should get, since the parent may or may not be set.
-            const model = get(this, relName);
+            const model = get(this, snakeToCamel(relName));
             model.setRepository(repository);
         });
 
@@ -162,8 +167,7 @@ export default class Model {
     }
 
     @action parse(data) {
-        // TODO: This makes the keys all in camelCase. Can't we force this on the backend?
-        const formattedData = mapKeys(data, (value, key) => camelCase(key));
+        const formattedData = mapKeys(data, (value, key) => snakeToCamel(key));
 
         this._attributes.forEach((attr) => {
             if (formattedData[attr] !== undefined) {
@@ -174,10 +178,10 @@ export default class Model {
         this._activeCurrentRelations.forEach((currentRel) => {
             // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
             // However, it can also be an object if there are nested relations (non flattened).
-            if (isPlainObject(data[currentRel]) || isPlainObject(get(data[currentRel], '[0]'))) {
-                this[currentRel].parse(data[currentRel]);
+            if (isPlainObject(formattedData[currentRel]) || isPlainObject(get(formattedData[currentRel], '[0]'))) {
+                this[currentRel].parse(formattedData[currentRel]);
             } else {
-                this[currentRel].addFromRepository(data[currentRel]);
+                this[currentRel].addFromRepository(formattedData[currentRel]);
             }
         });
     }
