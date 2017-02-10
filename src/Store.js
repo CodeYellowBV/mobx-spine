@@ -1,6 +1,6 @@
 import { observable, computed, action } from 'mobx';
-import request from './request';
 import { isArray, map, filter, find, keyBy, at } from 'lodash';
+import request from './request';
 
 export default class Store {
     // Holds all models

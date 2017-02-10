@@ -1,8 +1,6 @@
 import { observable, isObservable, extendObservable, computed, action, toJS } from 'mobx';
+import { mapKeys, snakeCase, forIn, mapValues, find, get, isPlainObject } from 'lodash';
 import request from './request';
-import {
-    mapKeys, snakeCase, forIn, mapValues, find, get, isPlainObject,
-} from 'lodash';
 
 // lodash's `camelCase` method removes dots from the string; this breaks mobx-binder
 function snakeToCamel(s) {
