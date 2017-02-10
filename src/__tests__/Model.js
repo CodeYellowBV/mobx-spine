@@ -1,4 +1,4 @@
-import { Animal, Kind, Breed, Person, Location } from './fixtures/Animal';
+import { Animal, AnimalWithArray, Kind, Breed, Person, Location } from './fixtures/Animal';
 import animalKindBreedData from './fixtures/animal-with-kind-breed.json';
 import animalKindBreedDataNested from './fixtures/animal-with-kind-breed-nested.json';
 import saveFailData from './fixtures/save-fail.json';
@@ -261,6 +261,16 @@ test('toJS with relations', () => {
                 name: '',
             },
         },
+    });
+});
+
+test('toJS with observable array', () => {
+    const animal = new AnimalWithArray({
+        foo: ['q', 'a'],
+    });
+
+    expect(animal.toJS()).toEqual({
+        foo: ['q', 'a'],
     });
 });
 

@@ -1,4 +1,4 @@
-import { observable, isObservable, extendObservable, computed, action } from 'mobx';
+import { observable, isObservable, extendObservable, computed, action, toJS } from 'mobx';
 import request from './request';
 import {
     mapKeys, snakeCase, forIn, mapValues, find, get, isPlainObject,
@@ -123,7 +123,7 @@ export default class Model {
     toJS() {
         const output = {};
         this._attributes.forEach((attr) => {
-            output[attr] = this[attr];
+            output[attr] = toJS(this[attr]);
         });
 
         this._activeCurrentRelations.forEach((currentRel) => {

@@ -56,3 +56,8 @@ export class AnimalStore extends Store {
     Model = Animal;
     url = '/api/animal/';
 }
+
+// I have no creativity left after 17h, sorry. Also ssssh.
+export class AnimalWithArray extends Model {
+    @observable foo = [];
+}
