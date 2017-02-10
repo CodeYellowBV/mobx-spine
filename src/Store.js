@@ -178,7 +178,7 @@ export default class Store {
             throw new Error('There is no next page.');
         }
         this._state.currentPage += 1;
-        this.fetch();
+        return this.fetch();
     }
 
     @action getPreviousPage() {
@@ -186,7 +186,7 @@ export default class Store {
             throw new Error('There is no previous page.');
         }
         this._state.currentPage -= 1;
-        this.fetch();
+        return this.fetch();
     }
 
     @action setPage(page = 1, options = {}) {
@@ -198,8 +198,9 @@ export default class Store {
         }
         this._state.currentPage = page;
         if (options.fetch === undefined || options.fetch) {
-            this.fetch();
+            return this.fetch();
         }
+        return Promise.resolve();
     }
 
     // Helper methods to read models.

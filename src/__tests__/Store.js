@@ -2,6 +2,10 @@ import { Animal, AnimalStore, Breed, PersonStore } from './fixtures/Animal';
 import animalsWithPastOwnersData from './fixtures/animals-with-past-owners.json';
 import animalsWithKindBreedData from './fixtures/animals-with-kind-breed.json';
 import animalsData from './fixtures/animals.json';
+import pagination1Data from './fixtures/pagination/1.json';
+import pagination2Data from './fixtures/pagination/2.json';
+import pagination3Data from './fixtures/pagination/3.json';
+import pagination4Data from './fixtures/pagination/4.json';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 
@@ -239,6 +243,230 @@ describe('requests', () => {
         return animalStore.fetch()
         .then(() => {
             expect(animalStore.isLoading).toBe(false);
+        });
+    });
+});
+
+describe('Pagination', () => {
+    let mock;
+    beforeEach(() => {
+        mock = new MockAdapter(axios);
+    });
+    afterEach(() => {
+        if (mock) {
+            mock.restore();
+            mock = null;
+        }
+    });
+
+    test('without limit', () => {
+        const animalStore = new AnimalStore(null, {
+            limit: null,
+        });
+
+        expect(animalStore.totalPages).toBe(0);
+    });
+
+    test('set invalid limit', () => {
+        const animalStore = new AnimalStore();
+
+        expect(() => animalStore.setLimit('a')).toThrow('Page limit should be a number or falsy value.');
+
+        expect(animalStore.totalPages).toBe(0);
+    });
+
+    test('with four pages on first page', () => {
+        mock.onAny().replyOnce((config) => {
+            expect(config.params).toEqual({ with: null, limit: 3, offset: null });
+            return [200, pagination1Data];
+        });
+
+        const animalStore = new AnimalStore(null, {
+            limit: 3,
+        });
+
+        expect(animalStore.totalPages).toBe(0);
+        expect(animalStore.currentPage).toBe(1);
+        expect(animalStore.hasNextPage).toBe(false);
+        expect(animalStore.hasPreviousPage).toBe(false);
+
+        return animalStore.fetch()
+        .then(() => {
+            expect(animalStore.totalPages).toBe(4);
+            expect(animalStore.currentPage).toBe(1);
+            expect(animalStore.hasNextPage).toBe(true);
+            expect(animalStore.hasPreviousPage).toBe(false);
+        });
+    });
+
+    test('getNextPage - with four pages to second page', () => {
+        mock.onAny().replyOnce(() => {
+            return [200, pagination1Data];
+        });
+
+        const animalStore = new AnimalStore(null, {
+            limit: 3,
+        });
+
+        return animalStore.fetch()
+        .then(() => {
+            mock.onAny().replyOnce((config) => {
+                expect(config.params).toEqual({ with: null, limit: 3, offset: 3 });
+                return [200, pagination2Data];
+            });
+
+            return animalStore.getNextPage();
+        })
+        .then(() => {
+            expect(animalStore.map('id')).toEqual([4, 5, 6]);
+            expect(animalStore.currentPage).toBe(2);
+            expect(animalStore.hasPreviousPage).toBe(true);
+            expect(animalStore.hasNextPage).toBe(true);
+        });
+    });
+
+    test('getNextPage - with four pages to fourth page', () => {
+        mock.onAny().replyOnce(() => {
+            return [200, pagination1Data];
+        });
+
+        const animalStore = new AnimalStore(null, {
+            limit: 3,
+        });
+
+        return animalStore.fetch()
+        .then(() => {
+            mock.onAny().replyOnce(() => {
+                return [200, pagination2Data];
+            });
+
+            return animalStore.getNextPage();
+        })
+        .then(() => {
+            mock.onAny().replyOnce(() => {
+                return [200, pagination3Data];
+            });
+
+            return animalStore.getNextPage();
+        })
+        .then(() => {
+            mock.onAny().replyOnce(() => {
+                return [200, pagination4Data];
+            });
+
+            return animalStore.getNextPage();
+        })
+        .then(() => {
+            expect(animalStore.currentPage).toBe(4);
+            expect(animalStore.hasPreviousPage).toBe(true);
+            expect(animalStore.hasNextPage).toBe(false);
+        });
+    });
+
+    test('getPreviousPage', () => {
+        mock.onAny().replyOnce(() => {
+            return [200, pagination1Data];
+        });
+
+        const animalStore = new AnimalStore(null, {
+            limit: 3,
+        });
+
+        return animalStore.fetch()
+        .then(() => {
+            mock.onAny().replyOnce(() => {
+                return [200, pagination2Data];
+            });
+
+            return animalStore.getNextPage();
+        })
+        .then(() => {
+            mock.onAny().replyOnce(() => {
+                return [200, pagination1Data];
+            });
+
+            return animalStore.getPreviousPage();
+        })
+        .then(() => {
+            expect(animalStore.map('id')).toEqual([1, 2, 3]);
+            expect(animalStore.currentPage).toBe(1);
+            expect(animalStore.hasPreviousPage).toBe(false);
+        });
+    });
+
+    test('getPreviousPage - without page', () => {
+        const animalStore = new AnimalStore();
+
+        expect(() => animalStore.getPreviousPage()).toThrow('There is no previous page.');
+    });
+
+    test('getNextPage - without page', () => {
+        const animalStore = new AnimalStore();
+
+        expect(() => animalStore.getNextPage()).toThrow('There is no next page.');
+    });
+
+    test('setPage with fetch', () => {
+        mock.onAny().replyOnce(() => {
+            return [200, pagination1Data];
+        });
+
+        const animalStore = new AnimalStore(null, {
+            limit: 3,
+        });
+
+        return animalStore.fetch()
+        .then(() => {
+            mock.onAny().replyOnce(() => {
+                return [200, pagination3Data];
+            });
+
+            return animalStore.setPage(3);
+        })
+        .then(() => {
+            expect(animalStore.map('id')).toEqual([7, 8, 9]);
+            expect(animalStore.currentPage).toBe(3);
+            expect(animalStore.hasPreviousPage).toBe(true);
+            expect(animalStore.hasNextPage).toBe(true);
+        });
+    });
+
+    test('setPage with invalid page', () => {
+        const animalStore = new AnimalStore();
+
+        expect(() => animalStore.setPage('')).toThrow('Page should be a number.');
+    });
+
+    test('setPage with not existent page', () => {
+        mock.onAny().replyOnce(() => {
+            return [200, pagination1Data];
+        });
+
+        const animalStore = new AnimalStore(null, {
+            limit: 3,
+        });
+
+        return animalStore.fetch()
+        .then(() => {
+            expect(() => animalStore.setPage(5)).toThrow('Page should be between 1 and 4.');
+        });
+    });
+
+    test('setPage without fetch', () => {
+        mock.onAny().replyOnce(() => {
+            return [200, pagination1Data];
+        });
+
+        const animalStore = new AnimalStore(null, {
+            limit: 3,
+        });
+
+        return animalStore.fetch()
+        .then(() => {
+            return animalStore.setPage(3, { fetch: false });
+        })
+        .then(() => {
+            expect(animalStore.map('id')).toEqual([1, 2, 3]);
         });
     });
 });

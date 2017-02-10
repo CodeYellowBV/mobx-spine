@@ -1,0 +1,19 @@
+{
+    "data": [
+        {
+            "id": 7,
+            "name": "Bijzettafel"
+        },
+        {
+            "id": 8,
+            "name": "H4rdeschijf"
+        },
+        {
+            "id": 9,
+            "name": "Soepjes"
+        }
+    ],
+    "meta": {
+        "total_records": 11
+    }
+}

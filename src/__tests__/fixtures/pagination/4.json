@@ -1,0 +1,15 @@
+{
+    "data": [
+        {
+            "id": 10,
+            "name": "Praag"
+        },
+        {
+            "id": 11,
+            "name": "Fietshendel"
+        }
+    ],
+    "meta": {
+        "total_records": 11
+    }
+}

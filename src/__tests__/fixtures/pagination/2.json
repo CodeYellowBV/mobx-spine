@@ -1,0 +1,19 @@
+{
+    "data": [
+        {
+            "id": 4,
+            "name": "Delta studenten"
+        },
+        {
+            "id": 5,
+            "name": "Passie vrucht"
+        },
+        {
+            "id": 6,
+            "name": "Appelsap"
+        }
+    ],
+    "meta": {
+        "total_records": 11
+    }
+}
