@@ -1,4 +1,4 @@
-import { action, computed, extendObservable, isObservable, observable } from 'mobx';
+import { action, computed, extendObservable, isObservable, observable, toJS } from 'mobx';
 import axios from 'axios';
 import { at, extend, filter, find, forIn, get, isArray, isPlainObject, keyBy, map, mapKeys, mapValues, snakeCase } from 'lodash';
 
@@ -222,7 +222,7 @@ let Model = (_class = class Model {
     toJS() {
         const output = {};
         this._attributes.forEach(attr => {
-            output[attr] = this[attr];
+            output[attr] = toJS(this[attr]);
         });
 
         this._activeCurrentRelations.forEach(currentRel => {
