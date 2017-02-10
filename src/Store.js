@@ -106,7 +106,7 @@ export default class Store {
 
         modelInstances.forEach(modelInstance => this.models.push(modelInstance));
 
-        return models;
+        return singular ? modelInstances[0] : modelInstances;
     }
 
     @action remove(models) {
