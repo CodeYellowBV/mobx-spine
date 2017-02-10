@@ -131,6 +131,14 @@ test('remove multiple models', () => {
     expect(animalStore.map('id')).toEqual([2]);
 });
 
+test('remove from model without id', () => {
+    const animalStore = new AnimalStore();
+    animalStore.parse([{ name: 'A' }, { name: 'B' }]);
+
+    animalStore.at(1).delete();
+    expect(animalStore.map('name')).toEqual(['A']);
+});
+
 test('add one model', () => {
     const animalStore = new AnimalStore();
     animalStore.parse(simpleData);

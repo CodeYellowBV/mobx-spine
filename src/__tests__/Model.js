@@ -111,6 +111,14 @@ test('Attributes list', () => {
     expect(animal._attributes).toEqual(['id', 'name']);
 });
 
+test('Non existent relation should throw an error', () => {
+    expect(() => {
+        return new Animal(null, {
+            relations: ['ponyfoo'],
+        });
+    }).toThrow('Specified relation "ponyfoo" does not exist on model.');
+});
+
 test('Parsing two-level relation', () => {
     const animal = new Animal(null, {
         relations: ['kind.breed'],
@@ -274,6 +282,16 @@ test('toJS with observable array', () => {
     });
 });
 
+test('fetch without id', () => {
+    const animal = new Animal();
+    expect(() => animal.fetch()).toThrow('Trying to fetch model without id!');
+});
+
+test('delete without id and store', () => {
+    const animal = new Animal();
+    expect(animal.delete()).toBeInstanceOf(Promise);
+});
+
 describe('requests', () => {
     let mock;
     beforeEach(() => {
@@ -371,6 +389,20 @@ describe('requests', () => {
         });
 
         return animal.delete();
+    });
+
+    test('isLoading', () => {
+        const animal = new Animal({ id: 2 });
+        expect(animal.isLoading).toBe(false);
+        mock.onAny().replyOnce(() => {
+            expect(animal.isLoading).toBe(true);
+            return [200, { id: 2 }];
+        });
+
+        return animal.fetch()
+        .then(() => {
+            expect(animal.isLoading).toBe(false);
+        });
     });
 });
 

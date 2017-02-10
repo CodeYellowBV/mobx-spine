@@ -225,7 +225,7 @@ export default class Model {
                 this._pendingRequestCount -= 1;
             }));
         }
-        return null;
+        return Promise.resolve();
     }
 
     @action fetch(options = {}) {
