@@ -505,7 +505,7 @@ let Store = (_class$1 = class Store {
 
         modelInstances.forEach(modelInstance => this.models.push(modelInstance));
 
-        return models;
+        return singular ? modelInstances[0] : modelInstances;
     }
 
     remove(models) {
