@@ -15,7 +15,8 @@
     "test-coverage": "jest --coverage",
     "lint": "eslint src",
     "preversion": "npm run -s lint",
-    "build": "rm -f dist/** && node build.js"
+    "build": "rm -f dist/** && node build.js",
+    "ci": "npm run -s lint && npm run -s test-coverage && codecov"
   },
   "dependencies": {},
   "engines": {
@@ -33,6 +34,7 @@
     "babel-plugin-transform-decorators-legacy": "^1.3.4",
     "babel-plugin-transform-es2015-modules-commonjs": "^6.22.0",
     "babel-preset-stage-2": "^6.22.0",
+    "codecov": "^1.0.1",
     "eslint": "^3.14.1",
     "eslint-config-codeyellow": "^2.0.0",
     "jest": "^18.1.0",
