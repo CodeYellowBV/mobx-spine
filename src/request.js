@@ -2,6 +2,7 @@ import axios from 'axios';
 import { extend } from 'lodash';
 
 let csrfToken = null;
+let defaultHeaders = {};
 let baseUrl = '';
 
 // Function ripped from Django docs.
@@ -21,10 +22,10 @@ function request(method, url, data, options) {
         url,
         data: method !== 'get' && data,
         params: method === 'get' && data,
-        headers: {
+        headers: Object.assign({
             'Content-Type': 'application/json',
             'X-Csrftoken': useCsrfToken,
-        },
+        }, defaultHeaders),
     };
 
     extend(axiosOptions, options);
@@ -58,4 +59,8 @@ export default {
         baseUrl = url;
     },
     getBaseUrl: () => baseUrl,
+    setHeaders: (headers) => {
+        defaultHeaders = headers;
+    },
+    getHeaders: () => defaultHeaders,
 };

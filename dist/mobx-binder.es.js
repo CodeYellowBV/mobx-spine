@@ -3,6 +3,7 @@ import { at, extend, filter, find, forIn, get, isArray, isPlainObject, keyBy, ma
 import axios from 'axios';
 
 let csrfToken = null;
+let defaultHeaders = {};
 let baseUrl = '';
 
 // Function ripped from Django docs.
@@ -23,10 +24,10 @@ function request(method, url, data, options) {
         url,
         data: method !== 'get' && data,
         params: method === 'get' && data,
-        headers: {
+        headers: Object.assign({
             'Content-Type': 'application/json',
             'X-Csrftoken': useCsrfToken
-        }
+        }, defaultHeaders)
     };
 
     extend(axiosOptions, options);
@@ -58,7 +59,11 @@ var request$1 = {
     setBaseUrl: url => {
         baseUrl = url;
     },
-    getBaseUrl: () => baseUrl
+    getBaseUrl: () => baseUrl,
+    setHeaders: headers => {
+        defaultHeaders = headers;
+    },
+    getHeaders: () => defaultHeaders
 };
 
 var _class;
