@@ -1,6 +1,7 @@
 import { observable, isObservable, extendObservable, computed, action, toJS } from 'mobx';
 import { mapKeys, snakeCase, forIn, mapValues, find, get, isPlainObject } from 'lodash';
 import request from './request';
+import Store from './Store';
 
 // lodash's `camelCase` method removes dots from the string; this breaks mobx-binder
 function snakeToCamel(s) {
@@ -110,9 +111,14 @@ export default class Model {
         });
         // Add active relations as id.
         this._activeCurrentRelations.forEach((currentRel) => {
-            const model = this[currentRel];
-            if (model) {
-                output[snakeCase(currentRel)] = model[model.primaryKey];
+            const rel = this[currentRel];
+            const relBackendName = snakeCase(currentRel);
+            if (rel instanceof Model) {
+                output[relBackendName] = rel[rel.primaryKey];
+            }
+            if (rel instanceof Store) {
+                // TODO: This should use the `primaryKey` of the model in the store instead, not hardcoded the `id`.
+                output[relBackendName] = rel.map('id');
             }
         });
         return output;

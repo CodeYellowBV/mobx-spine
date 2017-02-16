@@ -214,6 +214,22 @@ test('toBackend with relations', () => {
     });
 });
 
+test('toBackend with store relation', () => {
+    const animal = new Animal({
+        id: 4,
+    }, { relations: ['pastOwners'] });
+
+    animal.pastOwners.parse([{ id: 5 }]);
+
+    const serialized = animal.toBackend();
+
+    expect(serialized).toEqual({
+        id: 4,
+        name: '',
+        past_owners: [5],
+    });
+});
+
 test('clear with basic properties', () => {
     const animal = new Animal({
         id: 2,
