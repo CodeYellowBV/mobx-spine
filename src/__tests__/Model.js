@@ -1,10 +1,10 @@
+import axios from 'axios';
+import { toJS } from 'mobx';
+import MockAdapter from 'axios-mock-adapter';
 import { Animal, AnimalWithArray, Kind, Breed, Person, Location } from './fixtures/Animal';
 import animalKindBreedData from './fixtures/animal-with-kind-breed.json';
 import animalKindBreedDataNested from './fixtures/animal-with-kind-breed-nested.json';
 import saveFailData from './fixtures/save-fail.json';
-import axios from 'axios';
-import { toJS } from 'mobx';
-import MockAdapter from 'axios-mock-adapter';
 
 test('Initialize model with valid data', () => {
     const animal = new Animal({

@@ -38,7 +38,6 @@ function request(method, url, data, options) {
             const resp = err.response;
             if (resp && resp.status === 403 && resp.data.code === 'NotAuthenticated') {
                 // TODO: We should do something here...
-                return;
             }
         });
     }

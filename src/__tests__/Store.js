@@ -1,3 +1,5 @@
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
 import { Animal, AnimalStore, Breed, PersonStore } from './fixtures/Animal';
 import animalsWithPastOwnersData from './fixtures/animals-with-past-owners.json';
 import animalsWithKindBreedData from './fixtures/animals-with-kind-breed.json';
@@ -6,8 +8,6 @@ import pagination1Data from './fixtures/pagination/1.json';
 import pagination2Data from './fixtures/pagination/2.json';
 import pagination3Data from './fixtures/pagination/3.json';
 import pagination4Data from './fixtures/pagination/4.json';
-import axios from 'axios';
-import MockAdapter from 'axios-mock-adapter';
 
 const simpleData = [{
     id: 2,

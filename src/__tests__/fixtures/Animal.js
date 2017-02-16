@@ -1,5 +1,5 @@
-import { Model, Store } from '../..';
 import { observable } from 'mobx';
+import { Model, Store } from '../..';
 
 export class Location extends Model {
     @observable id = null;
