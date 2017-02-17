@@ -579,12 +579,15 @@ let Model = (_class = class Model {
         });
 
         this._activeCurrentRelations.forEach(currentRel => {
-            // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
-            // However, it can also be an object if there are nested relations (non flattened).
-            if (isPlainObject(formattedData[currentRel]) || isPlainObject(get(formattedData[currentRel], '[0]'))) {
-                this[currentRel].parse(formattedData[currentRel]);
-            } else {
-                this[currentRel].addFromRepository(formattedData[currentRel]);
+            const newValue = formattedData[currentRel];
+            if (newValue !== undefined) {
+                // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
+                // However, it can also be an object if there are nested relations (non flattened).
+                if (isPlainObject(newValue) || isPlainObject(get(newValue, '[0]'))) {
+                    this[currentRel].parse(newValue);
+                } else {
+                    this[currentRel].addFromRepository(newValue);
+                }
             }
         });
     }

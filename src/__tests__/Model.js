@@ -182,6 +182,22 @@ test('Parsing store relation (nested)', () => {
     expect(animal.pastOwners.map('id')).toEqual([50, 51]);
 });
 
+test('Parsing two times with store relation', () => {
+    const animal = new Animal(null, {
+        relations: ['pastOwners'],
+    });
+
+    animal.pastOwners.parse([{ id: 3 }]);
+
+    expect(animal.pastOwners.map('id')).toEqual([3]);
+
+    animal.parse({
+        name: 'Pupper',
+    });
+
+    expect(animal.pastOwners.map('id')).toEqual([3]);
+});
+
 test('toBackend with basic properties', () => {
     const animal = new Animal({
         id: 3,
