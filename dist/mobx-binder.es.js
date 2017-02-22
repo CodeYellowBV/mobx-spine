@@ -506,7 +506,7 @@ let Model = (_class = class Model {
     toBackend() {
         const output = {};
         this._attributes.forEach(attr => {
-            output[snakeCase(attr)] = this[attr];
+            output[snakeCase(attr)] = toJS(this[attr]);
         });
         // Add active relations as id.
         this._activeCurrentRelations.forEach(currentRel => {

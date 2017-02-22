@@ -246,6 +246,16 @@ test('toBackend with store relation', () => {
     });
 });
 
+test('toBackend with observable array', () => {
+    const animal = new AnimalWithArray({
+        foo: ['q', 'a'],
+    });
+
+    expect(animal.toBackend()).toEqual({
+        foo: ['q', 'a'],
+    });
+});
+
 test('clear with basic properties', () => {
     const animal = new Animal({
         id: 2,
