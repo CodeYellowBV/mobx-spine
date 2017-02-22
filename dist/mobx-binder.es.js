@@ -22,8 +22,8 @@ function request(method, url, data, options) {
         method,
         baseURL: baseUrl,
         url,
-        data: method !== 'get' && data,
-        params: method === 'get' && data,
+        data: method !== 'get' && data ? data : undefined,
+        params: method === 'get' && data ? data : undefined,
         headers: Object.assign({
             'Content-Type': 'application/json',
             'X-Csrftoken': useCsrfToken
