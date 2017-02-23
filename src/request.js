@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { extend } from 'lodash';
 
 let csrfToken = null;
 let defaultHeaders = {};
@@ -28,7 +27,7 @@ function request(method, url, data, options) {
         }, defaultHeaders),
     };
 
-    extend(axiosOptions, options);
+    Object.assign(axiosOptions, options);
 
     const xhr = axios(axiosOptions)
         .then(response => response.data);
