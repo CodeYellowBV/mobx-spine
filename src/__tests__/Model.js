@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { toJS } from 'mobx';
 import MockAdapter from 'axios-mock-adapter';
-import { Animal, AnimalWithArray, Kind, Breed, Person, Location } from './fixtures/Animal';
+import { Animal, AnimalWithArray, AnimalWithFrontendProp, Kind, Breed, Person, Location } from './fixtures/Animal';
 import animalKindBreedData from './fixtures/animal-with-kind-breed.json';
 import animalKindBreedDataNested from './fixtures/animal-with-kind-breed-nested.json';
 import saveFailData from './fixtures/save-fail.json';
@@ -243,6 +243,20 @@ test('toBackend with store relation', () => {
         id: 4,
         name: '',
         past_owners: [5],
+    });
+});
+
+test('toBackend with frontend-only prop', () => {
+    const animal = new AnimalWithFrontendProp({
+        id: 3,
+        _frontend: 'Donkey',
+    });
+
+    const serialized = animal.toBackend();
+
+    expect(animal._frontend).toBe('Donkey');
+    expect(serialized).toEqual({
+        id: 3,
     });
 });
 

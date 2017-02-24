@@ -1,5 +1,5 @@
 import { action, computed, extendObservable, isObservable, observable, toJS } from 'mobx';
-import { at, extend, filter, find, forIn, get, isArray, isPlainObject, keyBy, map, mapKeys, mapValues, snakeCase } from 'lodash';
+import { at, filter, find, forIn, get, isArray, isPlainObject, keyBy, map, mapKeys, mapValues, snakeCase } from 'lodash';
 import axios from 'axios';
 
 let csrfToken = null;
@@ -30,7 +30,7 @@ function request(method, url, data, options) {
         }, defaultHeaders)
     };
 
-    extend(axiosOptions, options);
+    Object.assign(axiosOptions, options);
 
     const xhr = axios(axiosOptions).then(response => response.data);
 
@@ -113,7 +113,7 @@ function _applyDecoratedDescriptor$1(target, property, decorators, descriptor, c
 let Store = (_class$1 = class Store {
     // Holds the fetch parameters
     get isLoading() {
-        return this._pendingRequestCount > 0;
+        return this.__pendingRequestCount > 0;
     }
 
     get length() {
@@ -125,11 +125,11 @@ let Store = (_class$1 = class Store {
 
         _initDefineProp$1(this, 'params', _descriptor2$1, this);
 
-        _initDefineProp$1(this, '_pendingRequestCount', _descriptor3, this);
+        _initDefineProp$1(this, '__pendingRequestCount', _descriptor3, this);
 
-        _initDefineProp$1(this, '_state', _descriptor4, this);
+        _initDefineProp$1(this, '__state', _descriptor4, this);
 
-        this._activeRelations = [];
+        this.__activeRelations = [];
         this.Model = null;
 
         if (options.relations) {
@@ -148,17 +148,17 @@ let Store = (_class$1 = class Store {
     }
 
     parseRelations(activeRelations) {
-        this._activeRelations = activeRelations;
+        this.__activeRelations = activeRelations;
     }
 
     setRepository(repository) {
-        this._repository = repository;
+        this.__repository = repository;
     }
 
     addFromRepository(ids = []) {
         ids = isArray(ids) ? ids : [ids];
 
-        const records = at(keyBy(this._repository, 'id'), ids);
+        const records = at(keyBy(this.__repository, 'id'), ids);
         this.models.replace(records.map(record => {
             return new this.Model(record, {
                 store: this
@@ -169,8 +169,8 @@ let Store = (_class$1 = class Store {
     buildParams() {
         const offset = this.getPageOffset();
         return {
-            with: this._activeRelations.join(',') || null,
-            limit: this._state.limit,
+            with: this.__activeRelations.join(',') || null,
+            limit: this.__state.limit,
             // Hide offset if zero so the request looks cleaner in DevTools.
             offset: offset || null
         };
@@ -193,7 +193,7 @@ let Store = (_class$1 = class Store {
     _newModel(model = null) {
         return new this.Model(model, {
             store: this,
-            relations: this._activeRelations
+            relations: this.__activeRelations
         });
     }
 
@@ -226,11 +226,11 @@ let Store = (_class$1 = class Store {
     }
 
     fetch(options = {}) {
-        this._pendingRequestCount += 1;
+        this.__pendingRequestCount += 1;
         const params = Object.assign(this.buildParams(), this.params, options.data);
         return request$1.get(this.url, params).then(action(res => {
-            this._pendingRequestCount -= 1;
-            this._state.totalRecords = res.meta.total_records;
+            this.__pendingRequestCount -= 1;
+            this.__state.totalRecords = res.meta.total_records;
             this.fromBackend({
                 data: res.data,
                 repos: res.with,
@@ -246,40 +246,40 @@ let Store = (_class$1 = class Store {
     // Methods for pagination.
 
     getPageOffset() {
-        return (this._state.currentPage - 1) * this._state.limit;
+        return (this.__state.currentPage - 1) * this.__state.limit;
     }
 
     setLimit(limit) {
         if (limit && !Number.isInteger(limit)) {
             throw new Error('Page limit should be a number or falsy value.');
         }
-        this._state.limit = limit || null;
+        this.__state.limit = limit || null;
     }
 
     get totalPages() {
-        if (!this._state.limit) {
+        if (!this.__state.limit) {
             return 0;
         }
-        return Math.ceil(this._state.totalRecords / this._state.limit);
+        return Math.ceil(this.__state.totalRecords / this.__state.limit);
     }
 
     get currentPage() {
-        return this._state.currentPage;
+        return this.__state.currentPage;
     }
 
     get hasNextPage() {
-        return this._state.currentPage + 1 <= this.totalPages;
+        return this.__state.currentPage + 1 <= this.totalPages;
     }
 
     get hasPreviousPage() {
-        return this._state.currentPage > 1;
+        return this.__state.currentPage > 1;
     }
 
     getNextPage() {
         if (!this.hasNextPage) {
             throw new Error('There is no next page.');
         }
-        this._state.currentPage += 1;
+        this.__state.currentPage += 1;
         return this.fetch();
     }
 
@@ -287,7 +287,7 @@ let Store = (_class$1 = class Store {
         if (!this.hasPreviousPage) {
             throw new Error('There is no previous page.');
         }
-        this._state.currentPage -= 1;
+        this.__state.currentPage -= 1;
         return this.fetch();
     }
 
@@ -298,7 +298,7 @@ let Store = (_class$1 = class Store {
         if (page > this.totalPages || page < 1) {
             throw new Error(`Page should be between 1 and ${this.totalPages}.`);
         }
-        this._state.currentPage = page;
+        this.__state.currentPage = page;
         if (options.fetch === undefined || options.fetch) {
             return this.fetch();
         }
@@ -344,12 +344,12 @@ let Store = (_class$1 = class Store {
     initializer: function () {
         return {};
     }
-}), _descriptor3 = _applyDecoratedDescriptor$1(_class$1.prototype, '_pendingRequestCount', [observable], {
+}), _descriptor3 = _applyDecoratedDescriptor$1(_class$1.prototype, '__pendingRequestCount', [observable], {
     enumerable: true,
     initializer: function () {
         return 0;
     }
-}), _descriptor4 = _applyDecoratedDescriptor$1(_class$1.prototype, '_state', [observable], {
+}), _descriptor4 = _applyDecoratedDescriptor$1(_class$1.prototype, '__state', [observable], {
     enumerable: true,
     initializer: function () {
         return {
@@ -405,6 +405,9 @@ function _applyDecoratedDescriptor(target, property, decorators, descriptor, con
 
 // lodash's `camelCase` method removes dots from the string; this breaks mobx-binder
 function snakeToCamel(s) {
+    if (s.startsWith('_')) {
+        return s;
+    }
     return s.replace(/_\w/g, m => m[1].toUpperCase());
 }
 
@@ -436,27 +439,27 @@ let Model = (_class = class Model {
     }
 
     get isLoading() {
-        return this._pendingRequestCount > 0;
+        return this.__pendingRequestCount > 0;
     }
 
     constructor(data, options = {}) {
         this.primaryKey = 'id';
-        this._attributes = [];
-        this._originalAttributes = {};
-        this._activeRelations = [];
-        this._activeCurrentRelations = [];
+        this.__attributes = [];
+        this.__originalAttributes = {};
+        this.__activeRelations = [];
+        this.__activeCurrentRelations = [];
 
-        _initDefineProp(this, '_backendValidationErrors', _descriptor, this);
+        _initDefineProp(this, '__backendValidationErrors', _descriptor, this);
 
-        _initDefineProp(this, '_pendingRequestCount', _descriptor2, this);
+        _initDefineProp(this, '__pendingRequestCount', _descriptor2, this);
 
-        this._store = options.store;
+        this.__store = options.store;
         this.setRepository(options.repository);
         // Find all attributes. Not all observables are an attribute.
         forIn(this, (value, key) => {
-            if (!key.startsWith('_') && isObservable(this, key)) {
-                this._attributes.push(key);
-                this._originalAttributes[key] = value;
+            if (!key.startsWith('__') && isObservable(this, key)) {
+                this.__attributes.push(key);
+                this.__originalAttributes[key] = value;
             }
         });
         if (options.relations) {
@@ -468,7 +471,7 @@ let Model = (_class = class Model {
     }
 
     parseRelations(activeRelations) {
-        this._activeRelations = activeRelations;
+        this.__activeRelations = activeRelations;
         // TODO: No idea why getting the relations only works when it's a Function.
         const relations = this.relations && this.relations();
         const relModels = {};
@@ -483,7 +486,7 @@ let Model = (_class = class Model {
             // When two nested relations are defined next to each other (e.g. `['kind.breed', 'kind.location']`),
             // the relation `kind` only needs to be initialized once.
             relModels[currentRel] = currentProp ? currentProp.concat(otherRels) : otherRels;
-            this._activeCurrentRelations.push(currentRel);
+            this.__activeCurrentRelations.push(currentRel);
         });
         extendObservable(this, mapValues(relModels, (otherRelNames, relName) => {
             const RelModel = relations[relName];
@@ -499,17 +502,19 @@ let Model = (_class = class Model {
     // Return the fetch params for including relations on the backend.
     parseRelationParams() {
         return {
-            with: this._activeRelations.join(',') || null
+            with: this.__activeRelations.join(',') || null
         };
     }
 
     toBackend() {
         const output = {};
-        this._attributes.forEach(attr => {
-            output[snakeCase(attr)] = toJS(this[attr]);
+        this.__attributes.forEach(attr => {
+            if (!attr.startsWith('_')) {
+                output[snakeCase(attr)] = toJS(this[attr]);
+            }
         });
         // Add active relations as id.
-        this._activeCurrentRelations.forEach(currentRel => {
+        this.__activeCurrentRelations.forEach(currentRel => {
             const rel = this[currentRel];
             const relBackendName = snakeCase(currentRel);
             if (rel instanceof Model) {
@@ -525,11 +530,11 @@ let Model = (_class = class Model {
 
     toJS() {
         const output = {};
-        this._attributes.forEach(attr => {
+        this.__attributes.forEach(attr => {
             output[attr] = toJS(this[attr]);
         });
 
-        this._activeCurrentRelations.forEach(currentRel => {
+        this.__activeCurrentRelations.forEach(currentRel => {
             const model = this[currentRel];
             if (model) {
                 output[currentRel] = model.toJS();
@@ -559,11 +564,11 @@ let Model = (_class = class Model {
     }
 
     setRepository(repository) {
-        this._repository = repository;
+        this.__repository = repository;
     }
 
     addFromRepository(id) {
-        const relData = find(this._repository, { id });
+        const relData = find(this.__repository, { id });
         if (relData) {
             this.parse(relData);
         }
@@ -572,13 +577,13 @@ let Model = (_class = class Model {
     parse(data) {
         const formattedData = mapKeys(data, (value, key) => snakeToCamel(key));
 
-        this._attributes.forEach(attr => {
+        this.__attributes.forEach(attr => {
             if (formattedData[attr] !== undefined) {
                 this[attr] = formattedData[attr];
             }
         });
 
-        this._activeCurrentRelations.forEach(currentRel => {
+        this.__activeCurrentRelations.forEach(currentRel => {
             const newValue = formattedData[currentRel];
             if (newValue !== undefined) {
                 // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
@@ -593,20 +598,20 @@ let Model = (_class = class Model {
     }
 
     save() {
-        this._backendValidationErrors = {};
-        this._pendingRequestCount += 1;
+        this.__backendValidationErrors = {};
+        this.__pendingRequestCount += 1;
         // TODO: Allow data from an argument to be saved?
         const method = this[this.primaryKey] ? 'patch' : 'post';
         return request$1[method](this.url, this.toBackend()).then(action(data => {
-            this._pendingRequestCount -= 1;
+            this.__pendingRequestCount -= 1;
             this.parse(data);
         })).catch(action(err => {
             // TODO: I'm not particularly happy about this implementation.
-            this._pendingRequestCount -= 1;
+            this.__pendingRequestCount -= 1;
             if (err.response) {
                 const valErrors = parseBackendValidationErrors(err.response);
                 if (valErrors) {
-                    this._backendValidationErrors = valErrors;
+                    this.__backendValidationErrors = valErrors;
                 }
             }
             throw err;
@@ -615,19 +620,19 @@ let Model = (_class = class Model {
 
     // TODO: This is a bit hacky...
     get backendValidationErrors() {
-        return this._backendValidationErrors;
+        return this.__backendValidationErrors;
     }
 
     delete() {
         // TODO: currently this always does a optimistic delete (meaning it doesn't wait on the request)
         // Do we want a non-optimistic delete?
-        if (this._store) {
-            this._store.remove(this);
+        if (this.__store) {
+            this.__store.remove(this);
         }
         if (this[this.primaryKey]) {
-            this._pendingRequestCount += 1;
+            this.__pendingRequestCount += 1;
             return request$1.delete(this.url).then(action(() => {
-                this._pendingRequestCount -= 1;
+                this.__pendingRequestCount -= 1;
             }));
         }
         return Promise.resolve();
@@ -638,10 +643,10 @@ let Model = (_class = class Model {
         if (!this[this.primaryKey]) {
             throw new Error('Trying to fetch model without id!');
         }
-        this._pendingRequestCount += 1;
+        this.__pendingRequestCount += 1;
         const data = Object.assign(this.parseRelationParams(), options.data);
         return request$1.get(this.url, data).then(action(res => {
-            this._pendingRequestCount -= 1;
+            this.__pendingRequestCount -= 1;
 
             this.fromBackend({
                 data: res.data,
@@ -652,20 +657,20 @@ let Model = (_class = class Model {
     }
 
     clear() {
-        forIn(this._originalAttributes, (value, key) => {
+        forIn(this.__originalAttributes, (value, key) => {
             this[key] = value;
         });
 
-        this._activeCurrentRelations.forEach(currentRel => {
+        this.__activeCurrentRelations.forEach(currentRel => {
             this[currentRel].clear();
         });
     }
-}, (_descriptor = _applyDecoratedDescriptor(_class.prototype, '_backendValidationErrors', [observable], {
+}, (_descriptor = _applyDecoratedDescriptor(_class.prototype, '__backendValidationErrors', [observable], {
     enumerable: true,
     initializer: function () {
         return {};
     }
-}), _descriptor2 = _applyDecoratedDescriptor(_class.prototype, '_pendingRequestCount', [observable], {
+}), _descriptor2 = _applyDecoratedDescriptor(_class.prototype, '__pendingRequestCount', [observable], {
     enumerable: true,
     initializer: function () {
         return 0;

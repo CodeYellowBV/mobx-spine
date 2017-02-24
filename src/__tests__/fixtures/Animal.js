@@ -61,3 +61,8 @@ export class AnimalStore extends Store {
 export class AnimalWithArray extends Model {
     @observable foo = [];
 }
+
+export class AnimalWithFrontendProp extends Model {
+    @observable id = null;
+    @observable _frontend = null;
+}

@@ -5,6 +5,9 @@ import Store from './Store';
 
 // lodash's `camelCase` method removes dots from the string; this breaks mobx-binder
 function snakeToCamel(s) {
+    if (s.startsWith('_')) {
+        return s;
+    }
     return s.replace(/_\w/g, m => m[1].toUpperCase());
 }
 
@@ -107,7 +110,9 @@ export default class Model {
     toBackend() {
         const output = {};
         this.__attributes.forEach((attr) => {
-            output[snakeCase(attr)] = toJS(this[attr]);
+            if (!attr.startsWith('_')) {
+                output[snakeCase(attr)] = toJS(this[attr]);
+            }
         });
         // Add active relations as id.
         this.__activeCurrentRelations.forEach((currentRel) => {
