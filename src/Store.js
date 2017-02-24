@@ -7,18 +7,18 @@ export default class Store {
     @observable models = [];
     // Holds the fetch parameters
     @observable params = {};
-    @observable _pendingRequestCount = 0;
-    @observable _state = {
+    @observable __pendingRequestCount = 0;
+    @observable __state = {
         currentPage: 1,
         limit: 25,
         totalRecords: 0,
     };
-    _activeRelations = [];
+    __activeRelations = [];
     Model = null;
-    _repository;
+    __repository;
 
     @computed get isLoading() {
-        return this._pendingRequestCount > 0;
+        return this.__pendingRequestCount > 0;
     }
 
     @computed get length() {
@@ -42,17 +42,17 @@ export default class Store {
     }
 
     parseRelations(activeRelations) {
-        this._activeRelations = activeRelations;
+        this.__activeRelations = activeRelations;
     }
 
     setRepository(repository) {
-        this._repository = repository;
+        this.__repository = repository;
     }
 
     addFromRepository(ids = []) {
         ids = isArray(ids) ? ids : [ids];
 
-        const records = at(keyBy(this._repository, 'id'), ids);
+        const records = at(keyBy(this.__repository, 'id'), ids);
         this.models.replace(records.map((record) => {
             return new this.Model(record, {
                 store: this,
@@ -66,8 +66,8 @@ export default class Store {
     buildParams() {
         const offset = this.getPageOffset();
         return {
-            with: this._activeRelations.join(',') || null,
-            limit: this._state.limit,
+            with: this.__activeRelations.join(',') || null,
+            limit: this.__state.limit,
             // Hide offset if zero so the request looks cleaner in DevTools.
             offset: offset || null,
         };
@@ -90,7 +90,7 @@ export default class Store {
     _newModel(model = null) {
         return new this.Model(model, {
             store: this,
-            relations: this._activeRelations,
+            relations: this.__activeRelations,
         });
     }
 
@@ -123,12 +123,12 @@ export default class Store {
     }
 
     @action fetch(options = {}) {
-        this._pendingRequestCount += 1;
+        this.__pendingRequestCount += 1;
         const params = Object.assign(this.buildParams(), this.params, options.data);
         return request.get(this.url, params)
         .then(action((res) => {
-            this._pendingRequestCount -= 1;
-            this._state.totalRecords = res.meta.total_records;
+            this.__pendingRequestCount -= 1;
+            this.__state.totalRecords = res.meta.total_records;
             this.fromBackend({
                 data: res.data,
                 repos: res.with,
@@ -144,40 +144,40 @@ export default class Store {
     // Methods for pagination.
 
     getPageOffset() {
-        return (this._state.currentPage - 1) * this._state.limit;
+        return (this.__state.currentPage - 1) * this.__state.limit;
     }
 
     @action setLimit(limit) {
         if (limit && !Number.isInteger(limit)) {
             throw new Error('Page limit should be a number or falsy value.');
         }
-        this._state.limit = limit || null;
+        this.__state.limit = limit || null;
     }
 
     @computed get totalPages() {
-        if (!this._state.limit) {
+        if (!this.__state.limit) {
             return 0;
         }
-        return Math.ceil(this._state.totalRecords / this._state.limit);
+        return Math.ceil(this.__state.totalRecords / this.__state.limit);
     }
 
     @computed get currentPage() {
-        return this._state.currentPage;
+        return this.__state.currentPage;
     }
 
     @computed get hasNextPage() {
-        return this._state.currentPage + 1 <= this.totalPages;
+        return this.__state.currentPage + 1 <= this.totalPages;
     }
 
     @computed get hasPreviousPage() {
-        return this._state.currentPage > 1;
+        return this.__state.currentPage > 1;
     }
 
     @action getNextPage() {
         if (!this.hasNextPage) {
             throw new Error('There is no next page.');
         }
-        this._state.currentPage += 1;
+        this.__state.currentPage += 1;
         return this.fetch();
     }
 
@@ -185,7 +185,7 @@ export default class Store {
         if (!this.hasPreviousPage) {
             throw new Error('There is no previous page.');
         }
-        this._state.currentPage -= 1;
+        this.__state.currentPage -= 1;
         return this.fetch();
     }
 
@@ -196,7 +196,7 @@ export default class Store {
         if (page > this.totalPages || page < 1) {
             throw new Error(`Page should be between 1 and ${this.totalPages}.`);
         }
-        this._state.currentPage = page;
+        this.__state.currentPage = page;
         if (options.fetch === undefined || options.fetch) {
             return this.fetch();
         }

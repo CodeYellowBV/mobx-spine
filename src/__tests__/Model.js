@@ -108,7 +108,7 @@ test('Initialize multiple nested relations', () => {
 test('Attributes list', () => {
     const animal = new Animal();
 
-    expect(animal._attributes).toEqual(['id', 'name']);
+    expect(animal.__attributes).toEqual(['id', 'name']);
 });
 
 test('Non existent relation should throw an error', () => {
