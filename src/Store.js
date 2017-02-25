@@ -27,7 +27,7 @@ export default class Store {
 
     constructor(data, options = {}) {
         if (options.relations) {
-            this.parseRelations(options.relations);
+            this.__parseRelations(options.relations);
         }
         // TODO: throw an error if it's not an array?
         if (data) {
@@ -41,15 +41,11 @@ export default class Store {
         }
     }
 
-    parseRelations(activeRelations) {
+    __parseRelations(activeRelations) {
         this.__activeRelations = activeRelations;
     }
 
-    setRepository(repository) {
-        this.__repository = repository;
-    }
-
-    addFromRepository(ids = []) {
+    __addFromRepository(ids = []) {
         ids = isArray(ids) ? ids : [ids];
 
         const records = at(keyBy(this.__repository, 'id'), ids);

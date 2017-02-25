@@ -55,7 +55,7 @@ export default class Model {
 
     constructor(data, options = {}) {
         this.__store = options.store;
-        this.setRepository(options.repository);
+        this.__repository = options.repository;
         // Find all attributes. Not all observables are an attribute.
         forIn(this, (value, key) => {
             if (!key.startsWith('__') && isObservable(this, key)) {
@@ -64,14 +64,14 @@ export default class Model {
             }
         });
         if (options.relations) {
-            this.parseRelations(options.relations);
+            this.__parseRelations(options.relations);
         }
         if (data) {
             this.parse(data);
         }
     }
 
-    @action parseRelations(activeRelations) {
+    @action __parseRelations(activeRelations) {
         this.__activeRelations = activeRelations;
         // TODO: No idea why getting the relations only works when it's a Function.
         const relations = this.relations && this.relations();
@@ -154,7 +154,7 @@ export default class Model {
             // All nested models get a repository. At this time we don't know yet
             // what id the model should get, since the parent may or may not be set.
             const model = get(this, snakeToCamel(relName));
-            model.setRepository(repository);
+            model.__repository = repository;
         });
 
         // Now all repositories are set on the relations, start parsing the actual data.
@@ -164,11 +164,7 @@ export default class Model {
         }
     }
 
-    setRepository(repository) {
-        this.__repository = repository;
-    }
-
-    addFromRepository(id) {
+    __addFromRepository(id) {
         const relData = find(this.__repository, { id });
         if (relData) {
             this.parse(relData);
@@ -186,7 +182,7 @@ export default class Model {
                 if (isPlainObject(value) || isPlainObject(get(value, '[0]'))) {
                     this[attr].parse(value);
                 } else {
-                    this[attr].addFromRepository(value);
+                    this[attr].__addFromRepository(value);
                 }
             }
         });
