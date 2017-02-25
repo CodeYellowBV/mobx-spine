@@ -9,15 +9,21 @@ A frontend package built upon [MobX](https://mobx.js.org/) to work with [Django 
 
 mobx-binder is highly inspired by Backbone and by the package we built on top of Backbone, [Backbone Relation](https://github.com/CodeYellowBV/backbone-relation).
 
-## Usage
+## Design differences with Backbone
 
-One major design difference to Backbone is that in mobx-binder, all properties of a model must be defined beforehand.
+Since mobx-binder uses MobX, it does not need to have an event system like Backbone has. This means that there are no `this.listenTo()`'s. If you need something like that, look for [`autorun()`](https://mobx.js.org/refguide/autorun.html) or add a [`@computed`](https://mobx.js.org/refguide/computed-decorator.html) property.
+
+Another difference is that in mobx-binder, all properties of a model must be defined beforehand. So if a model has the props `id` and `name` defined, it's not possible to suddenly add a `slug` property unless you define it on the model itself. Not allowing this helps with keeping overview of the props there are.
+
+mobx-binder has support for relations and pagination built-in, in contrast to Backbone.
+
+## Usage
 
 A basic example of mobx-binder:
 
 ```js
 import { observable } from 'mobx';
-import { Model } from 'mobx-binder';
+import { Model, Store } from 'mobx-binder';
 
 class Animal extends Model {
     @observable id = null;
@@ -57,8 +63,6 @@ console.log(animal.breed.name);
 An example with a Store (called a Collection in Backbone):
 
 ```js
-import { Store } from 'mobx-binder';
-
 class AnimalStore extends Store {
     url = '/api/animal/';
     Model = Animal
@@ -66,4 +70,20 @@ class AnimalStore extends Store {
 
 class animalStore = new AnimalStore(null, { relations: ['breed'] });
 animalStore.fetch(); // Performs a request: GET api/animal/?with=breed
+```
+
+An example of saving data:
+
+```js
+class Animal extends Model {
+    urlRoot = '/api/animal/';
+    @observable id = null;
+    @observable name = '';
+    @observable _errors = {};
+}
+
+const animal = new Animal({ id: 1, name: 'King' });
+animal.save(); // Performs a request: POST api/animal
+// Note that the `_errors` prop will not be included in the request;
+// props starting with an underscore are frontend-only.
 ```
