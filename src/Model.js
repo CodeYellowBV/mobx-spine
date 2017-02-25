@@ -176,23 +176,17 @@ export default class Model {
     }
 
     @action parse(data) {
-        const formattedData = mapKeys(data, (value, key) => snakeToCamel(key));
-
-        this.__attributes.forEach((attr) => {
-            if (formattedData[attr] !== undefined) {
-                this[attr] = formattedData[attr];
-            }
-        });
-
-        this.__activeCurrentRelations.forEach((currentRel) => {
-            const newValue = formattedData[currentRel];
-            if (newValue !== undefined) {
+        forIn(data, (value, key) => {
+            const attr = snakeToCamel(key);
+            if (this.__attributes.includes(attr)) {
+                this[attr] = value;
+            } else if (this.__activeCurrentRelations.includes(attr)) {
                 // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                 // However, it can also be an object if there are nested relations (non flattened).
-                if (isPlainObject(newValue) || isPlainObject(get(newValue, '[0]'))) {
-                    this[currentRel].parse(newValue);
+                if (isPlainObject(value) || isPlainObject(get(value, '[0]'))) {
+                    this[attr].parse(value);
                 } else {
-                    this[currentRel].addFromRepository(newValue);
+                    this[attr].addFromRepository(value);
                 }
             }
         });
