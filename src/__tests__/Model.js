@@ -436,6 +436,17 @@ describe('requests', () => {
         });
     });
 
+    test('save fail with 500', () => {
+        const animal = new Animal({ name: 'Nope' });
+        mock.onAny().replyOnce(500, {});
+
+        return animal.save()
+        .catch(() => {
+            const valErrors = toJS(animal.backendValidationErrors);
+            expect(valErrors).toEqual({});
+        });
+    });
+
     test('delete existing with basic properties', () => {
         const animal = new Animal({ id: 12, name: 'Burhan' });
         mock.onAny().replyOnce((config) => {
