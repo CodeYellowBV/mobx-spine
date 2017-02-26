@@ -81,13 +81,6 @@ export default class Model {
         }));
     }
 
-    // Return the fetch params for including relations on the backend.
-    buildParams() {
-        return {
-            with: this.__activeRelations.join(',') || null,
-        };
-    }
-
     toBackend() {
         const output = {};
         this.__attributes.forEach((attr) => {
@@ -218,7 +211,7 @@ export default class Model {
             throw new Error('Trying to fetch model without id!');
         }
         this.__pendingRequestCount += 1;
-        const data = Object.assign(this.buildParams(), options.data);
+        const data = Object.assign(this.api.buildFetchModelParams(this), options.data);
         return this.api.fetchModel({ url: this.url, data })
         .then(action((res) => {
             this.fromBackend(res);

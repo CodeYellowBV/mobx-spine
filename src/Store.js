@@ -59,16 +59,6 @@ export default class Store {
         }));
     }
 
-    buildParams() {
-        const offset = this.getPageOffset();
-        return {
-            with: this.__activeRelations.join(',') || null,
-            limit: this.__state.limit,
-            // Hide offset if zero so the request looks cleaner in DevTools.
-            offset: offset || null,
-        };
-    }
-
     @action fromBackend({ data, repos, relMapping }) {
         this.models.replace(data.map((record) => {
             // TODO: I'm not happy at all about how this looks.
@@ -120,7 +110,7 @@ export default class Store {
 
     @action fetch(options = {}) {
         this.__pendingRequestCount += 1;
-        const data = Object.assign(this.buildParams(), this.params, options.data);
+        const data = Object.assign(this.api.buildFetchStoreParams(this), this.params, options.data);
         return this.api.fetchStore({ url: this.url, data })
         .then(action((res) => {
             this.__pendingRequestCount -= 1;

@@ -67,6 +67,12 @@ export default class BinderApi {
         return this.__request('delete', url, data, options);
     }
 
+    buildFetchModelParams(model) {
+        return {
+            with: model.__activeRelations.join(',') || null,
+        };
+    }
+
     fetchModel({ url, data }) {
         return this.get(url, data)
         .then((res) => {
@@ -92,6 +98,16 @@ export default class BinderApi {
     deleteModel({ url }) {
         // TODO: kind of silly now, but we'll probably want better error handling soon.
         return this.delete(url);
+    }
+
+    buildFetchStoreParams(store) {
+        const offset = store.getPageOffset();
+        return {
+            with: store.__activeRelations.join(',') || null,
+            limit: store.__state.limit,
+            // Hide offset if zero so the request looks cleaner in DevTools.
+            offset: offset || null,
+        };
     }
 
     fetchStore({ url, data }) {
