@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { toJS } from 'mobx';
 import MockAdapter from 'axios-mock-adapter';
-import { Animal, AnimalWithArray, AnimalWithFrontendProp, Kind, Breed, Person, Location } from './fixtures/Animal';
+import { Animal, AnimalWithArray, AnimalWithFrontendProp, AnimalWithoutApi, Kind, Breed, Person, Location } from './fixtures/Animal';
 import animalKindBreedData from './fixtures/animal-with-kind-breed.json';
 import animalKindBreedDataNested from './fixtures/animal-with-kind-breed-nested.json';
 import saveFailData from './fixtures/save-fail.json';
@@ -346,6 +346,11 @@ test('fetch without id', () => {
 test('delete without id and store', () => {
     const animal = new Animal();
     expect(animal.delete()).toBeInstanceOf(Promise);
+});
+
+test('fetch without api', () => {
+    const animal = new AnimalWithoutApi({ id: 2 });
+    expect(() => animal.fetch()).toThrow('You are trying to perform a API request without an `api` property defined on the model.');
 });
 
 describe('requests', () => {

@@ -138,6 +138,13 @@ export default class Model {
         }
     }
 
+    __getApi() {
+        if (!this.api) {
+            throw new Error('You are trying to perform a API request without an `api` property defined on the model.');
+        }
+        return this.api;
+    }
+
     __addFromRepository(id) {
         const relData = find(this.__repository, { id });
         if (relData) {
@@ -166,7 +173,7 @@ export default class Model {
         this.__backendValidationErrors = {};
         this.__pendingRequestCount += 1;
         // TODO: Allow data from an argument to be saved?
-        return this.api.saveModel({
+        return this.__getApi().saveModel({
             url: this.url,
             data: this.toBackend(),
             isNew: !!this[this.primaryKey],
@@ -197,7 +204,7 @@ export default class Model {
         }
         if (this[this.primaryKey]) {
             this.__pendingRequestCount += 1;
-            return this.api.deleteModel({ url: this.url })
+            return this.__getApi().deleteModel({ url: this.url })
             .then(action(() => {
                 this.__pendingRequestCount -= 1;
             }));
@@ -211,8 +218,8 @@ export default class Model {
             throw new Error('Trying to fetch model without id!');
         }
         this.__pendingRequestCount += 1;
-        const data = Object.assign(this.api.buildFetchModelParams(this), options.data);
-        return this.api.fetchModel({ url: this.url, data })
+        const data = Object.assign(this.__getApi().buildFetchModelParams(this), options.data);
+        return this.__getApi().fetchModel({ url: this.url, data })
         .then(action((res) => {
             this.fromBackend(res);
             this.__pendingRequestCount -= 1;

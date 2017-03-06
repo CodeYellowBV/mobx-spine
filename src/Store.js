@@ -59,6 +59,13 @@ export default class Store {
         }));
     }
 
+    __getApi() {
+        if (!this.api) {
+            throw new Error('You are trying to perform a API request without an `api` property defined on the store.');
+        }
+        return this.api;
+    }
+
     @action fromBackend({ data, repos, relMapping }) {
         this.models.replace(data.map((record) => {
             // TODO: I'm not happy at all about how this looks.
@@ -110,8 +117,8 @@ export default class Store {
 
     @action fetch(options = {}) {
         this.__pendingRequestCount += 1;
-        const data = Object.assign(this.api.buildFetchStoreParams(this), this.params, options.data);
-        return this.api.fetchStore({ url: this.url, data })
+        const data = Object.assign(this.__getApi().buildFetchStoreParams(this), this.params, options.data);
+        return this.__getApi().fetchStore({ url: this.url, data })
         .then(action((res) => {
             this.__pendingRequestCount -= 1;
             this.__state.totalRecords = res.totalRecords;

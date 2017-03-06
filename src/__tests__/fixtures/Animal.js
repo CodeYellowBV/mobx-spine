@@ -68,3 +68,11 @@ export class AnimalWithFrontendProp extends Model {
     @observable id = null;
     @observable _frontend = null;
 }
+
+export class AnimalWithoutApi extends Model {
+    @observable id = null;
+}
+
+export class AnimalStoreWithoutApi extends Store {
+    Model = Animal;
+}
