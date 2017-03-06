@@ -2,68 +2,13 @@ import { action, computed, extendObservable, isObservable, observable, toJS } fr
 import { at, filter, find, forIn, get, isArray, isPlainObject, keyBy, map, mapKeys, mapValues, snakeCase } from 'lodash';
 import axios from 'axios';
 
-let csrfToken = null;
-let defaultHeaders = {};
-let baseUrl = '';
-
-// Function ripped from Django docs.
-// See: https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
-function csrfSafeMethod(method) {
-    // These HTTP methods do not require CSRF protection.
-    return (/^(GET|HEAD|OPTIONS|TRACE)$/i.test(method)
-    );
-}
-
-function request(method, url, data, options) {
-    options || (options = {});
-    const useCsrfToken = csrfSafeMethod(method) ? null : csrfToken;
-
-    const axiosOptions = {
-        method,
-        baseURL: baseUrl,
-        url,
-        data: method !== 'get' && data ? data : undefined,
-        params: method === 'get' && data ? data : undefined,
-        headers: Object.assign({
-            'Content-Type': 'application/json',
-            'X-Csrftoken': useCsrfToken
-        }, defaultHeaders)
-    };
-
-    Object.assign(axiosOptions, options);
-
-    const xhr = axios(axiosOptions).then(response => response.data);
-
-    if (options.notifyException !== false) {
-        xhr.catch(err => {
-            const resp = err.response;
-            if (resp && resp.status === 403 && resp.data.code === 'NotAuthenticated') {
-                // TODO: We should do something here...
-            }
-        });
+// lodash's `camelCase` method removes dots from the string; this breaks mobx-binder
+function snakeToCamel(s) {
+    if (s.startsWith('_')) {
+        return s;
     }
-
-    return xhr;
+    return s.replace(/_\w/g, m => m[1].toUpperCase());
 }
-
-var request$1 = {
-    get: (...args) => request.apply(undefined, ['get', ...args]),
-    post: (...args) => request.apply(undefined, ['post', ...args]),
-    patch: (...args) => request.apply(undefined, ['patch', ...args]),
-    put: (...args) => request.apply(undefined, ['put', ...args]),
-    delete: (...args) => request.apply(undefined, ['delete', ...args]),
-    setCsrfToken: token => {
-        csrfToken = token;
-    },
-    setBaseUrl: url => {
-        baseUrl = url;
-    },
-    getBaseUrl: () => baseUrl,
-    setHeaders: headers => {
-        defaultHeaders = headers;
-    },
-    getHeaders: () => defaultHeaders
-};
 
 var _class$1;
 var _descriptor$1;
@@ -111,11 +56,10 @@ function _applyDecoratedDescriptor$1(target, property, decorators, descriptor, c
 }
 
 let Store = (_class$1 = class Store {
-    // Holds the fetch parameters
     get isLoading() {
         return this.__pendingRequestCount > 0;
     }
-
+    // Holds the fetch parameters
     get length() {
         return this.models.length;
     }
@@ -131,9 +75,10 @@ let Store = (_class$1 = class Store {
 
         this.__activeRelations = [];
         this.Model = null;
+        this.api = null;
 
         if (options.relations) {
-            this.parseRelations(options.relations);
+            this.__parseRelations(options.relations);
         }
         // TODO: throw an error if it's not an array?
         if (data) {
@@ -147,15 +92,11 @@ let Store = (_class$1 = class Store {
         }
     }
 
-    parseRelations(activeRelations) {
+    __parseRelations(activeRelations) {
         this.__activeRelations = activeRelations;
     }
 
-    setRepository(repository) {
-        this.__repository = repository;
-    }
-
-    addFromRepository(ids = []) {
+    __addFromRepository(ids = []) {
         ids = isArray(ids) ? ids : [ids];
 
         const records = at(keyBy(this.__repository, 'id'), ids);
@@ -164,16 +105,6 @@ let Store = (_class$1 = class Store {
                 store: this
             });
         }));
-    }
-
-    buildParams() {
-        const offset = this.getPageOffset();
-        return {
-            with: this.__activeRelations.join(',') || null,
-            limit: this.__state.limit,
-            // Hide offset if zero so the request looks cleaner in DevTools.
-            offset: offset || null
-        };
     }
 
     fromBackend({ data, repos, relMapping }) {
@@ -227,15 +158,11 @@ let Store = (_class$1 = class Store {
 
     fetch(options = {}) {
         this.__pendingRequestCount += 1;
-        const params = Object.assign(this.buildParams(), this.params, options.data);
-        return request$1.get(this.url, params).then(action(res => {
+        const data = Object.assign(this.api.buildFetchStoreParams(this), this.params, options.data);
+        return this.api.fetchStore({ url: this.url, data }).then(action(res => {
             this.__pendingRequestCount -= 1;
-            this.__state.totalRecords = res.meta.total_records;
-            this.fromBackend({
-                data: res.data,
-                repos: res.with,
-                relMapping: res.with_mapping
-            });
+            this.__state.totalRecords = res.totalRecords;
+            this.fromBackend(res);
         }));
     }
 
@@ -403,37 +330,17 @@ function _applyDecoratedDescriptor(target, property, decorators, descriptor, con
     return desc;
 }
 
-// lodash's `camelCase` method removes dots from the string; this breaks mobx-binder
-function snakeToCamel(s) {
-    if (s.startsWith('_')) {
-        return s;
-    }
-    return s.replace(/_\w/g, m => m[1].toUpperCase());
-}
-
-// TODO: need to find a good place for this
-function parseBackendValidationErrors(response) {
-    const valErrors = get(response, 'data.error.validation_errors');
-    if (response.status === 400 && valErrors) {
-        const camelCasedErrors = mapKeys(valErrors, (value, key) => snakeToCamel(key));
-        return mapValues(camelCasedErrors, valError => {
-            return valError.map(obj => obj.code);
-        });
-    }
-    return false;
-}
-
 let Model = (_class = class Model {
-    // Holds activated - nested - relations (e.g. `['animal', 'animal.breed']`)
+    // Holds activated - non-nested - relations (e.g. `['animal']`)
 
-    // TODO: Find out why `static primaryKey` doesn't work. I WANT IT STATIC GODDAMMIT.
+    // Holds original attributes with values, so `clear()` knows what to reset to (quite ugly).
     get url() {
         const id = this[this.primaryKey];
         return `${this.urlRoot}${id ? `${id}/` : ''}`;
     }
-    // Holds activated - non-nested - relations (e.g. `['animal']`)
+    // Holds activated - nested - relations (e.g. `['animal', 'animal.breed']`)
 
-    // Holds original attributes with values, so `clear()` knows what to reset to (quite ugly).
+    // TODO: Find out why `static primaryKey` doesn't work. I WANT IT STATIC GODDAMMIT.
     get isNew() {
         return !this[this.primaryKey];
     }
@@ -448,13 +355,14 @@ let Model = (_class = class Model {
         this.__originalAttributes = {};
         this.__activeRelations = [];
         this.__activeCurrentRelations = [];
+        this.api = null;
 
         _initDefineProp(this, '__backendValidationErrors', _descriptor, this);
 
         _initDefineProp(this, '__pendingRequestCount', _descriptor2, this);
 
         this.__store = options.store;
-        this.setRepository(options.repository);
+        this.__repository = options.repository;
         // Find all attributes. Not all observables are an attribute.
         forIn(this, (value, key) => {
             if (!key.startsWith('__') && isObservable(this, key)) {
@@ -463,14 +371,14 @@ let Model = (_class = class Model {
             }
         });
         if (options.relations) {
-            this.parseRelations(options.relations);
+            this.__parseRelations(options.relations);
         }
         if (data) {
             this.parse(data);
         }
     }
 
-    parseRelations(activeRelations) {
+    __parseRelations(activeRelations) {
         this.__activeRelations = activeRelations;
         // TODO: No idea why getting the relations only works when it's a Function.
         const relations = this.relations && this.relations();
@@ -497,13 +405,6 @@ let Model = (_class = class Model {
                 relations: otherRelNames
             });
         }));
-    }
-
-    // Return the fetch params for including relations on the backend.
-    parseRelationParams() {
-        return {
-            with: this.__activeRelations.join(',') || null
-        };
     }
 
     toBackend() {
@@ -553,7 +454,7 @@ let Model = (_class = class Model {
             // All nested models get a repository. At this time we don't know yet
             // what id the model should get, since the parent may or may not be set.
             const model = get(this, snakeToCamel(relName));
-            model.setRepository(repository);
+            model.__repository = repository;
         });
 
         // Now all repositories are set on the relations, start parsing the actual data.
@@ -563,11 +464,7 @@ let Model = (_class = class Model {
         }
     }
 
-    setRepository(repository) {
-        this.__repository = repository;
-    }
-
-    addFromRepository(id) {
+    __addFromRepository(id) {
         const relData = find(this.__repository, { id });
         if (relData) {
             this.parse(relData);
@@ -575,23 +472,17 @@ let Model = (_class = class Model {
     }
 
     parse(data) {
-        const formattedData = mapKeys(data, (value, key) => snakeToCamel(key));
-
-        this.__attributes.forEach(attr => {
-            if (formattedData[attr] !== undefined) {
-                this[attr] = formattedData[attr];
-            }
-        });
-
-        this.__activeCurrentRelations.forEach(currentRel => {
-            const newValue = formattedData[currentRel];
-            if (newValue !== undefined) {
+        forIn(data, (value, key) => {
+            const attr = snakeToCamel(key);
+            if (this.__attributes.includes(attr)) {
+                this[attr] = value;
+            } else if (this.__activeCurrentRelations.includes(attr)) {
                 // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                 // However, it can also be an object if there are nested relations (non flattened).
-                if (isPlainObject(newValue) || isPlainObject(get(newValue, '[0]'))) {
-                    this[currentRel].parse(newValue);
+                if (isPlainObject(value) || isPlainObject(get(value, '[0]'))) {
+                    this[attr].parse(value);
                 } else {
-                    this[currentRel].addFromRepository(newValue);
+                    this[attr].__addFromRepository(value);
                 }
             }
         });
@@ -601,18 +492,17 @@ let Model = (_class = class Model {
         this.__backendValidationErrors = {};
         this.__pendingRequestCount += 1;
         // TODO: Allow data from an argument to be saved?
-        const method = this[this.primaryKey] ? 'patch' : 'post';
-        return request$1[method](this.url, this.toBackend()).then(action(data => {
+        return this.api.saveModel({
+            url: this.url,
+            data: this.toBackend(),
+            isNew: !!this[this.primaryKey]
+        }).then(action(data => {
             this.__pendingRequestCount -= 1;
             this.parse(data);
         })).catch(action(err => {
-            // TODO: I'm not particularly happy about this implementation.
             this.__pendingRequestCount -= 1;
-            if (err.response) {
-                const valErrors = parseBackendValidationErrors(err.response);
-                if (valErrors) {
-                    this.__backendValidationErrors = valErrors;
-                }
+            if (err.valErrors) {
+                this.__backendValidationErrors = err.valErrors;
             }
             throw err;
         }));
@@ -631,7 +521,7 @@ let Model = (_class = class Model {
         }
         if (this[this.primaryKey]) {
             this.__pendingRequestCount += 1;
-            return request$1.delete(this.url).then(action(() => {
+            return this.api.deleteModel({ url: this.url }).then(action(() => {
                 this.__pendingRequestCount -= 1;
             }));
         }
@@ -644,15 +534,10 @@ let Model = (_class = class Model {
             throw new Error('Trying to fetch model without id!');
         }
         this.__pendingRequestCount += 1;
-        const data = Object.assign(this.parseRelationParams(), options.data);
-        return request$1.get(this.url, data).then(action(res => {
+        const data = Object.assign(this.api.buildFetchModelParams(this), options.data);
+        return this.api.fetchModel({ url: this.url, data }).then(action(res => {
+            this.fromBackend(res);
             this.__pendingRequestCount -= 1;
-
-            this.fromBackend({
-                data: res.data,
-                repos: res.with,
-                relMapping: res.with_mapping
-            });
         }));
     }
 
@@ -675,6 +560,126 @@ let Model = (_class = class Model {
     initializer: function () {
         return 0;
     }
-}), _applyDecoratedDescriptor(_class.prototype, 'url', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'url'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'isNew', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'isNew'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'isLoading', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'isLoading'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'parseRelations', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'parseRelations'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fromBackend', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'fromBackend'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'parse', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'parse'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'save', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'save'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'backendValidationErrors', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'backendValidationErrors'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'delete', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'delete'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fetch', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'fetch'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'clear', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'clear'), _class.prototype)), _class);
+}), _applyDecoratedDescriptor(_class.prototype, 'url', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'url'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'isNew', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'isNew'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'isLoading', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'isLoading'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, '__parseRelations', [action], Object.getOwnPropertyDescriptor(_class.prototype, '__parseRelations'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fromBackend', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'fromBackend'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'parse', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'parse'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'save', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'save'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'backendValidationErrors', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'backendValidationErrors'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'delete', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'delete'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fetch', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'fetch'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'clear', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'clear'), _class.prototype)), _class);
 
-export { Model, Store, request$1 as request };
+// Function ripped from Django docs.
+// See: https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
+function csrfSafeMethod(method) {
+    // These HTTP methods do not require CSRF protection.
+    return (/^(GET|HEAD|OPTIONS|TRACE)$/i.test(method)
+    );
+}
+
+function parseBackendValidationErrors(response) {
+    const valErrors = get(response, 'data.error.validation_errors');
+    if (response.status === 400 && valErrors) {
+        const camelCasedErrors = mapKeys(valErrors, (value, key) => snakeToCamel(key));
+        return mapValues(camelCasedErrors, valError => {
+            return valError.map(obj => obj.code);
+        });
+    }
+    return null;
+}
+
+let BinderApi = class BinderApi {
+    constructor() {
+        this.baseUrl = null;
+        this.csrfToken = null;
+        this.defaultHeaders = {};
+    }
+
+    __request(method, url, data, options) {
+        options || (options = {});
+        const useCsrfToken = csrfSafeMethod(method) ? undefined : this.csrfToken;
+
+        const axiosOptions = {
+            method,
+            baseURL: this.baseUrl,
+            url,
+            data: method !== 'get' && data ? data : undefined,
+            params: method === 'get' && data ? data : undefined,
+            headers: Object.assign({
+                'Content-Type': 'application/json',
+                'X-Csrftoken': useCsrfToken
+            }, this.defaultHeaders)
+        };
+
+        Object.assign(axiosOptions, options);
+
+        return axios(axiosOptions).then(response => response.data);
+    }
+
+    get(url, data, options) {
+        return this.__request('get', url, data, options);
+    }
+
+    post(url, data, options) {
+        return this.__request('post', url, data, options);
+    }
+
+    patch(url, data, options) {
+        return this.__request('patch', url, data, options);
+    }
+
+    put(url, data, options) {
+        return this.__request('put', url, data, options);
+    }
+
+    delete(url, data, options) {
+        return this.__request('delete', url, data, options);
+    }
+
+    buildFetchModelParams(model) {
+        return {
+            with: model.__activeRelations.join(',') || null
+        };
+    }
+
+    fetchModel({ url, data }) {
+        return this.get(url, data).then(res => {
+            return {
+                data: res.data,
+                repos: res.with,
+                relMapping: res.with_mapping
+            };
+        });
+    }
+
+    saveModel({ url, data, isNew }) {
+        const method = isNew ? 'patch' : 'post';
+        return this[method](url, data).catch(err => {
+            if (err.response) {
+                err.valErrors = parseBackendValidationErrors(err.response);
+            }
+            throw err;
+        });
+    }
+
+    deleteModel({ url }) {
+        // TODO: kind of silly now, but we'll probably want better error handling soon.
+        return this.delete(url);
+    }
+
+    buildFetchStoreParams(store) {
+        const offset = store.getPageOffset();
+        return {
+            with: store.__activeRelations.join(',') || null,
+            limit: store.__state.limit,
+            // Hide offset if zero so the request looks cleaner in DevTools.
+            offset: offset || null
+        };
+    }
+
+    fetchStore({ url, data }) {
+        return this.get(url, data).then(res => {
+            return {
+                data: res.data,
+                repos: res.with,
+                relMapping: res.with_mapping,
+                totalRecords: res.meta.total_records
+            };
+        });
+    }
+};
+
+export { Model, Store, BinderApi };
