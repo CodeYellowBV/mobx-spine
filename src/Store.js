@@ -1,6 +1,5 @@
 import { observable, computed, action } from 'mobx';
 import { isArray, map, filter, find, keyBy, at } from 'lodash';
-import request from './request';
 
 export default class Store {
     // Holds all models
@@ -15,6 +14,7 @@ export default class Store {
     };
     __activeRelations = [];
     Model = null;
+    api = null;
     __repository;
 
     @computed get isLoading() {
@@ -57,16 +57,6 @@ export default class Store {
                 // (where `owners` is a store, and `location` a model)
             });
         }));
-    }
-
-    buildParams() {
-        const offset = this.getPageOffset();
-        return {
-            with: this.__activeRelations.join(',') || null,
-            limit: this.__state.limit,
-            // Hide offset if zero so the request looks cleaner in DevTools.
-            offset: offset || null,
-        };
     }
 
     @action fromBackend({ data, repos, relMapping }) {
@@ -120,16 +110,12 @@ export default class Store {
 
     @action fetch(options = {}) {
         this.__pendingRequestCount += 1;
-        const params = Object.assign(this.buildParams(), this.params, options.data);
-        return request.get(this.url, params)
+        const data = Object.assign(this.api.buildFetchStoreParams(this), this.params, options.data);
+        return this.api.fetchStore({ url: this.url, data })
         .then(action((res) => {
             this.__pendingRequestCount -= 1;
-            this.__state.totalRecords = res.meta.total_records;
-            this.fromBackend({
-                data: res.data,
-                repos: res.with,
-                relMapping: res.with_mapping,
-            });
+            this.__state.totalRecords = res.totalRecords;
+            this.fromBackend(res);
         }));
     }
 

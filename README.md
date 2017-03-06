@@ -17,13 +17,15 @@ Another difference is that in mobx-binder, all properties of a model must be def
 
 mobx-binder has support for relations and pagination built-in, in contrast to Backbone.
 
+A model or collection can only do requests to an API if you add an `api` instance to it. This allows for easy mocking of the API, and makes mobx-binder not coupled to Binder, our Python framework. It would be easy to make a package or just a separate file with a custom backend.
+
 ## Usage
 
 A basic example of mobx-binder:
 
 ```js
 import { observable } from 'mobx';
-import { Model, Store } from 'mobx-binder';
+import { Model, Store, BinderApi } from 'mobx-binder';
 
 class Animal extends Model {
     @observable id = null;
@@ -38,12 +40,15 @@ animal.color = 'green' // `color` is not defined, so this does not trigger a re-
 An example with relations:
 
 ```js
+const api = new BinderApi();
+
 class Breed extends Model {
     @observable id = null;
     @observable name = '';
 }
 
 class Animal extends Model {
+    api = api;
     urlRoot = '/api/animal/';
     @observable id = null;
     @observable name = '';
@@ -64,8 +69,9 @@ An example with a Store (called a Collection in Backbone):
 
 ```js
 class AnimalStore extends Store {
+    api = api;
     url = '/api/animal/';
-    Model = Animal
+    Model = Animal;
 }
 
 class animalStore = new AnimalStore(null, { relations: ['breed'] });
@@ -76,6 +82,7 @@ An example of saving data:
 
 ```js
 class Animal extends Model {
+    api = api;
     urlRoot = '/api/animal/';
     @observable id = null;
     @observable name = '';

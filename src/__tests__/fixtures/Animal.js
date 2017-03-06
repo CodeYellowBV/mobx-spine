@@ -1,5 +1,5 @@
 import { observable } from 'mobx';
-import { Model, Store } from '../..';
+import { Model, Store, BinderApi } from '../..';
 
 export class Location extends Model {
     @observable id = null;
@@ -40,6 +40,7 @@ export class Kind extends Model {
 
 export class Animal extends Model {
     urlRoot = '/api/animal/';
+    api = new BinderApi();
     @observable id = null;
     @observable name = '';
 
@@ -54,6 +55,7 @@ export class Animal extends Model {
 
 export class AnimalStore extends Store {
     Model = Animal;
+    api = new BinderApi();
     url = '/api/animal/';
 }
 

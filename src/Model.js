@@ -1,27 +1,7 @@
 import { observable, isObservable, extendObservable, computed, action, toJS } from 'mobx';
-import { mapKeys, snakeCase, forIn, mapValues, find, get, isPlainObject } from 'lodash';
-import request from './request';
+import { snakeCase, forIn, mapValues, find, get, isPlainObject } from 'lodash';
+import snakeToCamel from './snakeToCamel';
 import Store from './Store';
-
-// lodash's `camelCase` method removes dots from the string; this breaks mobx-binder
-function snakeToCamel(s) {
-    if (s.startsWith('_')) {
-        return s;
-    }
-    return s.replace(/_\w/g, m => m[1].toUpperCase());
-}
-
-// TODO: need to find a good place for this
-function parseBackendValidationErrors(response) {
-    const valErrors = get(response, 'data.error.validation_errors');
-    if (response.status === 400 && valErrors) {
-        const camelCasedErrors = mapKeys(valErrors, (value, key) => snakeToCamel(key));
-        return mapValues(camelCasedErrors, (valError) => {
-            return valError.map(obj => obj.code);
-        });
-    }
-    return false;
-}
 
 export default class Model {
     // TODO: Find out why `static primaryKey` doesn't work. I WANT IT STATIC GODDAMMIT.
@@ -37,6 +17,7 @@ export default class Model {
     __activeCurrentRelations = [];
     __repository;
     __store;
+    api = null;
     @observable __backendValidationErrors = {};
     @observable __pendingRequestCount = 0;
 
@@ -98,13 +79,6 @@ export default class Model {
                 relations: otherRelNames,
             });
         }));
-    }
-
-    // Return the fetch params for including relations on the backend.
-    buildParams() {
-        return {
-            with: this.__activeRelations.join(',') || null,
-        };
     }
 
     toBackend() {
@@ -192,20 +166,19 @@ export default class Model {
         this.__backendValidationErrors = {};
         this.__pendingRequestCount += 1;
         // TODO: Allow data from an argument to be saved?
-        const method = this[this.primaryKey] ? 'patch' : 'post';
-        return request[method](this.url, this.toBackend())
+        return this.api.saveModel({
+            url: this.url,
+            data: this.toBackend(),
+            isNew: !!this[this.primaryKey],
+        })
         .then(action((data) => {
             this.__pendingRequestCount -= 1;
             this.parse(data);
         }))
         .catch(action((err) => {
-            // TODO: I'm not particularly happy about this implementation.
             this.__pendingRequestCount -= 1;
-            if (err.response) {
-                const valErrors = parseBackendValidationErrors(err.response);
-                if (valErrors) {
-                    this.__backendValidationErrors = valErrors;
-                }
+            if (err.valErrors) {
+                this.__backendValidationErrors = err.valErrors;
             }
             throw err;
         }));
@@ -224,7 +197,7 @@ export default class Model {
         }
         if (this[this.primaryKey]) {
             this.__pendingRequestCount += 1;
-            return request.delete(this.url)
+            return this.api.deleteModel({ url: this.url })
             .then(action(() => {
                 this.__pendingRequestCount -= 1;
             }));
@@ -238,16 +211,11 @@ export default class Model {
             throw new Error('Trying to fetch model without id!');
         }
         this.__pendingRequestCount += 1;
-        const data = Object.assign(this.buildParams(), options.data);
-        return request.get(this.url, data)
+        const data = Object.assign(this.api.buildFetchModelParams(this), options.data);
+        return this.api.fetchModel({ url: this.url, data })
         .then(action((res) => {
+            this.fromBackend(res);
             this.__pendingRequestCount -= 1;
-
-            this.fromBackend({
-                data: res.data,
-                repos: res.with,
-                relMapping: res.with_mapping,
-            });
         }));
     }
 
