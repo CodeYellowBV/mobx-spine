@@ -44,7 +44,11 @@ export default class BinderApi {
         Object.assign(axiosOptions, options);
 
         return axios(axiosOptions)
-        .then(response => response.data);
+        .then(this.__responseFormatter);
+    }
+
+    __responseFormatter(res) {
+        return res.data;
     }
 
     get(url, data, options) {
