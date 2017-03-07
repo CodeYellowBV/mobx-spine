@@ -1,13 +1,13 @@
 {
-  "name": "mobx-binder",
+  "name": "mobx-spine",
   "version": "0.1.0",
   "license": "ISC",
   "author": "Kees Kluskens <kees@webduck.nl>",
-  "description": "MobX with first-class support for Binder (a Django API framework).",
-  "main": "dist/mobx-binder.es.js",
+  "description": "MobX with support for models, relations and an API.",
+  "main": "dist/mobx-spine.es.js",
   "repository": {
     "type": "git",
-    "url": "git://github.com/CodeYellowBV/mobx-binder.git"
+    "url": "git://github.com/CodeYellowBV/mobx-spine.git"
   },
   "scripts": {
     "test": "jest",

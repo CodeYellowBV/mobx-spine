@@ -2,7 +2,7 @@ import { action, computed, extendObservable, isObservable, observable, toJS } fr
 import { at, filter, find, forIn, get, isArray, isPlainObject, keyBy, map, mapKeys, mapValues, snakeCase } from 'lodash';
 import axios from 'axios';
 
-// lodash's `camelCase` method removes dots from the string; this breaks mobx-binder
+// lodash's `camelCase` method removes dots from the string; this breaks mobx-spine
 function snakeToCamel(s) {
     if (s.startsWith('_')) {
         return s;
@@ -107,6 +107,13 @@ let Store = (_class$1 = class Store {
         }));
     }
 
+    __getApi() {
+        if (!this.api) {
+            throw new Error('You are trying to perform a API request without an `api` property defined on the store.');
+        }
+        return this.api;
+    }
+
     fromBackend({ data, repos, relMapping }) {
         this.models.replace(data.map(record => {
             // TODO: I'm not happy at all about how this looks.
@@ -158,8 +165,8 @@ let Store = (_class$1 = class Store {
 
     fetch(options = {}) {
         this.__pendingRequestCount += 1;
-        const data = Object.assign(this.api.buildFetchStoreParams(this), this.params, options.data);
-        return this.api.fetchStore({ url: this.url, data }).then(action(res => {
+        const data = Object.assign(this.__getApi().buildFetchStoreParams(this), this.params, options.data);
+        return this.__getApi().fetchStore({ url: this.url, data }).then(action(res => {
             this.__pendingRequestCount -= 1;
             this.__state.totalRecords = res.totalRecords;
             this.fromBackend(res);
@@ -464,6 +471,13 @@ let Model = (_class = class Model {
         }
     }
 
+    __getApi() {
+        if (!this.api) {
+            throw new Error('You are trying to perform a API request without an `api` property defined on the model.');
+        }
+        return this.api;
+    }
+
     __addFromRepository(id) {
         const relData = find(this.__repository, { id });
         if (relData) {
@@ -492,7 +506,7 @@ let Model = (_class = class Model {
         this.__backendValidationErrors = {};
         this.__pendingRequestCount += 1;
         // TODO: Allow data from an argument to be saved?
-        return this.api.saveModel({
+        return this.__getApi().saveModel({
             url: this.url,
             data: this.toBackend(),
             isNew: !!this[this.primaryKey]
@@ -521,7 +535,7 @@ let Model = (_class = class Model {
         }
         if (this[this.primaryKey]) {
             this.__pendingRequestCount += 1;
-            return this.api.deleteModel({ url: this.url }).then(action(() => {
+            return this.__getApi().deleteModel({ url: this.url }).then(action(() => {
                 this.__pendingRequestCount -= 1;
             }));
         }
@@ -534,8 +548,8 @@ let Model = (_class = class Model {
             throw new Error('Trying to fetch model without id!');
         }
         this.__pendingRequestCount += 1;
-        const data = Object.assign(this.api.buildFetchModelParams(this), options.data);
-        return this.api.fetchModel({ url: this.url, data }).then(action(res => {
+        const data = Object.assign(this.__getApi().buildFetchModelParams(this), options.data);
+        return this.__getApi().fetchModel({ url: this.url, data }).then(action(res => {
             this.fromBackend(res);
             this.__pendingRequestCount -= 1;
         }));
@@ -606,7 +620,11 @@ let BinderApi = class BinderApi {
 
         Object.assign(axiosOptions, options);
 
-        return axios(axiosOptions).then(response => response.data);
+        return axios(axiosOptions).then(this.__responseFormatter);
+    }
+
+    __responseFormatter(res) {
+        return res.data;
     }
 
     get(url, data, options) {

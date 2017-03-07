@@ -16,9 +16,9 @@ rollup.rollup({
 }).then((bundle) => {
     bundle.write({
         format: 'es',
-        moduleId: 'mobx-binder',
-        moduleName: 'mobxBinder',
-        dest: 'dist/mobx-binder.es.js',
+        moduleId: 'mobx-spine',
+        moduleName: 'mobxSpine',
+        dest: 'dist/mobx-spine.es.js',
     });
 }).catch((err) => {
     console.log(String(err));
