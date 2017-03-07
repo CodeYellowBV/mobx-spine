@@ -16,9 +16,18 @@ rollup.rollup({
 }).then((bundle) => {
     bundle.write({
         format: 'es',
+        dest: 'dist/mobx-spine.es.js',
+    });
+    bundle.write({
+        format: 'umd',
         moduleId: 'mobx-spine',
         moduleName: 'mobxSpine',
-        dest: 'dist/mobx-spine.es.js',
+        dest: 'dist/mobx-spine.umd.js',
+        globals: {
+            lodash: '_',
+            mobx: 'mobx',
+            axios: 'axios',
+        },
     });
 }).catch((err) => {
     console.log(String(err));
