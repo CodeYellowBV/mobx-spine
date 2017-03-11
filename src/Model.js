@@ -152,6 +152,9 @@ export default class Model {
     }
 
     @action parse(data) {
+        if (!isPlainObject(data)) {
+            throw new Error('Parameter supplied to parse() is not an object.');
+        }
         forIn(data, (value, key) => {
             const attr = snakeToCamel(key);
             if (this.__attributes.includes(attr)) {
