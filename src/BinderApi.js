@@ -98,6 +98,9 @@ export default class BinderApi {
     saveModel({ url, data, isNew }) {
         const method = isNew ? 'patch' : 'post';
         return this[method](url, data)
+        .then((newData) => {
+            return { data: newData };
+        })
         .catch((err) => {
             if (err.response) {
                 err.valErrors = parseBackendValidationErrors(err.response);

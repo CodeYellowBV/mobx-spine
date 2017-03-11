@@ -178,9 +178,9 @@ export default class Model {
             data: this.toBackend(),
             isNew: !!this[this.primaryKey],
         })
-        .then(action((data) => {
+        .then(action((res) => {
             this.__pendingRequestCount -= 1;
-            this.parse(data);
+            this.fromBackend(res);
         }))
         .catch(action((err) => {
             this.__pendingRequestCount -= 1;
