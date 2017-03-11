@@ -63,6 +63,9 @@ export default class Store {
         if (!this.api) {
             throw new Error('You are trying to perform a API request without an `api` property defined on the store.');
         }
+        if (!this.url) {
+            throw new Error('You are trying to perform a API request without an `url` property defined on the store.');
+        }
         return this.api;
     }
 

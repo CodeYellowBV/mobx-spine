@@ -1,6 +1,13 @@
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { Animal, AnimalStore, AnimalStoreWithoutApi, Breed, PersonStore } from './fixtures/Animal';
+import {
+    Animal,
+    AnimalStore,
+    AnimalStoreWithoutApi,
+    AnimalStoreWithoutUrl,
+    Breed,
+    PersonStore,
+} from './fixtures/Animal';
 import animalsWithPastOwnersData from './fixtures/animals-with-past-owners.json';
 import animalsWithKindBreedData from './fixtures/animals-with-kind-breed.json';
 import animalsData from './fixtures/animals.json';
@@ -199,6 +206,11 @@ test('toJS', () => {
 test('fetch without api', () => {
     const animalStore = new AnimalStoreWithoutApi();
     expect(() => animalStore.fetch()).toThrow('You are trying to perform a API request without an `api` property defined on the store.');
+});
+
+test('fetch without url', () => {
+    const animalStore = new AnimalStoreWithoutUrl();
+    expect(() => animalStore.fetch()).toThrow('You are trying to perform a API request without an `url` property defined on the store.');
 });
 
 describe('requests', () => {

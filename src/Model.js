@@ -141,6 +141,9 @@ export default class Model {
         if (!this.api) {
             throw new Error('You are trying to perform a API request without an `api` property defined on the model.');
         }
+        if (!this.urlRoot) {
+            throw new Error('You are trying to perform a API request without an `urlRoot` property defined on the model.');
+        }
         return this.api;
     }
 

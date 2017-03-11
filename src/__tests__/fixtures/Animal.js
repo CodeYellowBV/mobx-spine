@@ -76,3 +76,13 @@ export class AnimalWithoutApi extends Model {
 export class AnimalStoreWithoutApi extends Store {
     Model = Animal;
 }
+
+export class AnimalWithoutUrl extends Model {
+    api = new BinderApi();
+    @observable id = null;
+}
+
+export class AnimalStoreWithoutUrl extends Store {
+    api = new BinderApi();
+    Model = Animal;
+}
