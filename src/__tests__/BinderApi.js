@@ -49,6 +49,13 @@ test('GET request with headers', () => {
     return api.get('/api/asdf/');
 });
 
+test('GET request without trailing slash', () => {
+    const api = new BinderApi();
+    expect(() => {
+        return api.get('/api/asdf');
+    }).toThrow('Binder does not accept urls that do not have a trailing slash: /api/asdf');
+});
+
 test('POST request', () => {
     mock.onAny().replyOnce((config) => {
         expect(config.url).toBe('/api/asdf/');

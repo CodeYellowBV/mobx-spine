@@ -28,6 +28,7 @@ export default class BinderApi {
     __request(method, url, data, options) {
         options || (options = {});
         const useCsrfToken = csrfSafeMethod(method) ? undefined : this.csrfToken;
+        this.__testUrl(url);
 
         const axiosOptions = {
             method,
@@ -49,6 +50,12 @@ export default class BinderApi {
 
     __responseFormatter(res) {
         return res.data;
+    }
+
+    __testUrl(url) {
+        if (!url.endsWith('/')) {
+            throw new Error(`Binder does not accept urls that do not have a trailing slash: ${url}`);
+        }
     }
 
     get(url, data, options) {
