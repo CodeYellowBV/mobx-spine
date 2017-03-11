@@ -48,7 +48,7 @@ export default class Store {
     __addFromRepository(ids = []) {
         ids = isArray(ids) ? ids : [ids];
 
-        const records = at(keyBy(this.__repository, 'id'), ids);
+        const records = at(keyBy(this.__repository, this.__getModelPrimaryKey()), ids);
         this.models.replace(records.map((record) => {
             return new this.Model(record, {
                 store: this,
@@ -64,6 +64,11 @@ export default class Store {
             throw new Error('You are trying to perform a API request without an `api` property defined on the store.');
         }
         return this.api;
+    }
+
+    __getModelPrimaryKey() {
+        const tempModel = new this.Model();
+        return tempModel.primaryKey;
     }
 
     @action fromBackend({ data, repos, relMapping }) {
@@ -201,6 +206,10 @@ export default class Store {
 
     map(predicate) {
         return map(this.models, predicate);
+    }
+
+    mapByPrimaryKey() {
+        return this.map(this.__getModelPrimaryKey());
     }
 
     filter(predicate) {
