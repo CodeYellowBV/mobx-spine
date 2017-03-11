@@ -96,7 +96,6 @@ export default class Model {
                 output[relBackendName] = rel[rel.primaryKey];
             }
             if (rel instanceof Store) {
-                // TODO: This should use the `primaryKey` of the model in the store instead, not hardcoded the `id`.
                 output[relBackendName] = rel.mapByPrimaryKey();
             }
         });
