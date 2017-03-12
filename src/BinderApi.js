@@ -109,6 +109,17 @@ export default class BinderApi {
         });
     }
 
+    saveAllModels({ url, data }) {
+        return this.put(url, { data: data.data, with: data.relations })
+        .then((res) => {
+            return {
+                data: res.data[0],
+                repos: res.with,
+                relMapping: res.with_mapping,
+            };
+        });
+    }
+
     deleteModel({ url }) {
         // TODO: kind of silly now, but we'll probably want better error handling soon.
         return this.delete(url);

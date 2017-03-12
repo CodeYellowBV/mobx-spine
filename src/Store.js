@@ -1,5 +1,5 @@
 import { observable, computed, action } from 'mobx';
-import { isArray, map, filter, find, keyBy, at } from 'lodash';
+import { isArray, map, filter, find, keyBy, forIn, at } from 'lodash';
 
 export default class Store {
     // Holds all models
@@ -198,6 +198,24 @@ export default class Store {
             return this.fetch();
         }
         return Promise.resolve();
+    }
+
+    toBackendAll(newIds = []) {
+        const modelData = this.models.map((model, i) => {
+            return model.toBackendAll(newIds && newIds[i] !== undefined ? newIds[i] : null);
+        });
+
+        let data = [];
+        const relations = {};
+
+        modelData.forEach((model) => {
+            data = data.concat(model.data);
+            forIn(model.relations, (relModel, key) => {
+                relations[key] = relations[key] ? relations[key].concat(relModel) : relModel;
+            });
+        });
+
+        return { data, relations };
     }
 
     // Helper methods to read models.

@@ -20,6 +20,12 @@ export class Breed extends Model {
 export class Person extends Model {
     @observable id = null;
     @observable name = '';
+
+    relations() {
+        return {
+            town: Location,
+        };
+    }
 }
 
 export class PersonStore extends Store {

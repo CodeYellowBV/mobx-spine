@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { toJS } from 'mobx';
 import MockAdapter from 'axios-mock-adapter';
+import _ from 'lodash';
 import {
     Animal,
     AnimalWithArray,
@@ -14,7 +15,17 @@ import {
 } from './fixtures/Animal';
 import animalKindBreedData from './fixtures/animal-with-kind-breed.json';
 import animalKindBreedDataNested from './fixtures/animal-with-kind-breed-nested.json';
+import animalMultiPutResponse from './fixtures/animals-multi-put-response.json';
 import saveFailData from './fixtures/save-fail.json';
+
+beforeEach(() => {
+    // Refresh lodash's `_.uniqueId` internal state for every test
+    let idCounter = 0;
+    _.uniqueId = jest.fn(() => {
+        idCounter += 1;
+        return idCounter;
+    });
+});
 
 test('Initialize model with valid data', () => {
     const animal = new Animal({
@@ -263,6 +274,162 @@ test('toBackend with store relation', () => {
     });
 });
 
+test('toBackendAll with model relation', () => {
+    const animal = new Animal({
+        id: 4,
+    }, { relations: ['kind.breed', 'owner'] });
+
+    animal.kind.parse({ id: 5 });
+
+    const serialized = animal.toBackendAll();
+
+    expect(serialized).toEqual({
+        data: [{
+            id: 4,
+            kind: 5,
+            name: '',
+            owner: -2,
+        }],
+        relations: {
+            kind: [{
+                id: 5,
+                name: '',
+                breed: -1,
+            }],
+            breed: [{
+                id: -1,
+                name: '',
+            }],
+            owner: [{
+                id: -2,
+                name: '',
+            }],
+        },
+    });
+});
+
+test('Internal relation list should not contain duplicates', () => {
+    // I really should not test internals, but this caused hard-to-find bugs in the past
+    // so I want to be sure this works.
+    const animal = new Animal({}, { relations: ['kind', 'kind.breed'] });
+
+    expect(animal.__activeCurrentRelations).toEqual(['kind']);
+});
+
+test('toBackendAll with store relation', () => {
+    const animal = new Animal({}, { relations: ['pastOwners'] });
+
+    animal.pastOwners.parse([{ name: 'Bar' }, { name: 'Foo' }, { id: 10, name: 'R' }]);
+
+    const serialized = animal.toBackendAll();
+
+    expect(serialized).toEqual({
+        data: [{
+            id: -1,
+            name: '',
+            past_owners: [-2, -3, 10],
+        }],
+        relations: {
+            past_owners: [{
+                id: -2,
+                name: 'Bar',
+            }, {
+                id: -3,
+                name: 'Foo',
+            }, {
+                id: 10,
+                name: 'R',
+            }],
+        },
+    });
+});
+
+test('toBackendAll with deep nested relation', () => {
+    // It's very important to test what happens when the same relation ('location') is used twice + is nested.
+    const animal = new Animal({}, { relations: ['kind.location', 'kind.breed.location'] });
+
+    animal.kind.parse({
+        name: 'Aap',
+        location: { name: 'Apenheul' },
+        breed: { name: 'MyBreed', location: { name: 'Amerika' } },
+    });
+
+    const serialized = animal.toBackendAll();
+
+    expect(serialized).toEqual({
+        data: [{
+            id: -1,
+            name: '',
+            kind: -2,
+        }],
+        relations: {
+            kind: [{
+                id: -2,
+                name: 'Aap',
+                breed: -4,
+                location: -3,
+            }],
+            breed: [{
+                id: -4,
+                name: 'MyBreed',
+                location: -5,
+            }],
+            location: [{
+                id: -3,
+                name: 'Apenheul',
+            }, {
+                id: -5,
+                name: 'Amerika',
+            }],
+        },
+    });
+});
+
+test('toBackendAll with nested store relation', () => {
+    // It's very important to test what happens when the same relation ('location') is used twice + is nested.
+    const animal = new Animal({}, { relations: ['pastOwners.town'] });
+
+    animal.pastOwners.parse([{
+        name: 'Henk',
+        town: {
+            name: 'Eindhoven',
+        },
+    }, {
+        name: 'Krol',
+        town: {
+            name: 'Breda',
+        },
+    }]);
+
+    const serialized = animal.toBackendAll();
+
+    expect(serialized).toEqual({
+        data: [{
+            id: -1,
+            name: '',
+            past_owners: [-2, -3],
+        }],
+        relations: {
+            past_owners: [{
+                id: -2,
+                name: 'Henk',
+                town: -4,
+            }, {
+                id: -3,
+                name: 'Krol',
+                town: -5,
+            }],
+            town: [{
+                id: -4,
+                name: 'Eindhoven',
+            }, {
+                id: -5,
+                name: 'Breda',
+            }],
+        },
+    });
+});
+
 test('toBackend with frontend-only prop', () => {
     const animal = new AnimalWithFrontendProp({
         id: 3,
@@ -471,6 +638,59 @@ describe('requests', () => {
         .catch(() => {
             const valErrors = toJS(animal.backendValidationErrors);
             expect(valErrors).toEqual({});
+        });
+    });
+
+    test('save all with relations', () => {
+        const animal = new Animal({ name: 'Doggo', kind: { name: 'Dog' } }, { relations: ['kind'] });
+        mock.onAny().replyOnce((config) => {
+            expect(config.url).toBe('/api/animal/');
+            expect(config.method).toBe('put');
+            return [201, animalMultiPutResponse];
+        });
+
+        return animal.saveAll()
+        .then(() => {
+            expect(animal.id).toBe(10);
+            expect(animal.kind.id).toBe(4);
+        });
+    });
+
+    test('save all with existing model', () => {
+        const animal = new Animal({ id: 10, name: 'Doggo', kind: { name: 'Dog' } }, { relations: ['kind'] });
+        mock.onAny().replyOnce((config) => {
+            expect(config.url).toBe('/api/animal/');
+            expect(config.method).toBe('put');
+            const putData = JSON.parse(config.data);
+            expect(putData).toEqual({
+                data: [{
+                    id: 10,
+                    kind: -1,
+                    name: 'Doggo',
+                }],
+                with: {
+                    kind: [{
+                        id: -1,
+                        name: 'Dog',
+                    }],
+                },
+            });
+            return [201, animalMultiPutResponse];
+        });
+
+        return animal.saveAll();
+    });
+
+    test('save all fail', () => {
+        const animal = new Animal({});
+        mock.onAny().replyOnce(() => {
+            return [500, {}];
+        });
+
+        const promise = animal.saveAll();
+        expect(animal.isLoading).toBe(true);
+        return promise.catch(() => {
+            expect(animal.isLoading).toBe(false);
         });
     });
 

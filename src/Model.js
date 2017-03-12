@@ -1,7 +1,11 @@
 import { observable, isObservable, extendObservable, computed, action, toJS } from 'mobx';
-import { snakeCase, forIn, mapValues, find, get, isPlainObject } from 'lodash';
+import { snakeCase, forIn, mapValues, find, get, isPlainObject, isArray, uniqueId } from 'lodash';
 import snakeToCamel from './snakeToCamel';
 import Store from './Store';
+
+function generateNegativeId() {
+    return -parseInt(uniqueId());
+}
 
 export default class Model {
     // TODO: Find out why `static primaryKey` doesn't work. I WANT IT STATIC GODDAMMIT.
@@ -68,7 +72,9 @@ export default class Model {
             // When two nested relations are defined next to each other (e.g. `['kind.breed', 'kind.location']`),
             // the relation `kind` only needs to be initialized once.
             relModels[currentRel] = currentProp ? currentProp.concat(otherRels) : otherRels;
-            this.__activeCurrentRelations.push(currentRel);
+            if (!this.__activeCurrentRelations.includes(currentRel)) {
+                this.__activeCurrentRelations.push(currentRel);
+            }
         });
         extendObservable(this, mapValues(relModels, (otherRelNames, relName) => {
             const RelModel = relations[relName];
@@ -100,6 +106,39 @@ export default class Model {
             }
         });
         return output;
+    }
+
+    toBackendAll(newId) {
+        // TODO: This implementation is more a proof of concept; it's very shitty coded.
+        const data = this.toBackend();
+        const relations = {};
+
+        if (newId) {
+            data[this.primaryKey] = newId;
+        } else if (data[this.primaryKey] === null) {
+            data[this.primaryKey] = generateNegativeId();
+        }
+
+        this.__activeCurrentRelations.forEach((currentRel) => {
+            const rel = this[currentRel];
+            let myNewId = null;
+            const relBackendName = snakeCase(currentRel);
+            if (data[relBackendName] === null) {
+                myNewId = generateNegativeId();
+                data[relBackendName] = myNewId;
+            }
+            if (isArray(data[relBackendName])) {
+                myNewId = data[relBackendName].map(id => id === null ? generateNegativeId() : id);
+                data[relBackendName] = myNewId;
+            }
+            const relBackendData = rel.toBackendAll(myNewId);
+            relations[relBackendName] = relBackendData.data;
+            forIn(relBackendData.relations, (relB, key) => {
+                relations[key] = relations[key] ? relations[key].concat(relB) : relB;
+            });
+        });
+
+        return { data: [data], relations };
     }
 
     toJS() {
@@ -192,6 +231,24 @@ export default class Model {
             if (err.valErrors) {
                 this.__backendValidationErrors = err.valErrors;
             }
+            throw err;
+        }));
+    }
+
+    @action saveAll() {
+        this.__backendValidationErrors = {};
+        this.__pendingRequestCount += 1;
+        return this.__getApi().saveAllModels({
+            url: this.urlRoot,
+            data: this.toBackendAll(),
+        })
+        .then(action((res) => {
+            this.__pendingRequestCount -= 1;
+            this.fromBackend(res);
+        }))
+        .catch(action((err) => {
+            this.__pendingRequestCount -= 1;
+            // TODO: saveAll does not support handling backend validation errors yet.
             throw err;
         }));
     }

@@ -1,0 +1,23 @@
+{
+  "data": [
+    {
+      "id": 10,
+      "name": "Doggo",
+      "kind": 4
+    }
+  ],
+  "with": {
+    "animal_kind": [
+      {
+        "id": 4,
+        "name": "Dog"
+      }
+    ]
+  },
+  "meta": {
+    "total_records": 1
+  },
+  "with_mapping": {
+    "kind": "animal_kind"
+  }
+}

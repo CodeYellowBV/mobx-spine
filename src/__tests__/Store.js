@@ -74,7 +74,6 @@ test('Two level relation', () => {
     expect(animal.kind.breed).toBeInstanceOf(Breed);
 });
 
-
 test('get specific model', () => {
     const animalStore = new AnimalStore();
     animalStore.parse(simpleData);
