@@ -31,7 +31,7 @@ export default class Store {
         }
         // TODO: throw an error if it's not an array?
         if (data) {
-            this.parse(data);
+            throw new Error('Initializing a store directly with data is not possible for now. Use `store.parse(data)`');
         }
         if (options.limit !== undefined) {
             this.setLimit(options.limit);

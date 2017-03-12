@@ -35,7 +35,14 @@ test('Initialize store with valid data', () => {
     expect(animalStore.models[0].id).toBe(2);
 });
 
-// TODO; I have no clue why this doesn't work.
+// This is temporary...
+test('Initialize store in constructor should throw error', () => {
+    expect(() => {
+        return new AnimalStore([]);
+    }).toThrow('Initializing a store directly with data is not possible for now. Use `store.parse(data)`');
+});
+
+// TODO; see https://github.com/CodeYellowBV/mobx-spine/issues/6
 xtest('Initialize store in constructor', () => {
     const animalStore = new AnimalStore(simpleData);
     expect(animalStore.length).toBe(3);
