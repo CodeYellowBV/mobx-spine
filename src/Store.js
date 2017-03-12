@@ -33,9 +33,6 @@ export default class Store {
         if (data) {
             this.parse(data);
         }
-        if (options.currentPage !== undefined) {
-            this.setPage(options.currentPage, { fetch: false });
-        }
         if (options.limit !== undefined) {
             this.setLimit(options.limit);
         }
