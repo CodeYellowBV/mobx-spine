@@ -202,6 +202,12 @@ test('toJS', () => {
     expect(animalStore.toJS()).toEqual([{ id: 2, name: 'Monkey' }]);
 });
 
+test('Non-array given to parse() should throw an error', () => {
+    expect(() => {
+        const animalStore = new AnimalStore();
+        return animalStore.parse(1);
+    }).toThrow('Parameter supplied to parse() is not an array.');
+});
 
 test('fetch without api', () => {
     const animalStore = new AnimalStoreWithoutApi();

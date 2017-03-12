@@ -96,6 +96,9 @@ export default class Store {
     }
 
     @action parse(models) {
+        if (!isArray(models)) {
+            throw new Error('Parameter supplied to parse() is not an array.');
+        }
         this.models.replace(models.map(this._newModel.bind(this)));
     }
 
