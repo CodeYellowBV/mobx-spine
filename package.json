@@ -17,7 +17,14 @@
     "lint": "eslint src",
     "preversion": "npm run -s lint",
     "build": "rm -f dist/** && node build.js",
+    "precommit": "lint-staged",
     "ci": "npm run -s lint && npm run -s test-coverage && codecov"
+  },
+  "lint-staged": {
+    "*.js": [
+      "prettier --write",
+      "git add"
+    ]
   },
   "dependencies": {},
   "engines": {
@@ -38,7 +45,9 @@
     "codecov": "^1.0.1",
     "eslint": "^3.14.1",
     "eslint-config-codeyellow": "^4.0.0",
+    "husky": "^0.13.2",
     "jest": "^19.0.2",
+    "lint-staged": "^3.4.0",
     "lodash": "^4.17.4",
     "mobx": "^3.0.2",
     "rollup": "^0.41.4",
