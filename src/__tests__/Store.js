@@ -8,7 +8,8 @@ import {
     Breed,
     PersonStore,
 } from './fixtures/Animal';
-import animalsWithPastOwnersData from './fixtures/animals-with-past-owners.json';
+import animalsWithPastOwnersData
+    from './fixtures/animals-with-past-owners.json';
 import animalsWithKindBreedData from './fixtures/animals-with-kind-breed.json';
 import animalsData from './fixtures/animals.json';
 import pagination1Data from './fixtures/pagination/1.json';
@@ -16,16 +17,20 @@ import pagination2Data from './fixtures/pagination/2.json';
 import pagination3Data from './fixtures/pagination/3.json';
 import pagination4Data from './fixtures/pagination/4.json';
 
-const simpleData = [{
-    id: 2,
-    name: 'Monkey',
-}, {
-    id: 3,
-    name: 'Boogie',
-}, {
-    id: 10,
-    name: 'Jojo',
-}];
+const simpleData = [
+    {
+        id: 2,
+        name: 'Monkey',
+    },
+    {
+        id: 3,
+        name: 'Boogie',
+    },
+    {
+        id: 10,
+        name: 'Jojo',
+    },
+];
 
 test('Initialize store with valid data', () => {
     const animalStore = new AnimalStore();
@@ -39,7 +44,9 @@ test('Initialize store with valid data', () => {
 test('Initialize store in constructor should throw error', () => {
     expect(() => {
         return new AnimalStore([]);
-    }).toThrow('Initializing a store directly with data is not possible for now. Use `store.parse(data)`');
+    }).toThrow(
+        'Initializing a store directly with data is not possible for now. Use `store.parse(data)`'
+    );
 });
 
 // TODO; see https://github.com/CodeYellowBV/mobx-spine/issues/6
@@ -118,7 +125,7 @@ test('each model', () => {
     animalStore.parse(simpleData);
     const ids = [];
 
-    animalStore.each((model) => {
+    animalStore.each(model => {
         ids.push(model.id);
     });
     expect(ids).toEqual([2, 3, 10]);
@@ -167,11 +174,14 @@ test('add multiple models', () => {
     const animalStore = new AnimalStore();
     animalStore.parse(simpleData);
 
-    const models = animalStore.add([{
-        id: 20,
-    }, {
-        id: 21,
-    }]);
+    const models = animalStore.add([
+        {
+            id: 20,
+        },
+        {
+            id: 21,
+        },
+    ]);
     expect(animalStore.map('id')).toEqual([2, 3, 10, 20, 21]);
     expect(models).toBeInstanceOf(Array);
     expect(models[0]).toBeInstanceOf(Animal);
@@ -217,12 +227,16 @@ test('Non-array given to parse() should throw an error', () => {
 
 test('fetch without api', () => {
     const animalStore = new AnimalStoreWithoutApi();
-    expect(() => animalStore.fetch()).toThrow('You are trying to perform a API request without an `api` property defined on the store.');
+    expect(() => animalStore.fetch()).toThrow(
+        'You are trying to perform a API request without an `api` property defined on the store.'
+    );
 });
 
 test('fetch without url', () => {
     const animalStore = new AnimalStoreWithoutUrl();
-    expect(() => animalStore.fetch()).toThrow('You are trying to perform a API request without an `url` property defined on the store.');
+    expect(() => animalStore.fetch()).toThrow(
+        'You are trying to perform a API request without an `url` property defined on the store.'
+    );
 });
 
 describe('requests', () => {
@@ -239,15 +253,18 @@ describe('requests', () => {
 
     test('fetch with basic properties', () => {
         const animalStore = new AnimalStore();
-        mock.onAny().replyOnce((config) => {
+        mock.onAny().replyOnce(config => {
             expect(config.url).toBe('/api/animal/');
             expect(config.method).toBe('get');
-            expect(config.params).toEqual({ with: null, limit: 25, offset: null });
+            expect(config.params).toEqual({
+                with: null,
+                limit: 25,
+                offset: null,
+            });
             return [200, animalsData];
         });
 
-        return animalStore.fetch()
-        .then(() => {
+        return animalStore.fetch().then(() => {
             expect(animalStore.length).toBe(2);
             expect(animalStore.map('id')).toEqual([2, 3]);
         });
@@ -257,13 +274,16 @@ describe('requests', () => {
         const animalStore = new AnimalStore(null, {
             relations: ['kind.breed'],
         });
-        mock.onAny().replyOnce((config) => {
-            expect(config.params).toEqual({ with: 'kind.breed', limit: 25, offset: null });
+        mock.onAny().replyOnce(config => {
+            expect(config.params).toEqual({
+                with: 'kind.breed',
+                limit: 25,
+                offset: null,
+            });
             return [200, animalsWithKindBreedData];
         });
 
-        return animalStore.fetch()
-        .then(() => {
+        return animalStore.fetch().then(() => {
             expect(animalStore.at(0).id).toBe(1);
             expect(animalStore.at(0).kind.id).toBe(4);
             expect(animalStore.at(0).kind.breed.id).toBe(3);
@@ -278,8 +298,7 @@ describe('requests', () => {
             return [200, animalsData];
         });
 
-        return animalStore.fetch()
-        .then(() => {
+        return animalStore.fetch().then(() => {
             expect(animalStore.isLoading).toBe(false);
         });
     });
@@ -308,14 +327,20 @@ describe('Pagination', () => {
     test('set invalid limit', () => {
         const animalStore = new AnimalStore();
 
-        expect(() => animalStore.setLimit('a')).toThrow('Page limit should be a number or falsy value.');
+        expect(() => animalStore.setLimit('a')).toThrow(
+            'Page limit should be a number or falsy value.'
+        );
 
         expect(animalStore.totalPages).toBe(0);
     });
 
     test('with four pages on first page', () => {
-        mock.onAny().replyOnce((config) => {
-            expect(config.params).toEqual({ with: null, limit: 3, offset: null });
+        mock.onAny().replyOnce(config => {
+            expect(config.params).toEqual({
+                with: null,
+                limit: 3,
+                offset: null,
+            });
             return [200, pagination1Data];
         });
 
@@ -328,8 +353,7 @@ describe('Pagination', () => {
         expect(animalStore.hasNextPage).toBe(false);
         expect(animalStore.hasPreviousPage).toBe(false);
 
-        return animalStore.fetch()
-        .then(() => {
+        return animalStore.fetch().then(() => {
             expect(animalStore.totalPages).toBe(4);
             expect(animalStore.currentPage).toBe(1);
             expect(animalStore.hasNextPage).toBe(true);
@@ -346,21 +370,26 @@ describe('Pagination', () => {
             limit: 3,
         });
 
-        return animalStore.fetch()
-        .then(() => {
-            mock.onAny().replyOnce((config) => {
-                expect(config.params).toEqual({ with: null, limit: 3, offset: 3 });
-                return [200, pagination2Data];
-            });
+        return animalStore
+            .fetch()
+            .then(() => {
+                mock.onAny().replyOnce(config => {
+                    expect(config.params).toEqual({
+                        with: null,
+                        limit: 3,
+                        offset: 3,
+                    });
+                    return [200, pagination2Data];
+                });
 
-            return animalStore.getNextPage();
-        })
-        .then(() => {
-            expect(animalStore.map('id')).toEqual([4, 5, 6]);
-            expect(animalStore.currentPage).toBe(2);
-            expect(animalStore.hasPreviousPage).toBe(true);
-            expect(animalStore.hasNextPage).toBe(true);
-        });
+                return animalStore.getNextPage();
+            })
+            .then(() => {
+                expect(animalStore.map('id')).toEqual([4, 5, 6]);
+                expect(animalStore.currentPage).toBe(2);
+                expect(animalStore.hasPreviousPage).toBe(true);
+                expect(animalStore.hasNextPage).toBe(true);
+            });
     });
 
     test('getNextPage - with four pages to fourth page', () => {
@@ -372,33 +401,34 @@ describe('Pagination', () => {
             limit: 3,
         });
 
-        return animalStore.fetch()
-        .then(() => {
-            mock.onAny().replyOnce(() => {
-                return [200, pagination2Data];
-            });
+        return animalStore
+            .fetch()
+            .then(() => {
+                mock.onAny().replyOnce(() => {
+                    return [200, pagination2Data];
+                });
 
-            return animalStore.getNextPage();
-        })
-        .then(() => {
-            mock.onAny().replyOnce(() => {
-                return [200, pagination3Data];
-            });
+                return animalStore.getNextPage();
+            })
+            .then(() => {
+                mock.onAny().replyOnce(() => {
+                    return [200, pagination3Data];
+                });
 
-            return animalStore.getNextPage();
-        })
-        .then(() => {
-            mock.onAny().replyOnce(() => {
-                return [200, pagination4Data];
-            });
+                return animalStore.getNextPage();
+            })
+            .then(() => {
+                mock.onAny().replyOnce(() => {
+                    return [200, pagination4Data];
+                });
 
-            return animalStore.getNextPage();
-        })
-        .then(() => {
-            expect(animalStore.currentPage).toBe(4);
-            expect(animalStore.hasPreviousPage).toBe(true);
-            expect(animalStore.hasNextPage).toBe(false);
-        });
+                return animalStore.getNextPage();
+            })
+            .then(() => {
+                expect(animalStore.currentPage).toBe(4);
+                expect(animalStore.hasPreviousPage).toBe(true);
+                expect(animalStore.hasNextPage).toBe(false);
+            });
     });
 
     test('getPreviousPage', () => {
@@ -410,38 +440,43 @@ describe('Pagination', () => {
             limit: 3,
         });
 
-        return animalStore.fetch()
-        .then(() => {
-            mock.onAny().replyOnce(() => {
-                return [200, pagination2Data];
-            });
+        return animalStore
+            .fetch()
+            .then(() => {
+                mock.onAny().replyOnce(() => {
+                    return [200, pagination2Data];
+                });
 
-            return animalStore.getNextPage();
-        })
-        .then(() => {
-            mock.onAny().replyOnce(() => {
-                return [200, pagination1Data];
-            });
+                return animalStore.getNextPage();
+            })
+            .then(() => {
+                mock.onAny().replyOnce(() => {
+                    return [200, pagination1Data];
+                });
 
-            return animalStore.getPreviousPage();
-        })
-        .then(() => {
-            expect(animalStore.map('id')).toEqual([1, 2, 3]);
-            expect(animalStore.currentPage).toBe(1);
-            expect(animalStore.hasPreviousPage).toBe(false);
-        });
+                return animalStore.getPreviousPage();
+            })
+            .then(() => {
+                expect(animalStore.map('id')).toEqual([1, 2, 3]);
+                expect(animalStore.currentPage).toBe(1);
+                expect(animalStore.hasPreviousPage).toBe(false);
+            });
     });
 
     test('getPreviousPage - without page', () => {
         const animalStore = new AnimalStore();
 
-        expect(() => animalStore.getPreviousPage()).toThrow('There is no previous page.');
+        expect(() => animalStore.getPreviousPage()).toThrow(
+            'There is no previous page.'
+        );
     });
 
     test('getNextPage - without page', () => {
         const animalStore = new AnimalStore();
 
-        expect(() => animalStore.getNextPage()).toThrow('There is no next page.');
+        expect(() => animalStore.getNextPage()).toThrow(
+            'There is no next page.'
+        );
     });
 
     test('setPage with fetch', () => {
@@ -453,26 +488,29 @@ describe('Pagination', () => {
             limit: 3,
         });
 
-        return animalStore.fetch()
-        .then(() => {
-            mock.onAny().replyOnce(() => {
-                return [200, pagination3Data];
-            });
+        return animalStore
+            .fetch()
+            .then(() => {
+                mock.onAny().replyOnce(() => {
+                    return [200, pagination3Data];
+                });
 
-            return animalStore.setPage(3);
-        })
-        .then(() => {
-            expect(animalStore.map('id')).toEqual([7, 8, 9]);
-            expect(animalStore.currentPage).toBe(3);
-            expect(animalStore.hasPreviousPage).toBe(true);
-            expect(animalStore.hasNextPage).toBe(true);
-        });
+                return animalStore.setPage(3);
+            })
+            .then(() => {
+                expect(animalStore.map('id')).toEqual([7, 8, 9]);
+                expect(animalStore.currentPage).toBe(3);
+                expect(animalStore.hasPreviousPage).toBe(true);
+                expect(animalStore.hasNextPage).toBe(true);
+            });
     });
 
     test('setPage with invalid page', () => {
         const animalStore = new AnimalStore();
 
-        expect(() => animalStore.setPage('')).toThrow('Page should be a number.');
+        expect(() => animalStore.setPage('')).toThrow(
+            'Page should be a number.'
+        );
     });
 
     test('setPage with not existent page', () => {
@@ -484,9 +522,10 @@ describe('Pagination', () => {
             limit: 3,
         });
 
-        return animalStore.fetch()
-        .then(() => {
-            expect(() => animalStore.setPage(5)).toThrow('Page should be between 1 and 4.');
+        return animalStore.fetch().then(() => {
+            expect(() => animalStore.setPage(5)).toThrow(
+                'Page should be between 1 and 4.'
+            );
         });
     });
 
@@ -499,13 +538,13 @@ describe('Pagination', () => {
             limit: 3,
         });
 
-        return animalStore.fetch()
-        .then(() => {
-            return animalStore.setPage(3, { fetch: false });
-        })
-        .then(() => {
-            expect(animalStore.map('id')).toEqual([1, 2, 3]);
-        });
+        return animalStore
+            .fetch()
+            .then(() => {
+                return animalStore.setPage(3, { fetch: false });
+            })
+            .then(() => {
+                expect(animalStore.map('id')).toEqual([1, 2, 3]);
+            });
     });
 });
-

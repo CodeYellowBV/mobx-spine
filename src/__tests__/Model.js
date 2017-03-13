@@ -15,7 +15,8 @@ import {
     Location,
 } from './fixtures/Animal';
 import animalKindBreedData from './fixtures/animal-with-kind-breed.json';
-import animalKindBreedDataNested from './fixtures/animal-with-kind-breed-nested.json';
+import animalKindBreedDataNested
+    from './fixtures/animal-with-kind-breed-nested.json';
 import animalMultiPutResponse from './fixtures/animals-multi-put-response.json';
 import saveFailData from './fixtures/save-fail.json';
 
@@ -119,12 +120,15 @@ test('Initialize multiple relations', () => {
 });
 
 test('Initialize circular model', () => {
-    const animal = new AnimalCircular({
-        id: 2,
-        circular: {
-            id: 3,
+    const animal = new AnimalCircular(
+        {
+            id: 2,
+            circular: {
+                id: 3,
+            },
         },
-    }, { relations: ['circular'] });
+        { relations: ['circular'] }
+    );
 
     expect(animal.id).toBe(2);
     expect(animal.circular).toBeInstanceOf(AnimalCircular);
@@ -256,10 +260,13 @@ test('toBackend with basic properties', () => {
 });
 
 test('toBackend with relations', () => {
-    const animal = new Animal({
-        id: 4,
-        name: 'Donkey',
-    }, { relations: ['kind', 'owner'] });
+    const animal = new Animal(
+        {
+            id: 4,
+            name: 'Donkey',
+        },
+        { relations: ['kind', 'owner'] }
+    );
 
     animal.kind.id = 8;
 
@@ -274,9 +281,12 @@ test('toBackend with relations', () => {
 });
 
 test('toBackend with store relation', () => {
-    const animal = new Animal({
-        id: 4,
-    }, { relations: ['pastOwners'] });
+    const animal = new Animal(
+        {
+            id: 4,
+        },
+        { relations: ['pastOwners'] }
+    );
 
     animal.pastOwners.parse([{ id: 5 }]);
 
@@ -290,35 +300,46 @@ test('toBackend with store relation', () => {
 });
 
 test('toBackendAll with model relation', () => {
-    const animal = new Animal({
-        id: 4,
-    }, { relations: ['kind.breed', 'owner'] });
+    const animal = new Animal(
+        {
+            id: 4,
+        },
+        { relations: ['kind.breed', 'owner'] }
+    );
 
     animal.kind.parse({ id: 5 });
 
     const serialized = animal.toBackendAll();
 
     expect(serialized).toEqual({
-        data: [{
-            id: 4,
-            kind: 5,
-            name: '',
-            owner: -2,
-        }],
+        data: [
+            {
+                id: 4,
+                kind: 5,
+                name: '',
+                owner: -2,
+            },
+        ],
         relations: {
-            kind: [{
-                id: 5,
-                name: '',
-                breed: -1,
-            }],
-            breed: [{
-                id: -1,
-                name: '',
-            }],
-            owner: [{
-                id: -2,
-                name: '',
-            }],
+            kind: [
+                {
+                    id: 5,
+                    name: '',
+                    breed: -1,
+                },
+            ],
+            breed: [
+                {
+                    id: -1,
+                    name: '',
+                },
+            ],
+            owner: [
+                {
+                    id: -2,
+                    name: '',
+                },
+            ],
         },
     });
 });
@@ -334,34 +355,47 @@ test('Internal relation list should not contain duplicates', () => {
 test('toBackendAll with store relation', () => {
     const animal = new Animal({}, { relations: ['pastOwners'] });
 
-    animal.pastOwners.parse([{ name: 'Bar' }, { name: 'Foo' }, { id: 10, name: 'R' }]);
+    animal.pastOwners.parse([
+        { name: 'Bar' },
+        { name: 'Foo' },
+        { id: 10, name: 'R' },
+    ]);
 
     const serialized = animal.toBackendAll();
 
     expect(serialized).toEqual({
-        data: [{
-            id: -1,
-            name: '',
-            past_owners: [-2, -3, 10],
-        }],
+        data: [
+            {
+                id: -1,
+                name: '',
+                past_owners: [-2, -3, 10],
+            },
+        ],
         relations: {
-            past_owners: [{
-                id: -2,
-                name: 'Bar',
-            }, {
-                id: -3,
-                name: 'Foo',
-            }, {
-                id: 10,
-                name: 'R',
-            }],
+            past_owners: [
+                {
+                    id: -2,
+                    name: 'Bar',
+                },
+                {
+                    id: -3,
+                    name: 'Foo',
+                },
+                {
+                    id: 10,
+                    name: 'R',
+                },
+            ],
         },
     });
 });
 
 test('toBackendAll with deep nested relation', () => {
     // It's very important to test what happens when the same relation ('location') is used twice + is nested.
-    const animal = new Animal({}, { relations: ['kind.location', 'kind.breed.location'] });
+    const animal = new Animal(
+        {},
+        { relations: ['kind.location', 'kind.breed.location'] }
+    );
 
     animal.kind.parse({
         name: 'Aap',
@@ -372,30 +406,39 @@ test('toBackendAll with deep nested relation', () => {
     const serialized = animal.toBackendAll();
 
     expect(serialized).toEqual({
-        data: [{
-            id: -1,
-            name: '',
-            kind: -2,
-        }],
+        data: [
+            {
+                id: -1,
+                name: '',
+                kind: -2,
+            },
+        ],
         relations: {
-            kind: [{
-                id: -2,
-                name: 'Aap',
-                breed: -4,
-                location: -3,
-            }],
-            breed: [{
-                id: -4,
-                name: 'MyBreed',
-                location: -5,
-            }],
-            location: [{
-                id: -3,
-                name: 'Apenheul',
-            }, {
-                id: -5,
-                name: 'Amerika',
-            }],
+            kind: [
+                {
+                    id: -2,
+                    name: 'Aap',
+                    breed: -4,
+                    location: -3,
+                },
+            ],
+            breed: [
+                {
+                    id: -4,
+                    name: 'MyBreed',
+                    location: -5,
+                },
+            ],
+            location: [
+                {
+                    id: -3,
+                    name: 'Apenheul',
+                },
+                {
+                    id: -5,
+                    name: 'Amerika',
+                },
+            ],
         },
     });
 });
@@ -404,43 +447,54 @@ test('toBackendAll with nested store relation', () => {
     // It's very important to test what happens when the same relation ('location') is used twice + is nested.
     const animal = new Animal({}, { relations: ['pastOwners.town'] });
 
-    animal.pastOwners.parse([{
-        name: 'Henk',
-        town: {
-            name: 'Eindhoven',
+    animal.pastOwners.parse([
+        {
+            name: 'Henk',
+            town: {
+                name: 'Eindhoven',
+            },
         },
-    }, {
-        name: 'Krol',
-        town: {
-            name: 'Breda',
+        {
+            name: 'Krol',
+            town: {
+                name: 'Breda',
+            },
         },
-    }]);
+    ]);
 
     const serialized = animal.toBackendAll();
 
     expect(serialized).toEqual({
-        data: [{
-            id: -1,
-            name: '',
-            past_owners: [-2, -3],
-        }],
+        data: [
+            {
+                id: -1,
+                name: '',
+                past_owners: [-2, -3],
+            },
+        ],
         relations: {
-            past_owners: [{
-                id: -2,
-                name: 'Henk',
-                town: -4,
-            }, {
-                id: -3,
-                name: 'Krol',
-                town: -5,
-            }],
-            town: [{
-                id: -4,
-                name: 'Eindhoven',
-            }, {
-                id: -5,
-                name: 'Breda',
-            }],
+            past_owners: [
+                {
+                    id: -2,
+                    name: 'Henk',
+                    town: -4,
+                },
+                {
+                    id: -3,
+                    name: 'Krol',
+                    town: -5,
+                },
+            ],
+            town: [
+                {
+                    id: -4,
+                    name: 'Eindhoven',
+                },
+                {
+                    id: -5,
+                    name: 'Breda',
+                },
+            ],
         },
     });
 });
@@ -482,10 +536,13 @@ test('clear with basic properties', () => {
 });
 
 test('clear with relations', () => {
-    const animal = new Animal({
-        id: 5,
-        name: 'Donkey kong',
-    }, { relations: ['kind', 'owner'] });
+    const animal = new Animal(
+        {
+            id: 5,
+            name: 'Donkey kong',
+        },
+        { relations: ['kind', 'owner'] }
+    );
 
     animal.kind.id = 8;
 
@@ -507,11 +564,14 @@ test('toJS with basic properties', () => {
 });
 
 test('toJS with relations', () => {
-    const animal = new Animal({
-        id: 4,
-        name: 'japser',
-        kind: { id: 8, breed: { id: 10 } },
-    }, { relations: ['kind.breed'] });
+    const animal = new Animal(
+        {
+            id: 4,
+            name: 'japser',
+            kind: { id: 8, breed: { id: 10 } },
+        },
+        { relations: ['kind.breed'] }
+    );
 
     expect(animal.toJS()).toEqual({
         id: 4,
@@ -549,12 +609,16 @@ test('delete without id and store', () => {
 
 test('fetch without api', () => {
     const animal = new AnimalWithoutApi({ id: 2 });
-    expect(() => animal.fetch()).toThrow('You are trying to perform a API request without an `api` property defined on the model.');
+    expect(() => animal.fetch()).toThrow(
+        'You are trying to perform a API request without an `api` property defined on the model.'
+    );
 });
 
 test('fetch without url', () => {
     const animal = new AnimalWithoutUrl({ id: 2 });
-    expect(() => animal.fetch()).toThrow('You are trying to perform a API request without an `urlRoot` property defined on the model.');
+    expect(() => animal.fetch()).toThrow(
+        'You are trying to perform a API request without an `urlRoot` property defined on the model.'
+    );
 });
 
 describe('requests', () => {
@@ -571,32 +635,33 @@ describe('requests', () => {
 
     test('fetch with basic properties', () => {
         const animal = new Animal({ id: 2 });
-        mock.onAny().replyOnce((config) => {
+        mock.onAny().replyOnce(config => {
             expect(config.url).toBe('/api/animal/2/');
             expect(config.method).toBe('get');
             expect(config.params).toEqual({ with: null });
             return [200, { data: { id: 2, name: 'Madagascar' } }];
         });
 
-        return animal.fetch()
-        .then(() => {
+        return animal.fetch().then(() => {
             expect(animal.id).toBe(2);
         });
     });
 
     test('fetch with relations', () => {
-        const animal = new Animal({ id: 2 }, {
-            relations: ['kind.breed'],
-        });
-        mock.onAny().replyOnce((config) => {
+        const animal = new Animal(
+            { id: 2 },
+            {
+                relations: ['kind.breed'],
+            }
+        );
+        mock.onAny().replyOnce(config => {
             expect(config.params).toEqual({
                 with: 'kind.breed',
             });
             return [200, animalKindBreedData];
         });
 
-        return animal.fetch()
-        .then(() => {
+        return animal.fetch().then(() => {
             expect(animal.id).toBe(1);
             expect(animal.kind.id).toBe(4);
             expect(animal.kind.breed.id).toBe(3);
@@ -605,28 +670,26 @@ describe('requests', () => {
 
     test('save new with basic properties', () => {
         const animal = new Animal({ name: 'Doggo' });
-        mock.onAny().replyOnce((config) => {
+        mock.onAny().replyOnce(config => {
             expect(config.url).toBe('/api/animal/');
             expect(config.method).toBe('post');
             expect(config.data).toBe('{"id":null,"name":"Doggo"}');
             return [201, { id: 10, name: 'Doggo' }];
         });
 
-        return animal.save()
-        .then(() => {
+        return animal.save().then(() => {
             expect(animal.id).toBe(10);
         });
     });
 
     test('save existing with basic properties', () => {
         const animal = new Animal({ id: 12, name: 'Burhan' });
-        mock.onAny().replyOnce((config) => {
+        mock.onAny().replyOnce(config => {
             expect(config.method).toBe('patch');
             return [200, { id: 12, name: 'Burhan' }];
         });
 
-        return animal.save()
-        .then(() => {
+        return animal.save().then(() => {
             expect(animal.id).toBe(12);
         });
     });
@@ -635,8 +698,7 @@ describe('requests', () => {
         const animal = new Animal({ name: 'Nope' });
         mock.onAny().replyOnce(400, saveFailData);
 
-        return animal.save()
-        .catch(() => {
+        return animal.save().catch(() => {
             const valErrors = toJS(animal.backendValidationErrors);
             expect(valErrors).toEqual({
                 name: ['This field cannot be blank.'],
@@ -649,45 +711,53 @@ describe('requests', () => {
         const animal = new Animal({ name: 'Nope' });
         mock.onAny().replyOnce(500, {});
 
-        return animal.save()
-        .catch(() => {
+        return animal.save().catch(() => {
             const valErrors = toJS(animal.backendValidationErrors);
             expect(valErrors).toEqual({});
         });
     });
 
     test('save all with relations', () => {
-        const animal = new Animal({ name: 'Doggo', kind: { name: 'Dog' } }, { relations: ['kind'] });
-        mock.onAny().replyOnce((config) => {
+        const animal = new Animal(
+            { name: 'Doggo', kind: { name: 'Dog' } },
+            { relations: ['kind'] }
+        );
+        mock.onAny().replyOnce(config => {
             expect(config.url).toBe('/api/animal/');
             expect(config.method).toBe('put');
             return [201, animalMultiPutResponse];
         });
 
-        return animal.saveAll()
-        .then(() => {
+        return animal.saveAll().then(() => {
             expect(animal.id).toBe(10);
             expect(animal.kind.id).toBe(4);
         });
     });
 
     test('save all with existing model', () => {
-        const animal = new Animal({ id: 10, name: 'Doggo', kind: { name: 'Dog' } }, { relations: ['kind'] });
-        mock.onAny().replyOnce((config) => {
+        const animal = new Animal(
+            { id: 10, name: 'Doggo', kind: { name: 'Dog' } },
+            { relations: ['kind'] }
+        );
+        mock.onAny().replyOnce(config => {
             expect(config.url).toBe('/api/animal/');
             expect(config.method).toBe('put');
             const putData = JSON.parse(config.data);
             expect(putData).toEqual({
-                data: [{
-                    id: 10,
-                    kind: -1,
-                    name: 'Doggo',
-                }],
+                data: [
+                    {
+                        id: 10,
+                        kind: -1,
+                        name: 'Doggo',
+                    },
+                ],
                 with: {
-                    kind: [{
-                        id: -1,
-                        name: 'Dog',
-                    }],
+                    kind: [
+                        {
+                            id: -1,
+                            name: 'Dog',
+                        },
+                    ],
                 },
             });
             return [201, animalMultiPutResponse];
@@ -711,7 +781,7 @@ describe('requests', () => {
 
     test('delete existing with basic properties', () => {
         const animal = new Animal({ id: 12, name: 'Burhan' });
-        mock.onAny().replyOnce((config) => {
+        mock.onAny().replyOnce(config => {
             expect(config.method).toBe('delete');
             expect(config.url).toBe('/api/animal/12/');
             return [204, null];
@@ -728,10 +798,8 @@ describe('requests', () => {
             return [200, { id: 2 }];
         });
 
-        return animal.fetch()
-        .then(() => {
+        return animal.fetch().then(() => {
             expect(animal.isLoading).toBe(false);
         });
     });
 });
-

@@ -31,7 +31,9 @@ export default class Store {
         }
         // TODO: throw an error if it's not an array?
         if (data) {
-            throw new Error('Initializing a store directly with data is not possible for now. Use `store.parse(data)`');
+            throw new Error(
+                'Initializing a store directly with data is not possible for now. Use `store.parse(data)`'
+            );
         }
         if (options.limit !== undefined) {
             this.setLimit(options.limit);
@@ -45,23 +47,32 @@ export default class Store {
     __addFromRepository(ids = []) {
         ids = isArray(ids) ? ids : [ids];
 
-        const records = at(keyBy(this.__repository, this.__getModelPrimaryKey()), ids);
-        this.models.replace(records.map((record) => {
-            return new this.Model(record, {
-                store: this,
-                // TODO: fix nested relations in stores.
-                // This only does not work when using e.g. `owners.location`
-                // (where `owners` is a store, and `location` a model)
-            });
-        }));
+        const records = at(
+            keyBy(this.__repository, this.__getModelPrimaryKey()),
+            ids
+        );
+        this.models.replace(
+            records.map(record => {
+                return new this.Model(record, {
+                    store: this,
+                    // TODO: fix nested relations in stores.
+                    // This only does not work when using e.g. `owners.location`
+                    // (where `owners` is a store, and `location` a model)
+                });
+            })
+        );
     }
 
     __getApi() {
         if (!this.api) {
-            throw new Error('You are trying to perform a API request without an `api` property defined on the store.');
+            throw new Error(
+                'You are trying to perform a API request without an `api` property defined on the store.'
+            );
         }
         if (!this.url) {
-            throw new Error('You are trying to perform a API request without an `url` property defined on the store.');
+            throw new Error(
+                'You are trying to perform a API request without an `url` property defined on the store.'
+            );
         }
         return this.api;
     }
@@ -72,17 +83,19 @@ export default class Store {
     }
 
     @action fromBackend({ data, repos, relMapping }) {
-        this.models.replace(data.map((record) => {
-            // TODO: I'm not happy at all about how this looks.
-            // We'll need to finetune some things, but hey, for now it works.
-            const model = this._newModel();
-            model.fromBackend({
-                data: record,
-                repos,
-                relMapping,
-            });
-            return model;
-        }));
+        this.models.replace(
+            data.map(record => {
+                // TODO: I'm not happy at all about how this looks.
+                // We'll need to finetune some things, but hey, for now it works.
+                const model = this._newModel();
+                model.fromBackend({
+                    data: record,
+                    repos,
+                    relMapping,
+                });
+                return model;
+            })
+        );
     }
 
     _newModel(model = null) {
@@ -105,7 +118,8 @@ export default class Store {
 
         const modelInstances = models.map(this._newModel.bind(this));
 
-        modelInstances.forEach(modelInstance => this.models.push(modelInstance));
+        modelInstances.forEach(modelInstance =>
+            this.models.push(modelInstance));
 
         return singular ? modelInstances[0] : modelInstances;
     }
@@ -125,13 +139,18 @@ export default class Store {
 
     @action fetch(options = {}) {
         this.__pendingRequestCount += 1;
-        const data = Object.assign(this.__getApi().buildFetchStoreParams(this), this.params, options.data);
-        return this.__getApi().fetchStore({ url: this.url, data })
-        .then(action((res) => {
-            this.__pendingRequestCount -= 1;
-            this.__state.totalRecords = res.totalRecords;
-            this.fromBackend(res);
-        }));
+        const data = Object.assign(
+            this.__getApi().buildFetchStoreParams(this),
+            this.params,
+            options.data
+        );
+        return this.__getApi().fetchStore({ url: this.url, data }).then(
+            action(res => {
+                this.__pendingRequestCount -= 1;
+                this.__state.totalRecords = res.totalRecords;
+                this.fromBackend(res);
+            })
+        );
     }
 
     toJS() {
@@ -202,16 +221,20 @@ export default class Store {
 
     toBackendAll(newIds = []) {
         const modelData = this.models.map((model, i) => {
-            return model.toBackendAll(newIds && newIds[i] !== undefined ? newIds[i] : null);
+            return model.toBackendAll(
+                newIds && newIds[i] !== undefined ? newIds[i] : null
+            );
         });
 
         let data = [];
         const relations = {};
 
-        modelData.forEach((model) => {
+        modelData.forEach(model => {
             data = data.concat(model.data);
             forIn(model.relations, (relModel, key) => {
-                relations[key] = relations[key] ? relations[key].concat(relModel) : relModel;
+                relations[key] = relations[key]
+                    ? relations[key].concat(relModel)
+                    : relModel;
             });
         });
 

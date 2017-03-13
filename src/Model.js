@@ -1,5 +1,21 @@
-import { observable, isObservable, extendObservable, computed, action, toJS } from 'mobx';
-import { snakeCase, forIn, mapValues, find, get, isPlainObject, isArray, uniqueId } from 'lodash';
+import {
+    observable,
+    isObservable,
+    extendObservable,
+    computed,
+    action,
+    toJS,
+} from 'mobx';
+import {
+    snakeCase,
+    forIn,
+    mapValues,
+    find,
+    get,
+    isPlainObject,
+    isArray,
+    uniqueId,
+} from 'lodash';
 import snakeToCamel from './snakeToCamel';
 import Store from './Store';
 
@@ -61,7 +77,7 @@ export default class Model {
         // TODO: No idea why getting the relations only works when it's a Function.
         const relations = this.relations && this.relations();
         const relModels = {};
-        activeRelations.forEach((aRel) => {
+        activeRelations.forEach(aRel => {
             // Find the relation name before the first dot, and include all other relations after it
             // Example: input `animal.kind.breed` output -> `['animal', 'kind.breed']`
             const relNames = aRel.match(/([^.]+)\.(.+)/);
@@ -71,31 +87,38 @@ export default class Model {
             const otherRels = otherRelNames && [otherRelNames];
             // When two nested relations are defined next to each other (e.g. `['kind.breed', 'kind.location']`),
             // the relation `kind` only needs to be initialized once.
-            relModels[currentRel] = currentProp ? currentProp.concat(otherRels) : otherRels;
+            relModels[currentRel] = currentProp
+                ? currentProp.concat(otherRels)
+                : otherRels;
             if (!this.__activeCurrentRelations.includes(currentRel)) {
                 this.__activeCurrentRelations.push(currentRel);
             }
         });
-        extendObservable(this, mapValues(relModels, (otherRelNames, relName) => {
-            const RelModel = relations[relName];
-            if (!RelModel) {
-                throw new Error(`Specified relation "${relName}" does not exist on model.`);
-            }
-            return new RelModel(null, {
-                relations: otherRelNames,
-            });
-        }));
+        extendObservable(
+            this,
+            mapValues(relModels, (otherRelNames, relName) => {
+                const RelModel = relations[relName];
+                if (!RelModel) {
+                    throw new Error(
+                        `Specified relation "${relName}" does not exist on model.`
+                    );
+                }
+                return new RelModel(null, {
+                    relations: otherRelNames,
+                });
+            })
+        );
     }
 
     toBackend() {
         const output = {};
-        this.__attributes.forEach((attr) => {
+        this.__attributes.forEach(attr => {
             if (!attr.startsWith('_')) {
                 output[snakeCase(attr)] = toJS(this[attr]);
             }
         });
         // Add active relations as id.
-        this.__activeCurrentRelations.forEach((currentRel) => {
+        this.__activeCurrentRelations.forEach(currentRel => {
             const rel = this[currentRel];
             const relBackendName = snakeCase(currentRel);
             if (rel instanceof Model) {
@@ -119,7 +142,7 @@ export default class Model {
             data[this.primaryKey] = generateNegativeId();
         }
 
-        this.__activeCurrentRelations.forEach((currentRel) => {
+        this.__activeCurrentRelations.forEach(currentRel => {
             const rel = this[currentRel];
             let myNewId = null;
             const relBackendName = snakeCase(currentRel);
@@ -128,13 +151,17 @@ export default class Model {
                 data[relBackendName] = myNewId;
             }
             if (isArray(data[relBackendName])) {
-                myNewId = data[relBackendName].map(id => id === null ? generateNegativeId() : id);
+                myNewId = data[relBackendName].map(
+                    id => id === null ? generateNegativeId() : id
+                );
                 data[relBackendName] = myNewId;
             }
             const relBackendData = rel.toBackendAll(myNewId);
             relations[relBackendName] = relBackendData.data;
             forIn(relBackendData.relations, (relB, key) => {
-                relations[key] = relations[key] ? relations[key].concat(relB) : relB;
+                relations[key] = relations[key]
+                    ? relations[key].concat(relB)
+                    : relB;
             });
         });
 
@@ -143,11 +170,11 @@ export default class Model {
 
     toJS() {
         const output = {};
-        this.__attributes.forEach((attr) => {
+        this.__attributes.forEach(attr => {
             output[attr] = toJS(this[attr]);
         });
 
-        this.__activeCurrentRelations.forEach((currentRel) => {
+        this.__activeCurrentRelations.forEach(currentRel => {
             const model = this[currentRel];
             if (model) {
                 output[currentRel] = model.toJS();
@@ -178,10 +205,14 @@ export default class Model {
 
     __getApi() {
         if (!this.api) {
-            throw new Error('You are trying to perform a API request without an `api` property defined on the model.');
+            throw new Error(
+                'You are trying to perform a API request without an `api` property defined on the model.'
+            );
         }
         if (!this.urlRoot) {
-            throw new Error('You are trying to perform a API request without an `urlRoot` property defined on the model.');
+            throw new Error(
+                'You are trying to perform a API request without an `urlRoot` property defined on the model.'
+            );
         }
         return this.api;
     }
@@ -217,40 +248,50 @@ export default class Model {
         this.__backendValidationErrors = {};
         this.__pendingRequestCount += 1;
         // TODO: Allow data from an argument to be saved?
-        return this.__getApi().saveModel({
-            url: this.url,
-            data: this.toBackend(),
-            isNew: !!this[this.primaryKey],
-        })
-        .then(action((res) => {
-            this.__pendingRequestCount -= 1;
-            this.fromBackend(res);
-        }))
-        .catch(action((err) => {
-            this.__pendingRequestCount -= 1;
-            if (err.valErrors) {
-                this.__backendValidationErrors = err.valErrors;
-            }
-            throw err;
-        }));
+        return this.__getApi()
+            .saveModel({
+                url: this.url,
+                data: this.toBackend(),
+                isNew: !!this[this.primaryKey],
+            })
+            .then(
+                action(res => {
+                    this.__pendingRequestCount -= 1;
+                    this.fromBackend(res);
+                })
+            )
+            .catch(
+                action(err => {
+                    this.__pendingRequestCount -= 1;
+                    if (err.valErrors) {
+                        this.__backendValidationErrors = err.valErrors;
+                    }
+                    throw err;
+                })
+            );
     }
 
     @action saveAll() {
         this.__backendValidationErrors = {};
         this.__pendingRequestCount += 1;
-        return this.__getApi().saveAllModels({
-            url: this.urlRoot,
-            data: this.toBackendAll(),
-        })
-        .then(action((res) => {
-            this.__pendingRequestCount -= 1;
-            this.fromBackend(res);
-        }))
-        .catch(action((err) => {
-            this.__pendingRequestCount -= 1;
-            // TODO: saveAll does not support handling backend validation errors yet.
-            throw err;
-        }));
+        return this.__getApi()
+            .saveAllModels({
+                url: this.urlRoot,
+                data: this.toBackendAll(),
+            })
+            .then(
+                action(res => {
+                    this.__pendingRequestCount -= 1;
+                    this.fromBackend(res);
+                })
+            )
+            .catch(
+                action(err => {
+                    this.__pendingRequestCount -= 1;
+                    // TODO: saveAll does not support handling backend validation errors yet.
+                    throw err;
+                })
+            );
     }
 
     // TODO: This is a bit hacky...
@@ -266,10 +307,11 @@ export default class Model {
         }
         if (this[this.primaryKey]) {
             this.__pendingRequestCount += 1;
-            return this.__getApi().deleteModel({ url: this.url })
-            .then(action(() => {
-                this.__pendingRequestCount -= 1;
-            }));
+            return this.__getApi().deleteModel({ url: this.url }).then(
+                action(() => {
+                    this.__pendingRequestCount -= 1;
+                })
+            );
         }
         return Promise.resolve();
     }
@@ -279,12 +321,16 @@ export default class Model {
             throw new Error('Trying to fetch model without id!');
         }
         this.__pendingRequestCount += 1;
-        const data = Object.assign(this.__getApi().buildFetchModelParams(this), options.data);
-        return this.__getApi().fetchModel({ url: this.url, data })
-        .then(action((res) => {
-            this.fromBackend(res);
-            this.__pendingRequestCount -= 1;
-        }));
+        const data = Object.assign(
+            this.__getApi().buildFetchModelParams(this),
+            options.data
+        );
+        return this.__getApi().fetchModel({ url: this.url, data }).then(
+            action(res => {
+                this.fromBackend(res);
+                this.__pendingRequestCount -= 1;
+            })
+        );
     }
 
     @action clear() {
@@ -292,7 +338,7 @@ export default class Model {
             this[key] = value;
         });
 
-        this.__activeCurrentRelations.forEach((currentRel) => {
+        this.__activeCurrentRelations.forEach(currentRel => {
             this[currentRel].clear();
         });
     }

@@ -6,14 +6,15 @@ import snakeToCamel from './snakeToCamel';
 // See: https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
 function csrfSafeMethod(method) {
     // These HTTP methods do not require CSRF protection.
-    return (/^(GET|HEAD|OPTIONS|TRACE)$/i.test(method));
+    return /^(GET|HEAD|OPTIONS|TRACE)$/i.test(method);
 }
 
 function parseBackendValidationErrors(response) {
     const valErrors = get(response, 'data.error.validation_errors');
     if (response.status === 400 && valErrors) {
-        const camelCasedErrors = mapKeys(valErrors, (value, key) => snakeToCamel(key));
-        return mapValues(camelCasedErrors, (valError) => {
+        const camelCasedErrors = mapKeys(valErrors, (value, key) =>
+            snakeToCamel(key));
+        return mapValues(camelCasedErrors, valError => {
             return valError.map(obj => obj.code);
         });
     }
@@ -27,7 +28,9 @@ export default class BinderApi {
 
     __request(method, url, data, options) {
         options || (options = {});
-        const useCsrfToken = csrfSafeMethod(method) ? undefined : this.csrfToken;
+        const useCsrfToken = csrfSafeMethod(method)
+            ? undefined
+            : this.csrfToken;
         this.__testUrl(url);
 
         const axiosOptions = {
@@ -36,16 +39,18 @@ export default class BinderApi {
             url,
             data: method !== 'get' && data ? data : undefined,
             params: method === 'get' && data ? data : undefined,
-            headers: Object.assign({
-                'Content-Type': 'application/json',
-                'X-Csrftoken': useCsrfToken,
-            }, this.defaultHeaders),
+            headers: Object.assign(
+                {
+                    'Content-Type': 'application/json',
+                    'X-Csrftoken': useCsrfToken,
+                },
+                this.defaultHeaders
+            ),
         };
 
         Object.assign(axiosOptions, options);
 
-        return axios(axiosOptions)
-        .then(this.__responseFormatter);
+        return axios(axiosOptions).then(this.__responseFormatter);
     }
 
     __responseFormatter(res) {
@@ -54,7 +59,9 @@ export default class BinderApi {
 
     __testUrl(url) {
         if (!url.endsWith('/')) {
-            throw new Error(`Binder does not accept urls that do not have a trailing slash: ${url}`);
+            throw new Error(
+                `Binder does not accept urls that do not have a trailing slash: ${url}`
+            );
         }
     }
 
@@ -85,8 +92,7 @@ export default class BinderApi {
     }
 
     fetchModel({ url, data }) {
-        return this.get(url, data)
-        .then((res) => {
+        return this.get(url, data).then(res => {
             return {
                 data: res.data,
                 repos: res.with,
@@ -98,20 +104,22 @@ export default class BinderApi {
     saveModel({ url, data, isNew }) {
         const method = isNew ? 'patch' : 'post';
         return this[method](url, data)
-        .then((newData) => {
-            return { data: newData };
-        })
-        .catch((err) => {
-            if (err.response) {
-                err.valErrors = parseBackendValidationErrors(err.response);
-            }
-            throw err;
-        });
+            .then(newData => {
+                return { data: newData };
+            })
+            .catch(err => {
+                if (err.response) {
+                    err.valErrors = parseBackendValidationErrors(err.response);
+                }
+                throw err;
+            });
     }
 
     saveAllModels({ url, data }) {
-        return this.put(url, { data: data.data, with: data.relations })
-        .then((res) => {
+        return this.put(url, {
+            data: data.data,
+            with: data.relations,
+        }).then(res => {
             return {
                 data: res.data[0],
                 repos: res.with,
@@ -136,8 +144,7 @@ export default class BinderApi {
     }
 
     fetchStore({ url, data }) {
-        return this.get(url, data)
-        .then((res) => {
+        return this.get(url, data).then(res => {
             return {
                 data: res.data,
                 repos: res.with,
