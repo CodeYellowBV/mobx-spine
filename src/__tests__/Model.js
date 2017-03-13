@@ -8,6 +8,7 @@ import {
     AnimalWithFrontendProp,
     AnimalWithoutApi,
     AnimalWithoutUrl,
+    AnimalCircular,
     Kind,
     Breed,
     Person,
@@ -115,6 +116,20 @@ test('Initialize multiple relations', () => {
 
     expect(animal.kind).toBeInstanceOf(Kind);
     expect(animal.owner).toBeInstanceOf(Person);
+});
+
+test('Initialize circular model', () => {
+    const animal = new AnimalCircular({
+        id: 2,
+        circular: {
+            id: 3,
+        },
+    }, { relations: ['circular'] });
+
+    expect(animal.id).toBe(2);
+    expect(animal.circular).toBeInstanceOf(AnimalCircular);
+    expect(animal.circular.circular).toBeUndefined();
+    expect(animal.circular.id).toBe(3);
 });
 
 test('Initialize multiple nested relations', () => {

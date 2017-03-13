@@ -92,3 +92,13 @@ export class AnimalStoreWithoutUrl extends Store {
     api = new BinderApi();
     Model = Animal;
 }
+
+export class AnimalCircular extends Model {
+    @observable id = null;
+
+    relations() {
+        return {
+            circular: AnimalCircular,
+        };
+    }
+}
