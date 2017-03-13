@@ -275,7 +275,6 @@ export default class Model {
     }
 
     @action fetch(options = {}) {
-        // TODO: I feel like we should give a clear error message when `urlRoot` is not defined.
         if (!this[this.primaryKey]) {
             throw new Error('Trying to fetch model without id!');
         }
