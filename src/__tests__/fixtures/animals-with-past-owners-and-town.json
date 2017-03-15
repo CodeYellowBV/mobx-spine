@@ -1,0 +1,44 @@
+{
+  "data": {
+    "color": "Brown",
+    "past_owners": [
+      55,
+      66
+    ],
+    "name": "Cat",
+    "kind": 2,
+    "id": 2,
+    "deleted": false
+  },
+  "with": {
+    "animal_owner": [
+      {
+        "name": "Bobbie",
+        "id": 55,
+        "town": 10
+      },
+      {
+        "name": "Oessein",
+        "id": 66,
+        "town": 11
+      }
+    ],
+    "animal_owner_town": [
+      {
+        "id": 10,
+        "name": "Eindhoven"
+      },
+      {
+        "id": 11,
+        "name": "Breda"
+      }
+    ]
+  },
+  "meta": {
+
+  },
+  "with_mapping": {
+    "past_owners.town": "animal_owner_town",
+    "past_owners": "animal_owner"
+  }
+}

@@ -13,9 +13,12 @@ import {
     Kind,
     Breed,
     Person,
+    PersonStore,
     Location,
 } from './fixtures/Animal';
 import animalKindBreedData from './fixtures/animal-with-kind-breed.json';
+import animalsWithPastOwnersAndTownData
+    from './fixtures/animals-with-past-owners-and-town.json';
 import animalKindBreedDataNested
     from './fixtures/animal-with-kind-breed-nested.json';
 import animalMultiPutResponse from './fixtures/animals-multi-put-response.json';
@@ -52,6 +55,15 @@ test('Initialize model without data', () => {
     const animal = new Animal(null);
 
     expect(animal.id).toBeNull();
+    expect(animal.name).toBe('');
+});
+
+test('Chaining parse', () => {
+    const animal = new Animal().parse({
+        id: 2,
+    });
+
+    expect(animal.id).toBe(2);
 });
 
 test('primaryKey defined as not static should throw error', () => {
@@ -254,6 +266,26 @@ test('Parsing two times with store relation', () => {
     });
 
     expect(animal.pastOwners.map('id')).toEqual([3]);
+});
+
+xtest('Parsing store relation with model relation in it', () => {
+    const animal = new Animal(null, {
+        relations: ['pastOwners.town'],
+    });
+
+    expect(animal.pastOwners).not.toBeUndefined();
+    expect(animal.pastOwners).toBeInstanceOf(PersonStore);
+
+    animal.fromBackend({
+        data: animalsWithPastOwnersAndTownData.data,
+        repos: animalsWithPastOwnersAndTownData.with,
+        relMapping: animalsWithPastOwnersAndTownData.with_mapping,
+    });
+
+    expect(animal.pastOwners.map('id')).toBe([55, 66]);
+    expect(animal.pastOwners.get(55).town).toBeInstanceOf(Location);
+    expect(animal.pastOwners.get(55).town.id).toBe(11);
+    expect(animal.pastOwners.get(66).town.id).toBe(11);
 });
 
 test('toBackend with basic properties', () => {

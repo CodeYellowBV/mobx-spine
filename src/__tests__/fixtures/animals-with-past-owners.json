@@ -34,18 +34,15 @@
     "animal_owner": [
       {
         "name": "Hassad",
-        "id": 1,
-        "kind": null
+        "id": 1
       },
       {
         "name": "Bobbie",
-        "id": 2,
-        "kind": 2
+        "id": 2
       },
       {
         "name": "Oessein",
-        "id": 3,
-        "kind": 1
+        "id": 3
       }
     ]
   },
