@@ -108,9 +108,13 @@ export default class Model {
                         `Specified relation "${relName}" does not exist on model.`
                     );
                 }
-                return new RelModel(null, {
-                    relations: otherRelNames,
-                });
+                // TODO: Find a way to differentiate between a store and model. {diff-issue-1}
+                return new RelModel(
+                    {},
+                    {
+                        relations: otherRelNames,
+                    }
+                );
             })
         );
     }

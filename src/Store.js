@@ -1,5 +1,16 @@
 import { observable, computed, action } from 'mobx';
-import { isArray, map, filter, find, keyBy, forIn, at } from 'lodash';
+import {
+    isArray,
+    map,
+    filter,
+    find,
+    keyBy,
+    forIn,
+    at,
+    isPlainObject,
+} from 'lodash';
+
+const AVAILABLE_CONST_OPTIONS = ['relations', 'limit'];
 
 export default class Store {
     // Holds all models
@@ -25,15 +36,23 @@ export default class Store {
         return this.models.length;
     }
 
-    constructor(data, options = {}) {
+    constructor(options = {}, legacyOptions) {
+        if (!isPlainObject(options)) {
+            throw Error(
+                'Store only accepts an object with options. Chain `.parse(data)` to add models.'
+            );
+        }
+        // TODO: Remove this when we can differentiate between store and model {diff-issue-1}
+        if (legacyOptions) {
+            options = legacyOptions;
+        }
+        forIn(options, (value, option) => {
+            if (!AVAILABLE_CONST_OPTIONS.includes(option)) {
+                throw Error(`Unknown option passed to store: ${option}`);
+            }
+        });
         if (options.relations) {
             this.__parseRelations(options.relations);
-        }
-        // TODO: throw an error if it's not an array?
-        if (data) {
-            throw new Error(
-                'Initializing a store directly with data is not possible for now. Use `store.parse(data)`'
-            );
         }
         if (options.limit !== undefined) {
             this.setLimit(options.limit);

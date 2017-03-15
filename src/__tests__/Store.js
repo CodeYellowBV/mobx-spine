@@ -46,13 +46,18 @@ test('Chaining parse', () => {
     expect(animalStore).toBeInstanceOf(AnimalStore);
 });
 
-// This is temporary...
 test('Initialize store in constructor should throw error', () => {
     expect(() => {
         return new AnimalStore([]);
     }).toThrow(
-        'Initializing a store directly with data is not possible for now. Use `store.parse(data)`'
+        'Store only accepts an object with options. Chain `.parse(data)` to add models.'
     );
+});
+
+test('Initialize store with invalid option', () => {
+    expect(() => {
+        return new AnimalStore({ foo: 'bar' });
+    }).toThrow('Unknown option passed to store: foo');
 });
 
 // TODO; see https://github.com/CodeYellowBV/mobx-spine/issues/6
@@ -78,7 +83,7 @@ test('at model (negative)', () => {
 });
 
 test('Two level relation', () => {
-    const animalStore = new AnimalStore(null, {
+    const animalStore = new AnimalStore({
         relations: ['kind.breed'],
     });
     animalStore.parse(simpleData);
@@ -203,7 +208,7 @@ test('clear models', () => {
 });
 
 test('One-level store relation', () => {
-    const animalStore = new AnimalStore(null, {
+    const animalStore = new AnimalStore({
         relations: ['pastOwners'],
     });
 
@@ -277,7 +282,7 @@ describe('requests', () => {
     });
 
     test('fetch with relations', () => {
-        const animalStore = new AnimalStore(null, {
+        const animalStore = new AnimalStore({
             relations: ['kind.breed'],
         });
         mock.onAny().replyOnce(config => {
@@ -323,7 +328,7 @@ describe('Pagination', () => {
     });
 
     test('without limit', () => {
-        const animalStore = new AnimalStore(null, {
+        const animalStore = new AnimalStore({
             limit: null,
         });
 
@@ -350,7 +355,7 @@ describe('Pagination', () => {
             return [200, pagination1Data];
         });
 
-        const animalStore = new AnimalStore(null, {
+        const animalStore = new AnimalStore({
             limit: 3,
         });
 
@@ -372,7 +377,7 @@ describe('Pagination', () => {
             return [200, pagination1Data];
         });
 
-        const animalStore = new AnimalStore(null, {
+        const animalStore = new AnimalStore({
             limit: 3,
         });
 
@@ -403,7 +408,7 @@ describe('Pagination', () => {
             return [200, pagination1Data];
         });
 
-        const animalStore = new AnimalStore(null, {
+        const animalStore = new AnimalStore({
             limit: 3,
         });
 
@@ -442,7 +447,7 @@ describe('Pagination', () => {
             return [200, pagination1Data];
         });
 
-        const animalStore = new AnimalStore(null, {
+        const animalStore = new AnimalStore({
             limit: 3,
         });
 
@@ -490,7 +495,7 @@ describe('Pagination', () => {
             return [200, pagination1Data];
         });
 
-        const animalStore = new AnimalStore(null, {
+        const animalStore = new AnimalStore({
             limit: 3,
         });
 
@@ -524,7 +529,7 @@ describe('Pagination', () => {
             return [200, pagination1Data];
         });
 
-        const animalStore = new AnimalStore(null, {
+        const animalStore = new AnimalStore({
             limit: 3,
         });
 
@@ -540,7 +545,7 @@ describe('Pagination', () => {
             return [200, pagination1Data];
         });
 
-        const animalStore = new AnimalStore(null, {
+        const animalStore = new AnimalStore({
             limit: 3,
         });
 
