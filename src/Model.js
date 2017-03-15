@@ -247,6 +247,8 @@ export default class Model {
                 }
             }
         });
+
+        return this;
     }
 
     @action save() {

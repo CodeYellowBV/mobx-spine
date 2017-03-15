@@ -59,11 +59,9 @@ test('Initialize model without data', () => {
 });
 
 test('Chaining parse', () => {
-    const animal = new Animal().parse({
-        id: 2,
-    });
+    const animal = new Animal().parse({});
 
-    expect(animal.id).toBe(2);
+    expect(animal).toBeInstanceOf(Animal);
 });
 
 test('primaryKey defined as not static should throw error', () => {

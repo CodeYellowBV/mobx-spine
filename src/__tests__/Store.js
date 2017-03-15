@@ -40,6 +40,12 @@ test('Initialize store with valid data', () => {
     expect(animalStore.models[0].id).toBe(2);
 });
 
+test('Chaining parse', () => {
+    const animalStore = new AnimalStore().parse([]);
+
+    expect(animalStore).toBeInstanceOf(AnimalStore);
+});
+
 // This is temporary...
 test('Initialize store in constructor should throw error', () => {
     expect(() => {
