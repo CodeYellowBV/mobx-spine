@@ -2,6 +2,7 @@ import axios from 'axios';
 import { toJS } from 'mobx';
 import MockAdapter from 'axios-mock-adapter';
 import _ from 'lodash';
+import { Model } from '../';
 import {
     Animal,
     AnimalWithArray,
@@ -51,6 +52,16 @@ test('Initialize model without data', () => {
     const animal = new Animal(null);
 
     expect(animal.id).toBeNull();
+});
+
+test('primaryKey defined as not static should throw error', () => {
+    class Zebra extends Model {
+        primaryKey = 'blaat';
+    }
+
+    expect(() => {
+        return new Zebra();
+    }).toThrow('`primaryKey` should be a static property on the model.');
 });
 
 test('URL should be correct without primary key', () => {

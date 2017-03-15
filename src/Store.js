@@ -48,7 +48,7 @@ export default class Store {
         ids = isArray(ids) ? ids : [ids];
 
         const records = at(
-            keyBy(this.__repository, this.__getModelPrimaryKey()),
+            keyBy(this.__repository, this.Model.primaryKey),
             ids
         );
         this.models.replace(
@@ -75,11 +75,6 @@ export default class Store {
             );
         }
         return this.api;
-    }
-
-    __getModelPrimaryKey() {
-        const tempModel = new this.Model();
-        return tempModel.primaryKey;
     }
 
     @action fromBackend({ data, repos, relMapping }) {
@@ -245,7 +240,9 @@ export default class Store {
 
     get(id) {
         // The id can be defined as a string or int, but we want it to work in both cases.
-        return this.models.find(model => model[model.primaryKey] == id); // eslint-disable-line eqeqeq
+        return this.models.find(
+            model => model[model.constructor.primaryKey] == id
+        ); // eslint-disable-line eqeqeq
     }
 
     map(predicate) {
@@ -253,7 +250,7 @@ export default class Store {
     }
 
     mapByPrimaryKey() {
-        return this.map(this.__getModelPrimaryKey());
+        return this.map(this.Model.primaryKey);
     }
 
     filter(predicate) {

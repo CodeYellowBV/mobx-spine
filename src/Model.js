@@ -24,8 +24,7 @@ function generateNegativeId() {
 }
 
 export default class Model {
-    // TODO: Find out why `static primaryKey` doesn't work. I WANT IT STATIC GODDAMMIT.
-    primaryKey = 'id';
+    static primaryKey = 'id';
     urlRoot;
 
     __attributes = [];
@@ -42,16 +41,22 @@ export default class Model {
     @observable __pendingRequestCount = 0;
 
     @computed get url() {
-        const id = this[this.primaryKey];
+        const id = this[this.constructor.primaryKey];
         return `${this.urlRoot}${id ? `${id}/` : ''}`;
     }
 
     @computed get isNew() {
-        return !this[this.primaryKey];
+        return !this[this.constructor.primaryKey];
     }
 
     @computed get isLoading() {
         return this.__pendingRequestCount > 0;
+    }
+
+    set primaryKey(v) {
+        throw new Error(
+            '`primaryKey` should be a static property on the model.'
+        );
     }
 
     constructor(data, options = {}) {
@@ -122,7 +127,7 @@ export default class Model {
             const rel = this[currentRel];
             const relBackendName = snakeCase(currentRel);
             if (rel instanceof Model) {
-                output[relBackendName] = rel[rel.primaryKey];
+                output[relBackendName] = rel[rel.constructor.primaryKey];
             }
             if (rel instanceof Store) {
                 output[relBackendName] = rel.mapByPrimaryKey();
@@ -137,9 +142,9 @@ export default class Model {
         const relations = {};
 
         if (newId) {
-            data[this.primaryKey] = newId;
-        } else if (data[this.primaryKey] === null) {
-            data[this.primaryKey] = generateNegativeId();
+            data[this.constructor.primaryKey] = newId;
+        } else if (data[this.constructor.primaryKey] === null) {
+            data[this.constructor.primaryKey] = generateNegativeId();
         }
 
         this.__activeCurrentRelations.forEach(currentRel => {
@@ -252,7 +257,7 @@ export default class Model {
             .saveModel({
                 url: this.url,
                 data: this.toBackend(),
-                isNew: !!this[this.primaryKey],
+                isNew: !!this[this.constructor.primaryKey],
             })
             .then(
                 action(res => {
@@ -305,7 +310,7 @@ export default class Model {
         if (this.__store) {
             this.__store.remove(this);
         }
-        if (this[this.primaryKey]) {
+        if (this[this.constructor.primaryKey]) {
             this.__pendingRequestCount += 1;
             return this.__getApi().deleteModel({ url: this.url }).then(
                 action(() => {
@@ -317,7 +322,7 @@ export default class Model {
     }
 
     @action fetch(options = {}) {
-        if (!this[this.primaryKey]) {
+        if (!this[this.constructor.primaryKey]) {
             throw new Error('Trying to fetch model without id!');
         }
         this.__pendingRequestCount += 1;
