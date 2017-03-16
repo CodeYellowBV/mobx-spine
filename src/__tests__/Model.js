@@ -5,6 +5,7 @@ import _ from 'lodash';
 import { Model } from '../';
 import {
     Animal,
+    AnimalStore,
     AnimalWithArray,
     AnimalWithFrontendProp,
     AnimalWithoutApi,
@@ -829,6 +830,37 @@ describe('requests', () => {
         });
 
         return animal.delete();
+    });
+
+    test('delete existing with basic properties and remove from store', () => {
+        const animalStore = new AnimalStore().parse([
+            { id: 12, name: 'Burhan' },
+        ]);
+        const animal = animalStore.at(0);
+        mock.onAny().replyOnce(config => {
+            return [204, null];
+        });
+
+        const promise = animal.delete();
+        expect(animalStore.at(0)).toBeInstanceOf(Animal);
+        return promise.then(() => {
+            expect(animalStore.at(0)).toBeUndefined();
+        });
+    });
+
+    test('delete existing with basic properties and remove from store without immediate', () => {
+        const animalStore = new AnimalStore().parse([
+            { id: 12, name: 'Burhan' },
+        ]);
+        const animal = animalStore.at(0);
+        mock.onAny().replyOnce(config => {
+            return [204, null];
+        });
+
+        expect(animalStore.at(0)).toBeInstanceOf(Animal);
+        const promise = animal.delete({ immediate: true });
+        expect(animalStore.at(0)).toBeUndefined();
+        return promise;
     });
 
     test('isLoading', () => {

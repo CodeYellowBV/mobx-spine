@@ -308,21 +308,26 @@ export default class Model {
         return this.__backendValidationErrors;
     }
 
-    @action delete() {
-        // TODO: currently this always does a optimistic delete (meaning it doesn't wait on the request)
-        // Do we want a non-optimistic delete?
-        if (this.__store) {
-            this.__store.remove(this);
+    @action delete(options = {}) {
+        const removeFromStore = () =>
+            this.__store ? this.__store.remove(this) : null;
+        const hasPrimary = !!this[this.constructor.primaryKey];
+        if (options.immediate || !hasPrimary) {
+            removeFromStore();
         }
-        if (this[this.constructor.primaryKey]) {
-            this.__pendingRequestCount += 1;
-            return this.__getApi().deleteModel({ url: this.url }).then(
-                action(() => {
-                    this.__pendingRequestCount -= 1;
-                })
-            );
+        if (!hasPrimary) {
+            return Promise.resolve();
         }
-        return Promise.resolve();
+
+        this.__pendingRequestCount += 1;
+        return this.__getApi().deleteModel({ url: this.url }).then(
+            action(() => {
+                this.__pendingRequestCount -= 1;
+                if (!options.immediate) {
+                    removeFromStore();
+                }
+            })
+        );
     }
 
     @action fetch(options = {}) {
