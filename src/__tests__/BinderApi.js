@@ -116,3 +116,41 @@ test('DELETE request', () => {
 
     return new BinderApi().delete('/api/asdf/');
 });
+
+test('Failing request without onRequestError', () => {
+    const successHandle = jest.fn();
+    const errorHandle = jest.fn();
+
+    mock.onAny().replyOnce(() => {
+        return [500, {}];
+    });
+
+    return new BinderApi()
+        .delete('/api/asdf/')
+        .then(() => successHandle(), () => errorHandle())
+        .then(() => {
+            expect(successHandle).not.toHaveBeenCalled();
+            expect(errorHandle).toHaveBeenCalled();
+        });
+});
+
+test('Failing request with onRequestError', () => {
+    const successHandle = jest.fn();
+    const errorHandle = jest.fn();
+
+    mock.onAny().replyOnce(() => {
+        return [500, {}];
+    });
+
+    const api = new BinderApi();
+    api.onRequestError = jest.fn();
+
+    return new BinderApi()
+        .delete('/api/asdf/')
+        .then(() => successHandle(), () => errorHandle())
+        .then(() => {
+            expect(api.onRequestError).toHaveBeenCalled();
+            expect(successHandle).not.toHaveBeenCalled();
+            expect(errorHandle).toHaveBeenCalled();
+        });
+});
