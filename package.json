@@ -15,7 +15,8 @@
     "test-dev": "jest --watch",
     "test-coverage": "jest --coverage",
     "lint": "eslint src",
-    "preversion": "npm run -s lint",
+    "preversion": "npm run -s lint && npm test && npm run -s build",
+    "version": "git add -A dist",
     "build": "rm -f dist/** && node build.js",
     "precommit": "lint-staged",
     "ci": "npm run -s lint && npm run -s test-coverage && codecov"
