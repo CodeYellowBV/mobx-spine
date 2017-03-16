@@ -1,5 +1,26 @@
-import { action, computed, extendObservable, isObservable, observable, toJS } from 'mobx';
-import { at, filter, find, forIn, get, isArray, isPlainObject, keyBy, map, mapKeys, mapValues, snakeCase } from 'lodash';
+import {
+    action,
+    computed,
+    extendObservable,
+    isObservable,
+    observable,
+    toJS,
+} from 'mobx';
+import {
+    at,
+    filter,
+    find,
+    forIn,
+    get,
+    isArray,
+    isPlainObject,
+    keyBy,
+    map,
+    mapKeys,
+    mapValues,
+    snakeCase,
+    uniqueId,
+} from 'lodash';
 import axios from 'axios';
 
 // lodash's `camelCase` method removes dots from the string; this breaks mobx-spine
@@ -22,13 +43,21 @@ function _initDefineProp$1(target, property, descriptor, context) {
         enumerable: descriptor.enumerable,
         configurable: descriptor.configurable,
         writable: descriptor.writable,
-        value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
+        value: descriptor.initializer
+            ? descriptor.initializer.call(context)
+            : void 0,
     });
 }
 
-function _applyDecoratedDescriptor$1(target, property, decorators, descriptor, context) {
+function _applyDecoratedDescriptor$1(
+    target,
+    property,
+    decorators,
+    descriptor,
+    context
+) {
     var desc = {};
-    Object['ke' + 'ys'](descriptor).forEach(function (key) {
+    Object['ke' + 'ys'](descriptor).forEach(function(key) {
         desc[key] = descriptor[key];
     });
     desc.enumerable = !!desc.enumerable;
@@ -38,9 +67,12 @@ function _applyDecoratedDescriptor$1(target, property, decorators, descriptor, c
         desc.writable = true;
     }
 
-    desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-        return decorator(target, property, desc) || desc;
-    }, desc);
+    desc = decorators.slice().reverse().reduce(
+        function(desc, decorator) {
+            return decorator(target, property, desc) || desc;
+        },
+        desc
+    );
 
     if (context && desc.initializer !== void 0) {
         desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
@@ -55,7 +87,9 @@ function _applyDecoratedDescriptor$1(target, property, decorators, descriptor, c
     return desc;
 }
 
-let Store = (_class$1 = class Store {
+const AVAILABLE_CONST_OPTIONS = ['relations', 'limit'];
+
+let Store = ((_class$1 = class Store {
     get isLoading() {
         return this.__pendingRequestCount > 0;
     }
@@ -64,7 +98,7 @@ let Store = (_class$1 = class Store {
         return this.models.length;
     }
 
-    constructor(data, options = {}) {
+    constructor(options = {}) {
         _initDefineProp$1(this, 'models', _descriptor$1, this);
 
         _initDefineProp$1(this, 'params', _descriptor2$1, this);
@@ -77,15 +111,18 @@ let Store = (_class$1 = class Store {
         this.Model = null;
         this.api = null;
 
+        if (!isPlainObject(options)) {
+            throw Error(
+                'Store only accepts an object with options. Chain `.parse(data)` to add models.'
+            );
+        }
+        forIn(options, (value, option) => {
+            if (!AVAILABLE_CONST_OPTIONS.includes(option)) {
+                throw Error(`Unknown option passed to store: ${option}`);
+            }
+        });
         if (options.relations) {
             this.__parseRelations(options.relations);
-        }
-        // TODO: throw an error if it's not an array?
-        if (data) {
-            this.parse(data);
-        }
-        if (options.currentPage !== undefined) {
-            this.setPage(options.currentPage, { fetch: false });
         }
         if (options.limit !== undefined) {
             this.setLimit(options.limit);
@@ -99,44 +136,63 @@ let Store = (_class$1 = class Store {
     __addFromRepository(ids = []) {
         ids = isArray(ids) ? ids : [ids];
 
-        const records = at(keyBy(this.__repository, 'id'), ids);
-        this.models.replace(records.map(record => {
-            return new this.Model(record, {
-                store: this
-            });
-        }));
+        const records = at(
+            keyBy(this.__repository, this.Model.primaryKey),
+            ids
+        );
+        this.models.replace(
+            records.map(record => {
+                return new this.Model(record, {
+                    store: this,
+                });
+            })
+        );
     }
 
     __getApi() {
         if (!this.api) {
-            throw new Error('You are trying to perform a API request without an `api` property defined on the store.');
+            throw new Error(
+                'You are trying to perform a API request without an `api` property defined on the store.'
+            );
+        }
+        if (!this.url) {
+            throw new Error(
+                'You are trying to perform a API request without an `url` property defined on the store.'
+            );
         }
         return this.api;
     }
 
     fromBackend({ data, repos, relMapping }) {
-        this.models.replace(data.map(record => {
-            // TODO: I'm not happy at all about how this looks.
-            // We'll need to finetune some things, but hey, for now it works.
-            const model = this._newModel();
-            model.fromBackend({
-                data: record,
-                repos,
-                relMapping
-            });
-            return model;
-        }));
+        this.models.replace(
+            data.map(record => {
+                // TODO: I'm not happy at all about how this looks.
+                // We'll need to finetune some things, but hey, for now it works.
+                const model = this._newModel();
+                model.fromBackend({
+                    data: record,
+                    repos,
+                    relMapping,
+                });
+                return model;
+            })
+        );
     }
 
     _newModel(model = null) {
         return new this.Model(model, {
             store: this,
-            relations: this.__activeRelations
+            relations: this.__activeRelations,
         });
     }
 
     parse(models) {
+        if (!isArray(models)) {
+            throw new Error('Parameter supplied to parse() is not an array.');
+        }
         this.models.replace(models.map(this._newModel.bind(this)));
+
+        return this;
     }
 
     add(models) {
@@ -145,7 +201,8 @@ let Store = (_class$1 = class Store {
 
         const modelInstances = models.map(this._newModel.bind(this));
 
-        modelInstances.forEach(modelInstance => this.models.push(modelInstance));
+        modelInstances.forEach(modelInstance =>
+            this.models.push(modelInstance));
 
         return singular ? modelInstances[0] : modelInstances;
     }
@@ -165,12 +222,18 @@ let Store = (_class$1 = class Store {
 
     fetch(options = {}) {
         this.__pendingRequestCount += 1;
-        const data = Object.assign(this.__getApi().buildFetchStoreParams(this), this.params, options.data);
-        return this.__getApi().fetchStore({ url: this.url, data }).then(action(res => {
-            this.__pendingRequestCount -= 1;
-            this.__state.totalRecords = res.totalRecords;
-            this.fromBackend(res);
-        }));
+        const data = Object.assign(
+            this.__getApi().buildFetchStoreParams(this),
+            this.params,
+            options.data
+        );
+        return this.__getApi().fetchStore({ url: this.url, data }).then(
+            action(res => {
+                this.__pendingRequestCount -= 1;
+                this.__state.totalRecords = res.totalRecords;
+                this.fromBackend(res);
+            })
+        );
     }
 
     toJS() {
@@ -239,15 +302,43 @@ let Store = (_class$1 = class Store {
         return Promise.resolve();
     }
 
+    toBackendAll(newIds = []) {
+        const modelData = this.models.map((model, i) => {
+            return model.toBackendAll(
+                newIds && newIds[i] !== undefined ? newIds[i] : null
+            );
+        });
+
+        let data = [];
+        const relations = {};
+
+        modelData.forEach(model => {
+            data = data.concat(model.data);
+            forIn(model.relations, (relModel, key) => {
+                relations[key] = relations[key]
+                    ? relations[key].concat(relModel)
+                    : relModel;
+            });
+        });
+
+        return { data, relations };
+    }
+
     // Helper methods to read models.
 
     get(id) {
         // The id can be defined as a string or int, but we want it to work in both cases.
-        return this.models.find(model => model[model.primaryKey] == id); // eslint-disable-line eqeqeq
+        return this.models.find(
+            model => model[model.constructor.primaryKey] == id
+        ); // eslint-disable-line eqeqeq
     }
 
     map(predicate) {
         return map(this.models, predicate);
+    }
+
+    mapByPrimaryKey() {
+        return this.map(this.Model.primaryKey);
     }
 
     filter(predicate) {
@@ -268,35 +359,153 @@ let Store = (_class$1 = class Store {
         }
         return this.models[index];
     }
-}, (_descriptor$1 = _applyDecoratedDescriptor$1(_class$1.prototype, 'models', [observable], {
-    enumerable: true,
-    initializer: function () {
-        return [];
+}), ((_descriptor$1 = _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'models',
+    [observable],
+    {
+        enumerable: true,
+        initializer: function() {
+            return [];
+        },
     }
-}), _descriptor2$1 = _applyDecoratedDescriptor$1(_class$1.prototype, 'params', [observable], {
-    enumerable: true,
-    initializer: function () {
-        return {};
+)), (_descriptor2$1 = _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'params',
+    [observable],
+    {
+        enumerable: true,
+        initializer: function() {
+            return {};
+        },
     }
-}), _descriptor3 = _applyDecoratedDescriptor$1(_class$1.prototype, '__pendingRequestCount', [observable], {
-    enumerable: true,
-    initializer: function () {
-        return 0;
+)), (_descriptor3 = _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    '__pendingRequestCount',
+    [observable],
+    {
+        enumerable: true,
+        initializer: function() {
+            return 0;
+        },
     }
-}), _descriptor4 = _applyDecoratedDescriptor$1(_class$1.prototype, '__state', [observable], {
-    enumerable: true,
-    initializer: function () {
-        return {
-            currentPage: 1,
-            limit: 25,
-            totalRecords: 0
-        };
+)), (_descriptor4 = _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    '__state',
+    [observable],
+    {
+        enumerable: true,
+        initializer: function() {
+            return {
+                currentPage: 1,
+                limit: 25,
+                totalRecords: 0,
+            };
+        },
     }
-}), _applyDecoratedDescriptor$1(_class$1.prototype, 'isLoading', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'length', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'length'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fromBackend', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parse', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'add', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'add'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'remove', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'remove'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clear', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fetch', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'setLimit', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'setLimit'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'totalPages', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'totalPages'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'currentPage', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'currentPage'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'hasNextPage', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasNextPage'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'hasPreviousPage', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasPreviousPage'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'getNextPage', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'getNextPage'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'getPreviousPage', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'getPreviousPage'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'setPage', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'setPage'), _class$1.prototype)), _class$1);
+)), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'isLoading',
+    [computed],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'length',
+    [computed],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'length'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'fromBackend',
+    [action],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'parse',
+    [action],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'add',
+    [action],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'add'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'remove',
+    [action],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'remove'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'clear',
+    [action],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'fetch',
+    [action],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'setLimit',
+    [action],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'setLimit'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'totalPages',
+    [computed],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'totalPages'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'currentPage',
+    [computed],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'currentPage'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'hasNextPage',
+    [computed],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasNextPage'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'hasPreviousPage',
+    [computed],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasPreviousPage'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'getNextPage',
+    [action],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'getNextPage'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'getPreviousPage',
+    [action],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'getPreviousPage'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'setPage',
+    [action],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'setPage'),
+    _class$1.prototype
+)), _class$1);
 
 var _class;
 var _descriptor;
 var _descriptor2;
+var _class2;
+var _temp;
 
 function _initDefineProp(target, property, descriptor, context) {
     if (!descriptor) return;
@@ -304,13 +513,21 @@ function _initDefineProp(target, property, descriptor, context) {
         enumerable: descriptor.enumerable,
         configurable: descriptor.configurable,
         writable: descriptor.writable,
-        value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
+        value: descriptor.initializer
+            ? descriptor.initializer.call(context)
+            : void 0,
     });
 }
 
-function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
+function _applyDecoratedDescriptor(
+    target,
+    property,
+    decorators,
+    descriptor,
+    context
+) {
     var desc = {};
-    Object['ke' + 'ys'](descriptor).forEach(function (key) {
+    Object['ke' + 'ys'](descriptor).forEach(function(key) {
         desc[key] = descriptor[key];
     });
     desc.enumerable = !!desc.enumerable;
@@ -320,9 +537,12 @@ function _applyDecoratedDescriptor(target, property, decorators, descriptor, con
         desc.writable = true;
     }
 
-    desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-        return decorator(target, property, desc) || desc;
-    }, desc);
+    desc = decorators.slice().reverse().reduce(
+        function(desc, decorator) {
+            return decorator(target, property, desc) || desc;
+        },
+        desc
+    );
 
     if (context && desc.initializer !== void 0) {
         desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
@@ -337,27 +557,34 @@ function _applyDecoratedDescriptor(target, property, decorators, descriptor, con
     return desc;
 }
 
-let Model = (_class = class Model {
+function generateNegativeId() {
+    return -parseInt(uniqueId());
+}
+
+let Model = ((_class = ((_temp = (_class2 = class Model {
     // Holds activated - non-nested - relations (e.g. `['animal']`)
 
     // Holds original attributes with values, so `clear()` knows what to reset to (quite ugly).
     get url() {
-        const id = this[this.primaryKey];
+        const id = this[this.constructor.primaryKey];
         return `${this.urlRoot}${id ? `${id}/` : ''}`;
     }
     // Holds activated - nested - relations (e.g. `['animal', 'animal.breed']`)
-
-    // TODO: Find out why `static primaryKey` doesn't work. I WANT IT STATIC GODDAMMIT.
     get isNew() {
-        return !this[this.primaryKey];
+        return !this[this.constructor.primaryKey];
     }
 
     get isLoading() {
         return this.__pendingRequestCount > 0;
     }
 
+    set primaryKey(v) {
+        throw new Error(
+            '`primaryKey` should be a static property on the model.'
+        );
+    }
+
     constructor(data, options = {}) {
-        this.primaryKey = 'id';
         this.__attributes = [];
         this.__originalAttributes = {};
         this.__activeRelations = [];
@@ -400,18 +627,29 @@ let Model = (_class = class Model {
             const otherRels = otherRelNames && [otherRelNames];
             // When two nested relations are defined next to each other (e.g. `['kind.breed', 'kind.location']`),
             // the relation `kind` only needs to be initialized once.
-            relModels[currentRel] = currentProp ? currentProp.concat(otherRels) : otherRels;
-            this.__activeCurrentRelations.push(currentRel);
-        });
-        extendObservable(this, mapValues(relModels, (otherRelNames, relName) => {
-            const RelModel = relations[relName];
-            if (!RelModel) {
-                throw new Error(`Specified relation "${relName}" does not exist on model.`);
+            relModels[currentRel] = currentProp
+                ? currentProp.concat(otherRels)
+                : otherRels;
+            if (!this.__activeCurrentRelations.includes(currentRel)) {
+                this.__activeCurrentRelations.push(currentRel);
             }
-            return new RelModel(null, {
-                relations: otherRelNames
-            });
-        }));
+        });
+        extendObservable(
+            this,
+            mapValues(relModels, (otherRelNames, relName) => {
+                const RelModel = relations[relName];
+                if (!RelModel) {
+                    throw new Error(
+                        `Specified relation "${relName}" does not exist on model.`
+                    );
+                }
+                const options = { relations: otherRelNames };
+                if (RelModel.prototype instanceof Store) {
+                    return new RelModel(options);
+                }
+                return new RelModel(null, options);
+            })
+        );
     }
 
     toBackend() {
@@ -426,14 +664,50 @@ let Model = (_class = class Model {
             const rel = this[currentRel];
             const relBackendName = snakeCase(currentRel);
             if (rel instanceof Model) {
-                output[relBackendName] = rel[rel.primaryKey];
+                output[relBackendName] = rel[rel.constructor.primaryKey];
             }
             if (rel instanceof Store) {
-                // TODO: This should use the `primaryKey` of the model in the store instead, not hardcoded the `id`.
-                output[relBackendName] = rel.map('id');
+                output[relBackendName] = rel.mapByPrimaryKey();
             }
         });
         return output;
+    }
+
+    toBackendAll(newId) {
+        // TODO: This implementation is more a proof of concept; it's very shitty coded.
+        const data = this.toBackend();
+        const relations = {};
+
+        if (newId) {
+            data[this.constructor.primaryKey] = newId;
+        } else if (data[this.constructor.primaryKey] === null) {
+            data[this.constructor.primaryKey] = generateNegativeId();
+        }
+
+        this.__activeCurrentRelations.forEach(currentRel => {
+            const rel = this[currentRel];
+            let myNewId = null;
+            const relBackendName = snakeCase(currentRel);
+            if (data[relBackendName] === null) {
+                myNewId = generateNegativeId();
+                data[relBackendName] = myNewId;
+            }
+            if (isArray(data[relBackendName])) {
+                myNewId = data[relBackendName].map(
+                    id => id === null ? generateNegativeId() : id
+                );
+                data[relBackendName] = myNewId;
+            }
+            const relBackendData = rel.toBackendAll(myNewId);
+            relations[relBackendName] = relBackendData.data;
+            forIn(relBackendData.relations, (relB, key) => {
+                relations[key] = relations[key]
+                    ? relations[key].concat(relB)
+                    : relB;
+            });
+        });
+
+        return { data: [data], relations };
     }
 
     toJS() {
@@ -473,7 +747,14 @@ let Model = (_class = class Model {
 
     __getApi() {
         if (!this.api) {
-            throw new Error('You are trying to perform a API request without an `api` property defined on the model.');
+            throw new Error(
+                'You are trying to perform a API request without an `api` property defined on the model.'
+            );
+        }
+        if (!this.urlRoot) {
+            throw new Error(
+                'You are trying to perform a API request without an `urlRoot` property defined on the model.'
+            );
         }
         return this.api;
     }
@@ -486,6 +767,9 @@ let Model = (_class = class Model {
     }
 
     parse(data) {
+        if (!isPlainObject(data)) {
+            throw new Error('Parameter supplied to parse() is not an object.');
+        }
         forIn(data, (value, key) => {
             const attr = snakeToCamel(key);
             if (this.__attributes.includes(attr)) {
@@ -500,26 +784,58 @@ let Model = (_class = class Model {
                 }
             }
         });
+
+        return this;
     }
 
     save() {
         this.__backendValidationErrors = {};
         this.__pendingRequestCount += 1;
         // TODO: Allow data from an argument to be saved?
-        return this.__getApi().saveModel({
-            url: this.url,
-            data: this.toBackend(),
-            isNew: !!this[this.primaryKey]
-        }).then(action(data => {
-            this.__pendingRequestCount -= 1;
-            this.parse(data);
-        })).catch(action(err => {
-            this.__pendingRequestCount -= 1;
-            if (err.valErrors) {
-                this.__backendValidationErrors = err.valErrors;
-            }
-            throw err;
-        }));
+        return this.__getApi()
+            .saveModel({
+                url: this.url,
+                data: this.toBackend(),
+                isNew: this.isNew,
+            })
+            .then(
+                action(res => {
+                    this.__pendingRequestCount -= 1;
+                    this.fromBackend(res);
+                })
+            )
+            .catch(
+                action(err => {
+                    this.__pendingRequestCount -= 1;
+                    if (err.valErrors) {
+                        this.__backendValidationErrors = err.valErrors;
+                    }
+                    throw err;
+                })
+            );
+    }
+
+    saveAll() {
+        this.__backendValidationErrors = {};
+        this.__pendingRequestCount += 1;
+        return this.__getApi()
+            .saveAllModels({
+                url: this.urlRoot,
+                data: this.toBackendAll(),
+            })
+            .then(
+                action(res => {
+                    this.__pendingRequestCount -= 1;
+                    this.fromBackend(res);
+                })
+            )
+            .catch(
+                action(err => {
+                    this.__pendingRequestCount -= 1;
+                    // TODO: saveAll does not support handling backend validation errors yet.
+                    throw err;
+                })
+            );
     }
 
     // TODO: This is a bit hacky...
@@ -527,32 +843,42 @@ let Model = (_class = class Model {
         return this.__backendValidationErrors;
     }
 
-    delete() {
-        // TODO: currently this always does a optimistic delete (meaning it doesn't wait on the request)
-        // Do we want a non-optimistic delete?
-        if (this.__store) {
-            this.__store.remove(this);
+    delete(options = {}) {
+        const removeFromStore = () =>
+            this.__store ? this.__store.remove(this) : null;
+        if (options.immediate || this.isNew) {
+            removeFromStore();
         }
-        if (this[this.primaryKey]) {
-            this.__pendingRequestCount += 1;
-            return this.__getApi().deleteModel({ url: this.url }).then(action(() => {
+        if (this.isNew) {
+            return Promise.resolve();
+        }
+
+        this.__pendingRequestCount += 1;
+        return this.__getApi().deleteModel({ url: this.url }).then(
+            action(() => {
                 this.__pendingRequestCount -= 1;
-            }));
-        }
-        return Promise.resolve();
+                if (!options.immediate) {
+                    removeFromStore();
+                }
+            })
+        );
     }
 
     fetch(options = {}) {
-        // TODO: I feel like we should give a clear error message when `urlRoot` is not defined.
-        if (!this[this.primaryKey]) {
+        if (this.isNew) {
             throw new Error('Trying to fetch model without id!');
         }
         this.__pendingRequestCount += 1;
-        const data = Object.assign(this.__getApi().buildFetchModelParams(this), options.data);
-        return this.__getApi().fetchModel({ url: this.url, data }).then(action(res => {
-            this.fromBackend(res);
-            this.__pendingRequestCount -= 1;
-        }));
+        const data = Object.assign(
+            this.__getApi().buildFetchModelParams(this),
+            options.data
+        );
+        return this.__getApi().fetchModel({ url: this.url, data }).then(
+            action(res => {
+                this.fromBackend(res);
+                this.__pendingRequestCount -= 1;
+            })
+        );
     }
 
     clear() {
@@ -564,30 +890,115 @@ let Model = (_class = class Model {
             this[currentRel].clear();
         });
     }
-}, (_descriptor = _applyDecoratedDescriptor(_class.prototype, '__backendValidationErrors', [observable], {
-    enumerable: true,
-    initializer: function () {
-        return {};
+})), (_class2.primaryKey = 'id'), _temp)), ((_descriptor = _applyDecoratedDescriptor(
+    _class.prototype,
+    '__backendValidationErrors',
+    [observable],
+    {
+        enumerable: true,
+        initializer: function() {
+            return {};
+        },
     }
-}), _descriptor2 = _applyDecoratedDescriptor(_class.prototype, '__pendingRequestCount', [observable], {
-    enumerable: true,
-    initializer: function () {
-        return 0;
+)), (_descriptor2 = _applyDecoratedDescriptor(
+    _class.prototype,
+    '__pendingRequestCount',
+    [observable],
+    {
+        enumerable: true,
+        initializer: function() {
+            return 0;
+        },
     }
-}), _applyDecoratedDescriptor(_class.prototype, 'url', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'url'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'isNew', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'isNew'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'isLoading', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'isLoading'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, '__parseRelations', [action], Object.getOwnPropertyDescriptor(_class.prototype, '__parseRelations'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fromBackend', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'fromBackend'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'parse', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'parse'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'save', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'save'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'backendValidationErrors', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'backendValidationErrors'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'delete', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'delete'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fetch', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'fetch'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'clear', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'clear'), _class.prototype)), _class);
+)), _applyDecoratedDescriptor(
+    _class.prototype,
+    'url',
+    [computed],
+    Object.getOwnPropertyDescriptor(_class.prototype, 'url'),
+    _class.prototype
+), _applyDecoratedDescriptor(
+    _class.prototype,
+    'isNew',
+    [computed],
+    Object.getOwnPropertyDescriptor(_class.prototype, 'isNew'),
+    _class.prototype
+), _applyDecoratedDescriptor(
+    _class.prototype,
+    'isLoading',
+    [computed],
+    Object.getOwnPropertyDescriptor(_class.prototype, 'isLoading'),
+    _class.prototype
+), _applyDecoratedDescriptor(
+    _class.prototype,
+    '__parseRelations',
+    [action],
+    Object.getOwnPropertyDescriptor(_class.prototype, '__parseRelations'),
+    _class.prototype
+), _applyDecoratedDescriptor(
+    _class.prototype,
+    'fromBackend',
+    [action],
+    Object.getOwnPropertyDescriptor(_class.prototype, 'fromBackend'),
+    _class.prototype
+), _applyDecoratedDescriptor(
+    _class.prototype,
+    'parse',
+    [action],
+    Object.getOwnPropertyDescriptor(_class.prototype, 'parse'),
+    _class.prototype
+), _applyDecoratedDescriptor(
+    _class.prototype,
+    'save',
+    [action],
+    Object.getOwnPropertyDescriptor(_class.prototype, 'save'),
+    _class.prototype
+), _applyDecoratedDescriptor(
+    _class.prototype,
+    'saveAll',
+    [action],
+    Object.getOwnPropertyDescriptor(_class.prototype, 'saveAll'),
+    _class.prototype
+), _applyDecoratedDescriptor(
+    _class.prototype,
+    'backendValidationErrors',
+    [computed],
+    Object.getOwnPropertyDescriptor(
+        _class.prototype,
+        'backendValidationErrors'
+    ),
+    _class.prototype
+), _applyDecoratedDescriptor(
+    _class.prototype,
+    'delete',
+    [action],
+    Object.getOwnPropertyDescriptor(_class.prototype, 'delete'),
+    _class.prototype
+), _applyDecoratedDescriptor(
+    _class.prototype,
+    'fetch',
+    [action],
+    Object.getOwnPropertyDescriptor(_class.prototype, 'fetch'),
+    _class.prototype
+), _applyDecoratedDescriptor(
+    _class.prototype,
+    'clear',
+    [action],
+    Object.getOwnPropertyDescriptor(_class.prototype, 'clear'),
+    _class.prototype
+)), _class);
 
 // Function ripped from Django docs.
 // See: https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
 function csrfSafeMethod(method) {
     // These HTTP methods do not require CSRF protection.
-    return (/^(GET|HEAD|OPTIONS|TRACE)$/i.test(method)
-    );
+    return /^(GET|HEAD|OPTIONS|TRACE)$/i.test(method);
 }
 
 function parseBackendValidationErrors(response) {
     const valErrors = get(response, 'data.error.validation_errors');
     if (response.status === 400 && valErrors) {
-        const camelCasedErrors = mapKeys(valErrors, (value, key) => snakeToCamel(key));
+        const camelCasedErrors = mapKeys(valErrors, (value, key) =>
+            snakeToCamel(key));
         return mapValues(camelCasedErrors, valError => {
             return valError.map(obj => obj.code);
         });
@@ -604,7 +1015,10 @@ let BinderApi = class BinderApi {
 
     __request(method, url, data, options) {
         options || (options = {});
-        const useCsrfToken = csrfSafeMethod(method) ? undefined : this.csrfToken;
+        const useCsrfToken = csrfSafeMethod(method)
+            ? undefined
+            : this.csrfToken;
+        this.__testUrl(url);
 
         const axiosOptions = {
             method,
@@ -612,19 +1026,37 @@ let BinderApi = class BinderApi {
             url,
             data: method !== 'get' && data ? data : undefined,
             params: method === 'get' && data ? data : undefined,
-            headers: Object.assign({
-                'Content-Type': 'application/json',
-                'X-Csrftoken': useCsrfToken
-            }, this.defaultHeaders)
+            headers: Object.assign(
+                {
+                    'Content-Type': 'application/json',
+                    'X-Csrftoken': useCsrfToken,
+                },
+                this.defaultHeaders
+            ),
         };
 
         Object.assign(axiosOptions, options);
 
-        return axios(axiosOptions).then(this.__responseFormatter);
+        const xhr = axios(axiosOptions);
+
+        // We fork the promise tree as we want to have the error traverse to the listeners
+        if (this.onRequestError) {
+            xhr.catch(this.onRequestError);
+        }
+
+        return xhr.then(this.__responseFormatter);
     }
 
     __responseFormatter(res) {
         return res.data;
+    }
+
+    __testUrl(url) {
+        if (!url.endsWith('/')) {
+            throw new Error(
+                `Binder does not accept urls that do not have a trailing slash: ${url}`
+            );
+        }
     }
 
     get(url, data, options) {
@@ -649,7 +1081,7 @@ let BinderApi = class BinderApi {
 
     buildFetchModelParams(model) {
         return {
-            with: model.__activeRelations.join(',') || null
+            with: model.__activeRelations.join(',') || null,
         };
     }
 
@@ -658,18 +1090,35 @@ let BinderApi = class BinderApi {
             return {
                 data: res.data,
                 repos: res.with,
-                relMapping: res.with_mapping
+                relMapping: res.with_mapping,
             };
         });
     }
 
     saveModel({ url, data, isNew }) {
-        const method = isNew ? 'patch' : 'post';
-        return this[method](url, data).catch(err => {
-            if (err.response) {
-                err.valErrors = parseBackendValidationErrors(err.response);
-            }
-            throw err;
+        const method = isNew ? 'post' : 'patch';
+        return this[method](url, data)
+            .then(newData => {
+                return { data: newData };
+            })
+            .catch(err => {
+                if (err.response) {
+                    err.valErrors = parseBackendValidationErrors(err.response);
+                }
+                throw err;
+            });
+    }
+
+    saveAllModels({ url, data }) {
+        return this.put(url, {
+            data: data.data,
+            with: data.relations,
+        }).then(res => {
+            return {
+                data: res.data[0],
+                repos: res.with,
+                relMapping: res.with_mapping,
+            };
         });
     }
 
@@ -684,7 +1133,7 @@ let BinderApi = class BinderApi {
             with: store.__activeRelations.join(',') || null,
             limit: store.__state.limit,
             // Hide offset if zero so the request looks cleaner in DevTools.
-            offset: offset || null
+            offset: offset || null,
         };
     }
 
@@ -694,7 +1143,7 @@ let BinderApi = class BinderApi {
                 data: res.data,
                 repos: res.with,
                 relMapping: res.with_mapping,
-                totalRecords: res.meta.total_records
+                totalRecords: res.meta.total_records,
             };
         });
     }
