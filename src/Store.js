@@ -36,15 +36,11 @@ export default class Store {
         return this.models.length;
     }
 
-    constructor(options = {}, legacyOptions) {
+    constructor(options = {}) {
         if (!isPlainObject(options)) {
             throw Error(
                 'Store only accepts an object with options. Chain `.parse(data)` to add models.'
             );
-        }
-        // TODO: Remove this when we can differentiate between store and model {diff-issue-1}
-        if (legacyOptions) {
-            options = legacyOptions;
         }
         forIn(options, (value, option) => {
             if (!AVAILABLE_CONST_OPTIONS.includes(option)) {
