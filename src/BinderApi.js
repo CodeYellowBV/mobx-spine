@@ -50,7 +50,14 @@ export default class BinderApi {
 
         Object.assign(axiosOptions, options);
 
-        return axios(axiosOptions).then(this.__responseFormatter);
+        const xhr = axios(axiosOptions);
+
+        // We fork the promise tree as we want to have the error traverse to the listeners
+        if (this.onRequestError) {
+            xhr.catch(this.onRequestError);
+        }
+
+        return xhr.then(this.__responseFormatter);
     }
 
     __responseFormatter(res) {
