@@ -109,7 +109,7 @@ export default class BinderApi {
     }
 
     saveModel({ url, data, isNew }) {
-        const method = isNew ? 'patch' : 'post';
+        const method = isNew ? 'post' : 'patch';
         return this[method](url, data)
             .then(newData => {
                 return { data: newData };

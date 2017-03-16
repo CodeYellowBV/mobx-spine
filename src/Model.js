@@ -261,7 +261,7 @@ export default class Model {
             .saveModel({
                 url: this.url,
                 data: this.toBackend(),
-                isNew: !!this[this.constructor.primaryKey],
+                isNew: this.isNew,
             })
             .then(
                 action(res => {
@@ -311,11 +311,10 @@ export default class Model {
     @action delete(options = {}) {
         const removeFromStore = () =>
             this.__store ? this.__store.remove(this) : null;
-        const hasPrimary = !!this[this.constructor.primaryKey];
-        if (options.immediate || !hasPrimary) {
+        if (options.immediate || this.isNew) {
             removeFromStore();
         }
-        if (!hasPrimary) {
+        if (this.isNew) {
             return Promise.resolve();
         }
 
@@ -331,7 +330,7 @@ export default class Model {
     }
 
     @action fetch(options = {}) {
-        if (!this[this.constructor.primaryKey]) {
+        if (this.isNew) {
             throw new Error('Trying to fetch model without id!');
         }
         this.__pendingRequestCount += 1;
