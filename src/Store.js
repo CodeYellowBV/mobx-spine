@@ -258,8 +258,8 @@ export default class Store {
     get(id) {
         // The id can be defined as a string or int, but we want it to work in both cases.
         return this.models.find(
-            model => model[model.constructor.primaryKey] == id
-        ); // eslint-disable-line eqeqeq
+            model => model[model.constructor.primaryKey] == id // eslint-disable-line eqeqeq
+        );
     }
 
     map(predicate) {
