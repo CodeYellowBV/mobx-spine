@@ -198,6 +198,48 @@ test('add multiple models', () => {
     expect(models[0]).toBeInstanceOf(Animal);
 });
 
+test('add multiple models with same id', () => {
+    const animalStore = new AnimalStore();
+    expect(() => {
+        return animalStore.add([
+            {
+                id: 20,
+            },
+            {
+                id: 20,
+            },
+        ]);
+    }).toThrow(
+        'A model with the same primary key value "20" already exists in this store.'
+    );
+});
+
+test('add one model with existing id', () => {
+    const animalStore = new AnimalStore().parse(simpleData);
+    expect(() => {
+        return animalStore.add([
+            {
+                id: 3,
+            },
+        ]);
+    }).toThrow(
+        'A model with the same primary key value "3" already exists in this store.'
+    );
+});
+
+test('add multiple models without id', () => {
+    const animalStore = new AnimalStore().parse(simpleData);
+    animalStore.add([
+        {
+            name: 'King',
+        },
+        {
+            name: 'Alfred',
+        },
+    ]);
+    expect(animalStore.length).toBe(5);
+});
+
 test('clear models', () => {
     const animalStore = new AnimalStore();
     animalStore.parse(simpleData);

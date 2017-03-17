@@ -130,8 +130,15 @@ export default class Store {
 
         const modelInstances = models.map(this._newModel.bind(this));
 
-        modelInstances.forEach(modelInstance =>
-            this.models.push(modelInstance));
+        modelInstances.forEach(modelInstance => {
+            const primaryValue = modelInstance[this.Model.primaryKey];
+            if (primaryValue && this.get(primaryValue)) {
+                throw Error(
+                    `A model with the same primary key value "${primaryValue}" already exists in this store.`
+                );
+            }
+            this.models.push(modelInstance);
+        });
 
         return singular ? modelInstances[0] : modelInstances;
     }
