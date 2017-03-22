@@ -59,6 +59,10 @@ export default class Model {
         );
     }
 
+    attrCasts() {
+        return {};
+    }
+
     constructor(data, options = {}) {
         this.__store = options.store;
         this.__repository = options.repository;
@@ -121,7 +125,7 @@ export default class Model {
         const output = {};
         this.__attributes.forEach(attr => {
             if (!attr.startsWith('_')) {
-                output[snakeCase(attr)] = toJS(this[attr]);
+                output[snakeCase(attr)] = this.__toJSAttr(attr, this[attr]);
             }
         });
         // Add active relations as id.
@@ -178,7 +182,7 @@ export default class Model {
     toJS() {
         const output = {};
         this.__attributes.forEach(attr => {
-            output[attr] = toJS(this[attr]);
+            output[attr] = this.__toJSAttr(attr, this[attr]);
         });
 
         this.__activeCurrentRelations.forEach(currentRel => {
@@ -188,6 +192,15 @@ export default class Model {
             }
         });
         return output;
+    }
+
+    __toJSAttr(attr, value) {
+        const attrCasts = this.attrCasts();
+        const attrCast = attrCasts[attr];
+        if (attrCast !== undefined) {
+            return toJS(attrCast.toJS(attr, value));
+        }
+        return toJS(value);
     }
 
     @action fromBackend({ data, repos, relMapping }) {
@@ -238,7 +251,7 @@ export default class Model {
         forIn(data, (value, key) => {
             const attr = snakeToCamel(key);
             if (this.__attributes.includes(attr)) {
-                this[attr] = value;
+                this[attr] = this.__parseAttr(attr, value);
             } else if (this.__activeCurrentRelations.includes(attr)) {
                 // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                 // However, it can also be an object if there are nested relations (non flattened).
@@ -251,6 +264,15 @@ export default class Model {
         });
 
         return this;
+    }
+
+    __parseAttr(attr, value) {
+        const attrCasts = this.attrCasts();
+        const attrCast = attrCasts[attr];
+        if (attrCast !== undefined) {
+            return attrCast.parse(attr, value);
+        }
+        return value;
     }
 
     @action save() {

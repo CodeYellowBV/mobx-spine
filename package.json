@@ -27,7 +27,9 @@
       "git add"
     ]
   },
-  "dependencies": {},
+  "dependencies": {
+    "moment": "^2.18.1"
+  },
   "engines": {
     "node": ">=4"
   },
