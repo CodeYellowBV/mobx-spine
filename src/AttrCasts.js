@@ -6,7 +6,7 @@ export default {
             if (value === null) {
                 return null;
             }
-            return moment(value);
+            return moment.utc(value);
         },
         toJS(attr, value) {
             if (value === null) {

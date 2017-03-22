@@ -22,7 +22,7 @@ test('datetime - should parse to model', () => {
     });
 
     expect(animal.bornAt).toBeInstanceOf(moment);
-    expect(animal.bornAt.format()).toBe('2017-03-22T23:08:23+01:00');
+    expect(animal.bornAt.format()).toBe('2017-03-22T22:08:23Z');
 });
 
 test('datetime - should parse to model when null', () => {
@@ -40,7 +40,7 @@ test('datetime - should be serialized in toJS()', () => {
     const animal = new Animal({ bornAt: '2017-03-22T22:08:23+00:00' });
 
     expect(animal.toJS()).toEqual({
-        bornAt: '2017-03-22T23:08:23+01:00',
+        bornAt: '2017-03-22T22:08:23Z',
     });
 });
 
@@ -66,6 +66,6 @@ test('datetime - should be serialized in toBackend()', () => {
     const animal = new Animal({ bornAt: '2017-03-22T22:08:23+00:00' });
 
     expect(animal.toBackend()).toEqual({
-        born_at: '2017-03-22T23:08:23+01:00',
+        born_at: '2017-03-22T22:08:23Z',
     });
 });
