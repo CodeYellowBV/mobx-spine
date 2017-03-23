@@ -27,9 +27,7 @@
       "git add"
     ]
   },
-  "dependencies": {
-    "moment": "^2.18.1"
-  },
+  "dependencies": {},
   "engines": {
     "node": ">=4"
   },
@@ -53,6 +51,7 @@
     "lint-staged": "^3.4.0",
     "lodash": "^4.17.4",
     "mobx": "^3.0.2",
+    "moment": "^2.18.1",
     "prettier": "^0.22.0",
     "rollup": "^0.41.4",
     "rollup-plugin-babel": "^2.7.1"
@@ -60,7 +59,8 @@
   "peerDependencies": {
     "axios": "^0.15.3",
     "lodash": "^4.17.4",
-    "mobx": "^3.0.2"
+    "mobx": "^3.0.2",
+    "moment": "^2.14.0"
   },
   "jest": {
     "roots": [
