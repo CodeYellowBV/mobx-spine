@@ -22,6 +22,7 @@ import {
     uniqueId,
 } from 'lodash';
 import axios from 'axios';
+import moment from 'moment';
 
 // lodash's `camelCase` method removes dots from the string; this breaks mobx-spine
 function snakeToCamel(s) {
@@ -201,8 +202,15 @@ let Store = ((_class$1 = class Store {
 
         const modelInstances = models.map(this._newModel.bind(this));
 
-        modelInstances.forEach(modelInstance =>
-            this.models.push(modelInstance));
+        modelInstances.forEach(modelInstance => {
+            const primaryValue = modelInstance[this.Model.primaryKey];
+            if (primaryValue && this.get(primaryValue)) {
+                throw Error(
+                    `A model with the same primary key value "${primaryValue}" already exists in this store.`
+                );
+            }
+            this.models.push(modelInstance);
+        });
 
         return singular ? modelInstances[0] : modelInstances;
     }
@@ -329,8 +337,8 @@ let Store = ((_class$1 = class Store {
     get(id) {
         // The id can be defined as a string or int, but we want it to work in both cases.
         return this.models.find(
-            model => model[model.constructor.primaryKey] == id
-        ); // eslint-disable-line eqeqeq
+            model => model[model.constructor.primaryKey] == id // eslint-disable-line eqeqeq
+        );
     }
 
     map(predicate) {
@@ -584,6 +592,10 @@ let Model = ((_class = ((_temp = (_class2 = class Model {
         );
     }
 
+    casts() {
+        return {};
+    }
+
     constructor(data, options = {}) {
         this.__attributes = [];
         this.__originalAttributes = {};
@@ -656,7 +668,7 @@ let Model = ((_class = ((_temp = (_class2 = class Model {
         const output = {};
         this.__attributes.forEach(attr => {
             if (!attr.startsWith('_')) {
-                output[snakeCase(attr)] = toJS(this[attr]);
+                output[snakeCase(attr)] = this.__toJSAttr(attr, this[attr]);
             }
         });
         // Add active relations as id.
@@ -713,7 +725,7 @@ let Model = ((_class = ((_temp = (_class2 = class Model {
     toJS() {
         const output = {};
         this.__attributes.forEach(attr => {
-            output[attr] = toJS(this[attr]);
+            output[attr] = this.__toJSAttr(attr, this[attr]);
         });
 
         this.__activeCurrentRelations.forEach(currentRel => {
@@ -723,6 +735,15 @@ let Model = ((_class = ((_temp = (_class2 = class Model {
             }
         });
         return output;
+    }
+
+    __toJSAttr(attr, value) {
+        const casts = this.casts();
+        const cast = casts[attr];
+        if (cast !== undefined) {
+            return toJS(cast.toJS(attr, value));
+        }
+        return toJS(value);
     }
 
     fromBackend({ data, repos, relMapping }) {
@@ -773,7 +794,7 @@ let Model = ((_class = ((_temp = (_class2 = class Model {
         forIn(data, (value, key) => {
             const attr = snakeToCamel(key);
             if (this.__attributes.includes(attr)) {
-                this[attr] = value;
+                this[attr] = this.__parseAttr(attr, value);
             } else if (this.__activeCurrentRelations.includes(attr)) {
                 // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                 // However, it can also be an object if there are nested relations (non flattened).
@@ -786,6 +807,15 @@ let Model = ((_class = ((_temp = (_class2 = class Model {
         });
 
         return this;
+    }
+
+    __parseAttr(attr, value) {
+        const casts = this.casts();
+        const cast = casts[attr];
+        if (cast !== undefined) {
+            return cast.parse(attr, value);
+        }
+        return value;
     }
 
     save() {
@@ -1149,4 +1179,43 @@ let BinderApi = class BinderApi {
     }
 };
 
-export { Model, Store, BinderApi };
+function checkMomentInstance(attr, value) {
+    if (!(value instanceof moment)) {
+        throw new Error(`Attribute \`${attr}\` is not a moment instance.`);
+    }
+}
+
+var Casts = {
+    date: {
+        parse(attr, value) {
+            if (value === null) {
+                return null;
+            }
+            return moment.utc(value, 'YYYY-MM-DD');
+        },
+        toJS(attr, value) {
+            if (value === null) {
+                return null;
+            }
+            checkMomentInstance(attr, value);
+            return value.format('YYYY-MM-DD');
+        },
+    },
+    datetime: {
+        parse(attr, value) {
+            if (value === null) {
+                return null;
+            }
+            return moment.utc(value);
+        },
+        toJS(attr, value) {
+            if (value === null) {
+                return null;
+            }
+            checkMomentInstance(attr, value);
+            return value.format();
+        },
+    },
+};
+
+export { Model, Store, BinderApi, Casts };

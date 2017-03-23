@@ -1,21 +1,29 @@
 (function(global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined'
-        ? factory(exports, require('mobx'), require('lodash'), require('axios'))
+        ? factory(
+              exports,
+              require('mobx'),
+              require('lodash'),
+              require('axios'),
+              require('moment')
+          )
         : typeof define === 'function' && define.amd
               ? define(
                     'mobx-spine',
-                    ['exports', 'mobx', 'lodash', 'axios'],
+                    ['exports', 'mobx', 'lodash', 'axios', 'moment'],
                     factory
                 )
               : factory(
                     (global.mobxSpine = global.mobxSpine || {}),
                     global.mobx,
                     global._,
-                    global.axios
+                    global.axios,
+                    global.moment
                 );
-})(this, function(exports, mobx, lodash, axios) {
+})(this, function(exports, mobx, lodash, axios, moment) {
     'use strict';
     axios = 'default' in axios ? axios['default'] : axios;
+    moment = 'default' in moment ? moment['default'] : moment;
 
     // lodash's `camelCase` method removes dots from the string; this breaks mobx-spine
     function snakeToCamel(s) {
@@ -204,8 +212,15 @@
 
             const modelInstances = models.map(this._newModel.bind(this));
 
-            modelInstances.forEach(modelInstance =>
-                this.models.push(modelInstance));
+            modelInstances.forEach(modelInstance => {
+                const primaryValue = modelInstance[this.Model.primaryKey];
+                if (primaryValue && this.get(primaryValue)) {
+                    throw Error(
+                        `A model with the same primary key value "${primaryValue}" already exists in this store.`
+                    );
+                }
+                this.models.push(modelInstance);
+            });
 
             return singular ? modelInstances[0] : modelInstances;
         }
@@ -336,8 +351,8 @@
         get(id) {
             // The id can be defined as a string or int, but we want it to work in both cases.
             return this.models.find(
-                model => model[model.constructor.primaryKey] == id
-            ); // eslint-disable-line eqeqeq
+                model => model[model.constructor.primaryKey] == id // eslint-disable-line eqeqeq
+            );
         }
 
         map(predicate) {
@@ -593,6 +608,10 @@
             );
         }
 
+        casts() {
+            return {};
+        }
+
         constructor(data, options = {}) {
             this.__attributes = [];
             this.__originalAttributes = {};
@@ -670,7 +689,10 @@
             const output = {};
             this.__attributes.forEach(attr => {
                 if (!attr.startsWith('_')) {
-                    output[lodash.snakeCase(attr)] = mobx.toJS(this[attr]);
+                    output[lodash.snakeCase(attr)] = this.__toJSAttr(
+                        attr,
+                        this[attr]
+                    );
                 }
             });
             // Add active relations as id.
@@ -727,7 +749,7 @@
         toJS() {
             const output = {};
             this.__attributes.forEach(attr => {
-                output[attr] = mobx.toJS(this[attr]);
+                output[attr] = this.__toJSAttr(attr, this[attr]);
             });
 
             this.__activeCurrentRelations.forEach(currentRel => {
@@ -737,6 +759,15 @@
                 }
             });
             return output;
+        }
+
+        __toJSAttr(attr, value) {
+            const casts = this.casts();
+            const cast = casts[attr];
+            if (cast !== undefined) {
+                return mobx.toJS(cast.toJS(attr, value));
+            }
+            return mobx.toJS(value);
         }
 
         fromBackend({ data, repos, relMapping }) {
@@ -789,7 +820,7 @@
             lodash.forIn(data, (value, key) => {
                 const attr = snakeToCamel(key);
                 if (this.__attributes.includes(attr)) {
-                    this[attr] = value;
+                    this[attr] = this.__parseAttr(attr, value);
                 } else if (this.__activeCurrentRelations.includes(attr)) {
                     // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                     // However, it can also be an object if there are nested relations (non flattened).
@@ -805,6 +836,15 @@
             });
 
             return this;
+        }
+
+        __parseAttr(attr, value) {
+            const casts = this.casts();
+            const cast = casts[attr];
+            if (cast !== undefined) {
+                return cast.parse(attr, value);
+            }
+            return value;
         }
 
         save() {
@@ -1170,9 +1210,49 @@
         }
     };
 
+    function checkMomentInstance(attr, value) {
+        if (!(value instanceof moment)) {
+            throw new Error(`Attribute \`${attr}\` is not a moment instance.`);
+        }
+    }
+
+    var Casts = {
+        date: {
+            parse(attr, value) {
+                if (value === null) {
+                    return null;
+                }
+                return moment.utc(value, 'YYYY-MM-DD');
+            },
+            toJS(attr, value) {
+                if (value === null) {
+                    return null;
+                }
+                checkMomentInstance(attr, value);
+                return value.format('YYYY-MM-DD');
+            },
+        },
+        datetime: {
+            parse(attr, value) {
+                if (value === null) {
+                    return null;
+                }
+                return moment.utc(value);
+            },
+            toJS(attr, value) {
+                if (value === null) {
+                    return null;
+                }
+                checkMomentInstance(attr, value);
+                return value.format();
+            },
+        },
+    };
+
     exports.Model = Model;
     exports.Store = Store;
     exports.BinderApi = BinderApi;
+    exports.Casts = Casts;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 });
