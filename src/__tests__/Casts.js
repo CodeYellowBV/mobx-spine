@@ -1,13 +1,13 @@
-import { Model, AttrCasts } from '../';
+import { Model, Casts } from '../';
 import { observable } from 'mobx';
 import moment from 'moment';
 
 class Animal extends Model {
     @observable bornAt = null;
 
-    attrCasts() {
+    casts() {
         return {
-            bornAt: AttrCasts.datetime,
+            bornAt: Casts.datetime,
         };
     }
 }

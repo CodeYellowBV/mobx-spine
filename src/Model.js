@@ -59,7 +59,7 @@ export default class Model {
         );
     }
 
-    attrCasts() {
+    casts() {
         return {};
     }
 
@@ -195,10 +195,10 @@ export default class Model {
     }
 
     __toJSAttr(attr, value) {
-        const attrCasts = this.attrCasts();
-        const attrCast = attrCasts[attr];
-        if (attrCast !== undefined) {
-            return toJS(attrCast.toJS(attr, value));
+        const casts = this.casts();
+        const cast = casts[attr];
+        if (cast !== undefined) {
+            return toJS(cast.toJS(attr, value));
         }
         return toJS(value);
     }
@@ -267,10 +267,10 @@ export default class Model {
     }
 
     __parseAttr(attr, value) {
-        const attrCasts = this.attrCasts();
-        const attrCast = attrCasts[attr];
-        if (attrCast !== undefined) {
-            return attrCast.parse(attr, value);
+        const casts = this.casts();
+        const cast = casts[attr];
+        if (cast !== undefined) {
+            return cast.parse(attr, value);
         }
         return value;
     }
