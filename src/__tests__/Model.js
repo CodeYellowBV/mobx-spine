@@ -844,7 +844,7 @@ describe('requests', () => {
         const promise = animal.delete();
         expect(animalStore.at(0)).toBeInstanceOf(Animal);
         return promise.then(() => {
-            expect(animalStore.at(0)).toBeUndefined();
+            expect(animalStore.length).toBe(0);
         });
     });
 
@@ -859,7 +859,7 @@ describe('requests', () => {
 
         expect(animalStore.at(0)).toBeInstanceOf(Animal);
         const promise = animal.delete({ immediate: true });
-        expect(animalStore.at(0)).toBeUndefined();
+        expect(animalStore.length).toBe(0);
         return promise;
     });
 

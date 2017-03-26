@@ -290,6 +290,12 @@ export default class Store {
     }
 
     at(index) {
+        const zeroLength = this.length - 1;
+        if (index > zeroLength) {
+            throw new Error(
+                `Index ${index} is out of bounds (max ${zeroLength}).`
+            );
+        }
         if (index < 0) {
             index += this.length;
         }

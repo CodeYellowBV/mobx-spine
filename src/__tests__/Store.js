@@ -82,6 +82,17 @@ test('at model (negative)', () => {
     expect(model.id).toBe(10);
 });
 
+test('at model (non existent index)', () => {
+    const animalStore = new AnimalStore().parse(simpleData);
+
+    expect(() => {
+        return animalStore.at(3);
+    }).toThrow('Index 3 is out of bounds (max 2).');
+    expect(() => {
+        return animalStore.at(4);
+    }).toThrow('Index 4 is out of bounds (max 2).');
+});
+
 test('Two level relation', () => {
     const animalStore = new AnimalStore({
         relations: ['kind.breed'],
