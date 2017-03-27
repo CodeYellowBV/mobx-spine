@@ -57,7 +57,10 @@ export default class BinderApi {
             xhr.catch(this.onRequestError);
         }
 
-        return xhr.then(this.__responseFormatter);
+        const onSuccess = options.skipFormatter === true
+            ? Promise.resolve()
+            : this.__responseFormatter;
+        return xhr.then(onSuccess);
     }
 
     __responseFormatter(res) {

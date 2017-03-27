@@ -57,6 +57,17 @@ test('GET request without trailing slash', () => {
     );
 });
 
+test('GET request skipping formatter', () => {
+    mock.onAny().replyOnce(config => {
+        return [200, {}];
+    });
+
+    const api = new BinderApi();
+    return api.get('/api/asdf/', null, { skipFormatter: true }).then(res => {
+        expect(res.status).toBe(200);
+    });
+});
+
 test('POST request', () => {
     mock.onAny().replyOnce(config => {
         expect(config.url).toBe('/api/asdf/');
