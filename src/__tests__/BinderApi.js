@@ -81,7 +81,7 @@ test('POST request', () => {
     });
 });
 
-test('POST request with params', () => {
+test('POST request with data', () => {
     mock.onAny().replyOnce(config => {
         expect(config.params).toEqual(undefined);
         expect(config.data).toEqual(JSON.stringify({ foo: 'bar' }));
@@ -89,6 +89,20 @@ test('POST request with params', () => {
     });
 
     return new BinderApi().post('/api/asdf/', { foo: 'bar' });
+});
+
+test('POST request with params', () => {
+    mock.onAny().replyOnce(config => {
+        expect(config.params).toEqual({ branch: 1 });
+        expect(config.data).toEqual(JSON.stringify({ foo: 'bar' }));
+        return [200, {}];
+    });
+
+    return new BinderApi().post(
+        '/api/asdf/',
+        { foo: 'bar' },
+        { params: { branch: 1 } }
+    );
 });
 
 test('POST request with CSRF', () => {

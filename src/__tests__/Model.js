@@ -759,6 +759,16 @@ describe('requests', () => {
         });
     });
 
+    test('save with params', () => {
+        const animal = new Animal();
+        mock.onAny().replyOnce(config => {
+            expect(config.params).toEqual({ branch_id: 1 });
+            return [201, {}];
+        });
+
+        return animal.save({ params: { branch_id: 1 } });
+    });
+
     test('save all with relations', () => {
         const animal = new Animal(
             { name: 'Doggo', kind: { name: 'Dog' } },
@@ -861,6 +871,16 @@ describe('requests', () => {
         const promise = animal.delete({ immediate: true });
         expect(animalStore.length).toBe(0);
         return promise;
+    });
+
+    test('delete with params', () => {
+        const animal = new Animal({ id: 1 });
+        mock.onAny().replyOnce(config => {
+            expect(config.params).toEqual({ branch_id: 1 });
+            return [204, null];
+        });
+
+        return animal.delete({ params: { branch_id: 1 } });
     });
 
     test('isLoading', () => {

@@ -275,7 +275,7 @@ export default class Model {
         return value;
     }
 
-    @action save() {
+    @action save(options = {}) {
         this.__backendValidationErrors = {};
         this.__pendingRequestCount += 1;
         // TODO: Allow data from an argument to be saved?
@@ -283,6 +283,7 @@ export default class Model {
             .saveModel({
                 url: this.url,
                 data: this.toBackend(),
+                params: options.params,
                 isNew: this.isNew,
             })
             .then(
@@ -341,14 +342,16 @@ export default class Model {
         }
 
         this.__pendingRequestCount += 1;
-        return this.__getApi().deleteModel({ url: this.url }).then(
-            action(() => {
-                this.__pendingRequestCount -= 1;
-                if (!options.immediate) {
-                    removeFromStore();
-                }
-            })
-        );
+        return this.__getApi()
+            .deleteModel({ url: this.url, params: options.params })
+            .then(
+                action(() => {
+                    this.__pendingRequestCount -= 1;
+                    if (!options.immediate) {
+                        removeFromStore();
+                    }
+                })
+            );
     }
 
     @action fetch(options = {}) {
