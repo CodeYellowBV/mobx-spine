@@ -824,7 +824,7 @@ let Model = ((_class = ((_temp = (_class2 = class Model {
         return value;
     }
 
-    save() {
+    save(options = {}) {
         this.__backendValidationErrors = {};
         this.__pendingRequestCount += 1;
         // TODO: Allow data from an argument to be saved?
@@ -832,6 +832,7 @@ let Model = ((_class = ((_temp = (_class2 = class Model {
             .saveModel({
                 url: this.url,
                 data: this.toBackend(),
+                params: options.params,
                 isNew: this.isNew,
             })
             .then(
@@ -890,14 +891,16 @@ let Model = ((_class = ((_temp = (_class2 = class Model {
         }
 
         this.__pendingRequestCount += 1;
-        return this.__getApi().deleteModel({ url: this.url }).then(
-            action(() => {
-                this.__pendingRequestCount -= 1;
-                if (!options.immediate) {
-                    removeFromStore();
-                }
-            })
-        );
+        return this.__getApi()
+            .deleteModel({ url: this.url, params: options.params })
+            .then(
+                action(() => {
+                    this.__pendingRequestCount -= 1;
+                    if (!options.immediate) {
+                        removeFromStore();
+                    }
+                })
+            );
     }
 
     fetch(options = {}) {
@@ -1061,7 +1064,7 @@ let BinderApi = class BinderApi {
             baseURL: this.baseUrl,
             url,
             data: method !== 'get' && data ? data : undefined,
-            params: method === 'get' && data ? data : undefined,
+            params: method === 'get' && data ? data : options.params,
             headers: Object.assign(
                 {
                     'Content-Type': 'application/json',
@@ -1134,9 +1137,9 @@ let BinderApi = class BinderApi {
         });
     }
 
-    saveModel({ url, data, isNew }) {
+    saveModel({ url, data, params, isNew }) {
         const method = isNew ? 'post' : 'patch';
-        return this[method](url, data)
+        return this[method](url, data, { params })
             .then(newData => {
                 return { data: newData };
             })
@@ -1161,9 +1164,9 @@ let BinderApi = class BinderApi {
         });
     }
 
-    deleteModel({ url }) {
+    deleteModel({ url, params }) {
         // TODO: kind of silly now, but we'll probably want better error handling soon.
-        return this.delete(url);
+        return this.delete(url, null, { params });
     }
 
     buildFetchStoreParams(store) {
