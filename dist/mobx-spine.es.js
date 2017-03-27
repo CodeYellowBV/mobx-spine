@@ -362,6 +362,12 @@ let Store = ((_class$1 = class Store {
     }
 
     at(index) {
+        const zeroLength = this.length - 1;
+        if (index > zeroLength) {
+            throw new Error(
+                `Index ${index} is out of bounds (max ${zeroLength}).`
+            );
+        }
         if (index < 0) {
             index += this.length;
         }
@@ -1070,11 +1076,14 @@ let BinderApi = class BinderApi {
         const xhr = axios(axiosOptions);
 
         // We fork the promise tree as we want to have the error traverse to the listeners
-        if (this.onRequestError) {
+        if (this.onRequestError && options.skipRequestError !== true) {
             xhr.catch(this.onRequestError);
         }
 
-        return xhr.then(this.__responseFormatter);
+        const onSuccess = options.skipFormatter === true
+            ? Promise.resolve()
+            : this.__responseFormatter;
+        return xhr.then(onSuccess);
     }
 
     __responseFormatter(res) {
@@ -1215,6 +1224,28 @@ var Casts = {
             checkMomentInstance(attr, value);
             return value.format();
         },
+    },
+    enum: expectedValues => {
+        if (!isArray(expectedValues)) {
+            throw new Error(
+                'Invalid argument suplied to `Casts.enum`, expected an instance of array.'
+            );
+        }
+        function checkExpectedValues(attr, value) {
+            if (value === null) {
+                return null;
+            }
+            if (expectedValues.includes(value)) {
+                return value;
+            }
+            throw new Error(
+                `Value set to attribute \`${attr}\`, ${JSON.stringify(value)}, is not one of the allowed enum: ${JSON.stringify(expectedValues)}`
+            );
+        }
+        return {
+            parse: checkExpectedValues,
+            toJS: checkExpectedValues,
+        };
     },
 };
 
