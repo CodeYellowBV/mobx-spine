@@ -161,3 +161,22 @@ test('Failing request with onRequestError', () => {
         expect(errorHandle).toHaveBeenCalled();
     });
 });
+
+test('Failing request with onRequestError and skipRequestError option', () => {
+    const errorHandle = jest.fn();
+
+    mock.onAny().replyOnce(() => {
+        return [500, {}];
+    });
+
+    const api = new BinderApi();
+    api.__responseFormatter = jest.fn();
+    api.onRequestError = jest.fn();
+
+    return api
+        .delete('/api/asdf/', null, { skipRequestError: true })
+        .catch(() => errorHandle())
+        .then(() => {
+            expect(api.onRequestError).not.toHaveBeenCalled();
+        });
+});

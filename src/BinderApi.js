@@ -53,7 +53,7 @@ export default class BinderApi {
         const xhr = axios(axiosOptions);
 
         // We fork the promise tree as we want to have the error traverse to the listeners
-        if (this.onRequestError) {
+        if (this.onRequestError && options.skipRequestError !== true) {
             xhr.catch(this.onRequestError);
         }
 
