@@ -94,10 +94,11 @@
     const AVAILABLE_CONST_OPTIONS = ['relations', 'limit'];
 
     let Store = ((_class$1 = class Store {
+        // Holds the fetch parameters
         get isLoading() {
             return this.__pendingRequestCount > 0;
         }
-        // Holds the fetch parameters
+
         get length() {
             return this.models.length;
         }
@@ -119,6 +120,7 @@
             this.__activeRelations = [];
             this.Model = null;
             this.api = null;
+            this.__nestedRepository = {};
 
             if (!lodash.isPlainObject(options)) {
                 throw Error(
@@ -153,6 +155,7 @@
                 records.map(record => {
                     return new this.Model(record, {
                         store: this,
+                        relations: this.__activeRelations,
                     });
                 })
             );
@@ -660,6 +663,7 @@
                 // Find the relation name before the first dot, and include all other relations after it
                 // Example: input `animal.kind.breed` output -> `['animal', 'kind.breed']`
                 const relNames = aRel.match(/([^.]+)\.(.+)/);
+
                 const currentRel = relNames ? relNames[1] : aRel;
                 const otherRelNames = relNames && relNames[2];
                 const currentProp = relModels[currentRel];
@@ -683,6 +687,13 @@
                         );
                     }
                     const options = { relations: otherRelNames };
+                    if (
+                        this.__store && this.__store.__nestedRepository[relName]
+                    ) {
+                        options.repository = this.__store.__nestedRepository[
+                            relName
+                        ];
+                    }
                     if (RelModel.prototype instanceof Store) {
                         return new RelModel(options);
                     }
@@ -785,8 +796,52 @@
                 const repository = repos[repoName];
                 // All nested models get a repository. At this time we don't know yet
                 // what id the model should get, since the parent may or may not be set.
-                const model = lodash.get(this, snakeToCamel(relName));
-                model.__repository = repository;
+                let model = lodash.get(this, snakeToCamel(relName));
+
+                // If we have a model which has a store relation which has a nested relation,
+                // the model doesn't exist yet
+                if (model === undefined) {
+                    // We need to find the first store in the chain
+                    // But we currently only support Model > Store > Model
+                    // If there are more Models/Store in the length the "find first store in chain"
+                    // needs to be implemented
+                    const rels = relName.split('.');
+                    let store;
+                    let nestedRel;
+
+                    // Find the first Store relation in the relation chain
+                    rels.some((rel, i) => {
+                        // Try rel, rel.rel, rel.rel.rel, etc.
+                        const subRelName = rels.slice(0, i + 1).join('.');
+                        const subRel = lodash.get(
+                            this,
+                            snakeToCamel(subRelName)
+                        );
+
+                        if (subRel instanceof Store) {
+                            store = subRel;
+                            // Now we found the store.
+                            // The store has models, and those models have another (model) relation.
+                            //
+                            // We need to set the a `__nestedRepository` in the store
+                            // That means that when models get added to the store,
+                            // Their relation is filled from the correct `__nestedRepository` in the store.
+                            //
+                            // So a Dog has PastOwners (store), the Owners in that store have a Town rel.
+                            // We set 'town': repository in the `__nestedRepository` of the PastOwners
+                            // When Owners get added, parsed, whatever, their town relation is set,
+                            // using `Store.__nestedRepository`.
+                            nestedRel = rels
+                                .slice(i + 1, rels.length)
+                                .join('.');
+                            return true;
+                        }
+                        return false;
+                    });
+                    store.__nestedRepository[nestedRel] = repository;
+                } else {
+                    model.__repository = repository;
+                }
             });
 
             // Now all repositories are set on the relations, start parsing the actual data.
