@@ -9,7 +9,6 @@ import {
 import {
     snakeCase,
     forIn,
-    slice,
     mapValues,
     find,
     get,
@@ -233,31 +232,29 @@ export default class Model {
                 let nestedRel;
 
                 // Find the first Store relation in the relation chain
-                for (let i = 0; i < rels.length; i += 1) {
-                    if (!store) {
-                        // Try rel, rel.rel, rel.rel.rel, etc.
-                        const subRelName = slice(rels, 0, i + 1).join('.');
-                        const subRel = get(this, snakeToCamel(subRelName));
+                rels.some((rel, i) => {
+                    // Try rel, rel.rel, rel.rel.rel, etc.
+                    const subRelName = rels.slice(0, i + 1).join('.');
+                    const subRel = get(this, snakeToCamel(subRelName));
 
-                        if (subRel instanceof Store) {
-                            store = subRel;
-                            // Now we found the store.
-                            // The store has models, and those models have another (model) relation
-                            //
-                            // We need to set the a __nestedRepository in the store
-                            // That means that when models get added to the store,
-                            // Their relation is filled from the correct __nestedRepository in the store
-                            //
-                            // So a Dog has PastOwners (store), the Owners in that store have a Town rel.
-                            // We set 'town': repository in the __nestedRepository of the PastOwners
-                            // When Owners get added, parsed, whatever, their town relation is set,
-                            // using the Store.__nestedRepository
-                            nestedRel = slice(rels, i + 1, rels.length).join(
-                                '.'
-                            );
-                        }
+                    if (subRel instanceof Store) {
+                        store = subRel;
+                        // Now we found the store.
+                        // The store has models, and those models have another (model) relation.
+                        //
+                        // We need to set the a `__nestedRepository` in the store
+                        // That means that when models get added to the store,
+                        // Their relation is filled from the correct `__nestedRepository` in the store.
+                        //
+                        // So a Dog has PastOwners (store), the Owners in that store have a Town rel.
+                        // We set 'town': repository in the `__nestedRepository` of the PastOwners
+                        // When Owners get added, parsed, whatever, their town relation is set,
+                        // using `Store.__nestedRepository`.
+                        nestedRel = rels.slice(i + 1, rels.length).join('.');
+                        return true;
                     }
-                }
+                    return false;
+                });
                 store.__nestedRepository[nestedRel] = repository;
             } else {
                 model.__repository = repository;
