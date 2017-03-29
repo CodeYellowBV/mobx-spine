@@ -267,7 +267,7 @@ test('Parsing two times with store relation', () => {
     expect(animal.pastOwners.map('id')).toEqual([3]);
 });
 
-xtest('Parsing store relation with model relation in it', () => {
+test('Parsing store relation with model relation in it', () => {
     const animal = new Animal(null, {
         relations: ['pastOwners.town'],
     });
@@ -281,10 +281,12 @@ xtest('Parsing store relation with model relation in it', () => {
         relMapping: animalsWithPastOwnersAndTownData.with_mapping,
     });
 
-    expect(animal.pastOwners.map('id')).toBe([55, 66]);
+    expect(animal.pastOwners.map('id')).toEqual([55, 66]);
     expect(animal.pastOwners.get(55).town).toBeInstanceOf(Location);
-    expect(animal.pastOwners.get(55).town.id).toBe(11);
+    expect(animal.pastOwners.get(55).town.id).toBe(10);
+    expect(animal.pastOwners.get(55).town.name).toBe('Eindhoven');
     expect(animal.pastOwners.get(66).town.id).toBe(11);
+    expect(animal.pastOwners.get(66).town.name).toBe('Breda');
 });
 
 test('toBackend with basic properties', () => {

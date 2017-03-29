@@ -27,6 +27,7 @@ export default class Store {
     Model = null;
     api = null;
     __repository;
+    __nestedRepository = {};
 
     @computed get isLoading() {
         return this.__pendingRequestCount > 0;
@@ -70,9 +71,7 @@ export default class Store {
             records.map(record => {
                 return new this.Model(record, {
                     store: this,
-                    // TODO: fix nested relations in stores.
-                    // This only does not work when using e.g. `owners.location`
-                    // (where `owners` is a store, and `location` a model)
+                    relations: this.__activeRelations,
                 });
             })
         );
