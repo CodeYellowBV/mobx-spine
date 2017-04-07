@@ -3,6 +3,9 @@ import { observable } from 'mobx';
 import moment from 'moment';
 import momentLocale from 'moment/min/moment-with-locales';
 
+// CI uses a different locale than we, so for the tests to pass we need to same locale.
+momentLocale.locale('nl');
+
 class Animal extends Model {
     @observable bornAt = null;
 
