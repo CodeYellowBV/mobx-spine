@@ -2,7 +2,7 @@ import moment from 'moment';
 import { isArray } from 'lodash';
 
 function checkMomentInstance(attr, value) {
-    if (!(value instanceof moment)) {
+    if (!moment.isMoment(value)) {
         throw new Error(`Attribute \`${attr}\` is not a moment instance.`);
     }
 }

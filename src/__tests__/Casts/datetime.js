@@ -1,6 +1,7 @@
 import { Model, Casts } from '../../';
 import { observable } from 'mobx';
 import moment from 'moment';
+import momentLocale from 'moment/min/moment-with-locales';
 
 class Animal extends Model {
     @observable bornAt = null;
@@ -67,5 +68,13 @@ test('should be serialized in toBackend()', () => {
 
     expect(animal.toBackend()).toEqual({
         born_at: '2017-03-22T22:08:23Z',
+    });
+});
+
+test('moment instance with locale should be recognized', () => {
+    const animal = new Animal();
+    animal.bornAt = momentLocale('2017-03-22T22:08:23+00:00');
+    expect(animal.toJS()).toEqual({
+        bornAt: '2017-03-22T23:08:23+01:00',
     });
 });
