@@ -4,7 +4,7 @@
   "license": "ISC",
   "author": "Kees Kluskens <kees@webduck.nl>",
   "description": "MobX with support for models, relations and an API.",
-  "browser": "dist/mobx-spine.es.js",
+  "module": "dist/mobx-spine.es.js",
   "main": "dist/mobx-spine.umd.js",
   "repository": {
     "type": "git",
