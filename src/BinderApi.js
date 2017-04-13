@@ -13,7 +13,8 @@ function parseBackendValidationErrors(response) {
     const valErrors = get(response, 'data.error.validation_errors');
     if (response.status === 400 && valErrors) {
         const camelCasedErrors = mapKeys(valErrors, (value, key) =>
-            snakeToCamel(key));
+            snakeToCamel(key)
+        );
         return mapValues(camelCasedErrors, valError => {
             return valError.map(obj => obj.code);
         });

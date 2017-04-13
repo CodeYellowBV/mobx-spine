@@ -169,7 +169,7 @@ export default class Model {
             }
             if (isArray(data[relBackendName])) {
                 myNewId = data[relBackendName].map(
-                    id => id === null ? generateNegativeId() : id
+                    id => (id === null ? generateNegativeId() : id)
                 );
                 data[relBackendName] = myNewId;
             }
@@ -378,7 +378,7 @@ export default class Model {
 
     @action delete(options = {}) {
         const removeFromStore = () =>
-            this.__store ? this.__store.remove(this) : null;
+            (this.__store ? this.__store.remove(this) : null);
         if (options.immediate || this.isNew) {
             removeFromStore();
         }
