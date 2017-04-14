@@ -37,6 +37,8 @@ export default class Model {
     __repository;
     __store;
     api = null;
+    // A `cid` can be used to identify the model locally.
+    cid = `m${uniqueId()}`;
     @observable __backendValidationErrors = {};
     @observable __pendingRequestCount = 0;
 

@@ -65,6 +65,11 @@ test('Chaining parse', () => {
     expect(animal).toBeInstanceOf(Animal);
 });
 
+test('`cid` should be a unique value`', () => {
+    expect(new Animal().cid).toBe('m1');
+    expect(new Animal().cid).toBe('m2');
+});
+
 test('primaryKey defined as not static should throw error', () => {
     class Zebra extends Model {
         primaryKey = 'blaat';
@@ -361,7 +366,7 @@ test('toBackendAll with model relation', () => {
                 id: 4,
                 kind: 5,
                 name: '',
-                owner: -2,
+                owner: -6,
             },
         ],
         relations: {
@@ -369,18 +374,18 @@ test('toBackendAll with model relation', () => {
                 {
                     id: 5,
                     name: '',
-                    breed: -1,
+                    breed: -5,
                 },
             ],
             breed: [
                 {
-                    id: -1,
+                    id: -5,
                     name: '',
                 },
             ],
             owner: [
                 {
-                    id: -2,
+                    id: -6,
                     name: '',
                 },
             ],
@@ -410,19 +415,19 @@ test('toBackendAll with store relation', () => {
     expect(serialized).toEqual({
         data: [
             {
-                id: -1,
+                id: -5,
                 name: '',
-                past_owners: [-2, -3, 10],
+                past_owners: [-6, -7, 10],
             },
         ],
         relations: {
             past_owners: [
                 {
-                    id: -2,
+                    id: -6,
                     name: 'Bar',
                 },
                 {
-                    id: -3,
+                    id: -7,
                     name: 'Foo',
                 },
                 {
@@ -452,34 +457,34 @@ test('toBackendAll with deep nested relation', () => {
     expect(serialized).toEqual({
         data: [
             {
-                id: -1,
+                id: -6,
                 name: '',
-                kind: -2,
+                kind: -7,
             },
         ],
         relations: {
             kind: [
                 {
-                    id: -2,
+                    id: -7,
                     name: 'Aap',
-                    breed: -4,
-                    location: -3,
+                    breed: -9,
+                    location: -8,
                 },
             ],
             breed: [
                 {
-                    id: -4,
+                    id: -9,
                     name: 'MyBreed',
-                    location: -5,
+                    location: -10,
                 },
             ],
             location: [
                 {
-                    id: -3,
+                    id: -8,
                     name: 'Apenheul',
                 },
                 {
-                    id: -5,
+                    id: -10,
                     name: 'Amerika',
                 },
             ],
@@ -511,31 +516,31 @@ test('toBackendAll with nested store relation', () => {
     expect(serialized).toEqual({
         data: [
             {
-                id: -1,
+                id: -6,
                 name: '',
-                past_owners: [-2, -3],
+                past_owners: [-7, -8],
             },
         ],
         relations: {
             past_owners: [
                 {
-                    id: -2,
+                    id: -7,
                     name: 'Henk',
-                    town: -4,
+                    town: -9,
                 },
                 {
-                    id: -3,
+                    id: -8,
                     name: 'Krol',
-                    town: -5,
+                    town: -10,
                 },
             ],
             town: [
                 {
-                    id: -4,
+                    id: -9,
                     name: 'Eindhoven',
                 },
                 {
-                    id: -5,
+                    id: -10,
                     name: 'Breda',
                 },
             ],
@@ -801,14 +806,14 @@ describe('requests', () => {
                 data: [
                     {
                         id: 10,
-                        kind: -1,
+                        kind: -3,
                         name: 'Doggo',
                     },
                 ],
                 with: {
                     kind: [
                         {
-                            id: -1,
+                            id: -3,
                             name: 'Dog',
                         },
                     ],
