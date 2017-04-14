@@ -68,12 +68,9 @@ function _applyDecoratedDescriptor$1(
         desc.writable = true;
     }
 
-    desc = decorators.slice().reverse().reduce(
-        function(desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        },
-        desc
-    );
+    desc = decorators.slice().reverse().reduce(function(desc, decorator) {
+        return decorator(target, property, desc) || desc;
+    }, desc);
 
     if (context && desc.initializer !== void 0) {
         desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
@@ -554,12 +551,9 @@ function _applyDecoratedDescriptor(
         desc.writable = true;
     }
 
-    desc = decorators.slice().reverse().reduce(
-        function(desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        },
-        desc
-    );
+    desc = decorators.slice().reverse().reduce(function(desc, decorator) {
+        return decorator(target, property, desc) || desc;
+    }, desc);
 
     if (context && desc.initializer !== void 0) {
         desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
@@ -578,15 +572,17 @@ function generateNegativeId() {
     return -parseInt(uniqueId());
 }
 
-let Model = ((_class = ((_temp = (_class2 = class Model {
-    // Holds activated - non-nested - relations (e.g. `['animal']`)
-
-    // Holds original attributes with values, so `clear()` knows what to reset to (quite ugly).
+let Model = ((_class = ((_temp = _class2 = class Model {
+    // Holds activated - nested - relations (e.g. `['animal', 'animal.breed']`)
     get url() {
         const id = this[this.constructor.primaryKey];
         return `${this.urlRoot}${id ? `${id}/` : ''}`;
     }
-    // Holds activated - nested - relations (e.g. `['animal', 'animal.breed']`)
+    // A `cid` can be used to identify the model locally.
+
+    // Holds activated - non-nested - relations (e.g. `['animal']`)
+
+    // Holds original attributes with values, so `clear()` knows what to reset to (quite ugly).
     get isNew() {
         return !this[this.constructor.primaryKey];
     }
@@ -611,6 +607,7 @@ let Model = ((_class = ((_temp = (_class2 = class Model {
         this.__activeRelations = [];
         this.__activeCurrentRelations = [];
         this.api = null;
+        this.cid = `m${uniqueId()}`;
 
         _initDefineProp(this, '__backendValidationErrors', _descriptor, this);
 
@@ -721,7 +718,7 @@ let Model = ((_class = ((_temp = (_class2 = class Model {
             }
             if (isArray(data[relBackendName])) {
                 myNewId = data[relBackendName].map(
-                    id => id === null ? generateNegativeId() : id
+                    id => (id === null ? generateNegativeId() : id)
                 );
                 data[relBackendName] = myNewId;
             }
@@ -930,7 +927,7 @@ let Model = ((_class = ((_temp = (_class2 = class Model {
 
     delete(options = {}) {
         const removeFromStore = () =>
-            this.__store ? this.__store.remove(this) : null;
+            (this.__store ? this.__store.remove(this) : null);
         if (options.immediate || this.isNew) {
             removeFromStore();
         }
@@ -977,7 +974,8 @@ let Model = ((_class = ((_temp = (_class2 = class Model {
             this[currentRel].clear();
         });
     }
-})), (_class2.primaryKey = 'id'), _temp)), ((_descriptor = _applyDecoratedDescriptor(
+}), (_class2.primaryKey =
+    'id'), _temp)), ((_descriptor = _applyDecoratedDescriptor(
     _class.prototype,
     '__backendValidationErrors',
     [observable],
@@ -1085,7 +1083,8 @@ function parseBackendValidationErrors(response) {
     const valErrors = get(response, 'data.error.validation_errors');
     if (response.status === 400 && valErrors) {
         const camelCasedErrors = mapKeys(valErrors, (value, key) =>
-            snakeToCamel(key));
+            snakeToCamel(key)
+        );
         return mapValues(camelCasedErrors, valError => {
             return valError.map(obj => obj.code);
         });
@@ -1240,7 +1239,7 @@ let BinderApi = class BinderApi {
 };
 
 function checkMomentInstance(attr, value) {
-    if (!(value instanceof moment)) {
+    if (!moment.isMoment(value)) {
         throw new Error(`Attribute \`${attr}\` is not a moment instance.`);
     }
 }
