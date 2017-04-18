@@ -1,0 +1,145 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`toBackendAll with deep nested relation 1`] = `
+Object {
+  "data": Array [
+    Object {
+      "id": -6,
+      "kind": -7,
+      "name": "",
+    },
+  ],
+  "relations": Object {
+    "breed": Array [
+      Object {
+        "id": -9,
+        "location": -10,
+        "name": "MyBreed",
+      },
+    ],
+    "kind": Array [
+      Object {
+        "breed": -9,
+        "id": -7,
+        "location": -8,
+        "name": "Aap",
+      },
+    ],
+    "location": Array [
+      Object {
+        "id": -8,
+        "name": "Apenheul",
+      },
+      Object {
+        "id": -10,
+        "name": "Amerika",
+      },
+    ],
+  },
+}
+`;
+
+exports[`toBackendAll with model relation 1`] = `
+Object {
+  "data": Array [
+    Object {
+      "id": 4,
+      "kind": 5,
+      "name": "",
+      "owner": -6,
+    },
+  ],
+  "relations": Object {
+    "breed": Array [
+      Object {
+        "id": -5,
+        "name": "",
+      },
+    ],
+    "kind": Array [
+      Object {
+        "breed": -5,
+        "id": 5,
+        "name": "",
+      },
+    ],
+    "owner": Array [
+      Object {
+        "id": -6,
+        "name": "",
+      },
+    ],
+  },
+}
+`;
+
+exports[`toBackendAll with nested store relation 1`] = `
+Object {
+  "data": Array [
+    Object {
+      "id": -6,
+      "name": "",
+      "past_owners": Array [
+        -7,
+        -8,
+      ],
+    },
+  ],
+  "relations": Object {
+    "past_owners": Array [
+      Object {
+        "id": -7,
+        "name": "Henk",
+        "town": -9,
+      },
+      Object {
+        "id": -8,
+        "name": "Krol",
+        "town": -10,
+      },
+    ],
+    "town": Array [
+      Object {
+        "id": -9,
+        "name": "Eindhoven",
+      },
+      Object {
+        "id": -10,
+        "name": "Breda",
+      },
+    ],
+  },
+}
+`;
+
+exports[`toBackendAll with store relation 1`] = `
+Object {
+  "data": Array [
+    Object {
+      "id": -5,
+      "name": "",
+      "past_owners": Array [
+        -6,
+        -7,
+        10,
+      ],
+    },
+  ],
+  "relations": Object {
+    "past_owners": Array [
+      Object {
+        "id": -6,
+        "name": "Bar",
+      },
+      Object {
+        "id": -7,
+        "name": "Foo",
+      },
+      Object {
+        "id": 10,
+        "name": "R",
+      },
+    ],
+  },
+}
+`;

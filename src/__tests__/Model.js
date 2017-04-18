@@ -359,38 +359,7 @@ test('toBackendAll with model relation', () => {
     animal.kind.parse({ id: 5 });
 
     const serialized = animal.toBackendAll();
-
-    expect(serialized).toEqual({
-        data: [
-            {
-                id: 4,
-                kind: 5,
-                name: '',
-                owner: -6,
-            },
-        ],
-        relations: {
-            kind: [
-                {
-                    id: 5,
-                    name: '',
-                    breed: -5,
-                },
-            ],
-            breed: [
-                {
-                    id: -5,
-                    name: '',
-                },
-            ],
-            owner: [
-                {
-                    id: -6,
-                    name: '',
-                },
-            ],
-        },
-    });
+    expect(serialized).toMatchSnapshot();
 });
 
 test('Internal relation list should not contain duplicates', () => {
@@ -411,32 +380,7 @@ test('toBackendAll with store relation', () => {
     ]);
 
     const serialized = animal.toBackendAll();
-
-    expect(serialized).toEqual({
-        data: [
-            {
-                id: -5,
-                name: '',
-                past_owners: [-6, -7, 10],
-            },
-        ],
-        relations: {
-            past_owners: [
-                {
-                    id: -6,
-                    name: 'Bar',
-                },
-                {
-                    id: -7,
-                    name: 'Foo',
-                },
-                {
-                    id: 10,
-                    name: 'R',
-                },
-            ],
-        },
-    });
+    expect(serialized).toMatchSnapshot();
 });
 
 test('toBackendAll with deep nested relation', () => {
@@ -453,43 +397,7 @@ test('toBackendAll with deep nested relation', () => {
     });
 
     const serialized = animal.toBackendAll();
-
-    expect(serialized).toEqual({
-        data: [
-            {
-                id: -6,
-                name: '',
-                kind: -7,
-            },
-        ],
-        relations: {
-            kind: [
-                {
-                    id: -7,
-                    name: 'Aap',
-                    breed: -9,
-                    location: -8,
-                },
-            ],
-            breed: [
-                {
-                    id: -9,
-                    name: 'MyBreed',
-                    location: -10,
-                },
-            ],
-            location: [
-                {
-                    id: -8,
-                    name: 'Apenheul',
-                },
-                {
-                    id: -10,
-                    name: 'Amerika',
-                },
-            ],
-        },
-    });
+    expect(serialized).toMatchSnapshot();
 });
 
 test('toBackendAll with nested store relation', () => {
@@ -512,40 +420,7 @@ test('toBackendAll with nested store relation', () => {
     ]);
 
     const serialized = animal.toBackendAll();
-
-    expect(serialized).toEqual({
-        data: [
-            {
-                id: -6,
-                name: '',
-                past_owners: [-7, -8],
-            },
-        ],
-        relations: {
-            past_owners: [
-                {
-                    id: -7,
-                    name: 'Henk',
-                    town: -9,
-                },
-                {
-                    id: -8,
-                    name: 'Krol',
-                    town: -10,
-                },
-            ],
-            town: [
-                {
-                    id: -9,
-                    name: 'Eindhoven',
-                },
-                {
-                    id: -10,
-                    name: 'Breda',
-                },
-            ],
-        },
-    });
+    expect(serialized).toMatchSnapshot();
 });
 
 test('toBackend with frontend-only prop', () => {
