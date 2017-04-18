@@ -9,6 +9,9 @@ Object {
       "owners": Array [
         3,
       ],
+      "past_owners": Array [
+        4,
+      ],
     },
   ],
   "relations": Object {
@@ -20,6 +23,9 @@ Object {
     "person": Array [
       Object {
         "id": 3,
+      },
+      Object {
+        "id": 4,
       },
     ],
   },

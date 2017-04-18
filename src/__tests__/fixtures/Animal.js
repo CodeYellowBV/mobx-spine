@@ -123,6 +123,7 @@ export class AnimalResourceName extends Model {
         return {
             blaat: KindResourceName,
             owners: PersonStoreResourceName,
+            pastOwners: PersonStoreResourceName,
         };
     }
 }

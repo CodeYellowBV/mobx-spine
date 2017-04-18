@@ -427,7 +427,7 @@ test('toBackendAll with nested store relation', () => {
 test('toBackendAll with `backendResourceName` property model', () => {
     const animal = new AnimalResourceName(
         {},
-        { relations: ['blaat', 'owners'] }
+        { relations: ['blaat', 'owners', 'pastOwners'] }
     );
 
     animal.parse({
@@ -438,6 +438,11 @@ test('toBackendAll with `backendResourceName` property model', () => {
         owners: [
             {
                 id: 3,
+            },
+        ],
+        pastOwners: [
+            {
+                id: 4,
             },
         ],
     });

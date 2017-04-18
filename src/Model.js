@@ -23,6 +23,10 @@ function generateNegativeId() {
     return -parseInt(uniqueId());
 }
 
+function concatInDict(dict, key, value) {
+    dict[key] = dict[key] ? dict[key].concat(value) : value;
+}
+
 export default class Model {
     static primaryKey = 'id';
     // How the model is known at the backend. This is useful when the model is in a relation that has a different name.
@@ -189,11 +193,9 @@ export default class Model {
             // In that case, you can add `static backendResourceName = 'activity';` to that model.
             const realBackendName =
                 rel.constructor.backendResourceName || relBackendName;
-            relations[realBackendName] = relBackendData.data;
+            concatInDict(relations, realBackendName, relBackendData.data);
             forIn(relBackendData.relations, (relB, key) => {
-                relations[key] = relations[key]
-                    ? relations[key].concat(relB)
-                    : relB;
+                concatInDict(relations, key, relB);
             });
         });
 
