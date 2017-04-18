@@ -38,6 +38,8 @@
     var _descriptor2$1;
     var _descriptor3;
     var _descriptor4;
+    var _class2$1;
+    var _temp$1;
 
     function _initDefineProp$1(target, property, descriptor, context) {
         if (!descriptor) return;
@@ -90,14 +92,19 @@
 
     const AVAILABLE_CONST_OPTIONS = ['relations', 'limit'];
 
-    let Store = ((_class$1 = class Store {
-        // Holds the fetch parameters
+    let Store = ((_class$1 = ((_temp$1 = _class2$1 = class Store {
         get isLoading() {
             return this.__pendingRequestCount > 0;
         }
-
+        // Holds the fetch parameters
         get length() {
             return this.models.length;
+        }
+
+        set backendResourceName(v) {
+            throw new Error(
+                '`backendResourceName` should be a static property on the store.'
+            );
         }
 
         constructor(options = {}) {
@@ -387,7 +394,8 @@
             }
             return this.models[index];
         }
-    }), ((_descriptor$1 = _applyDecoratedDescriptor$1(
+    }), (_class2$1.backendResourceName =
+        ''), _temp$1)), ((_descriptor$1 = _applyDecoratedDescriptor$1(
         _class$1.prototype,
         'models',
         [mobx.observable],
@@ -590,6 +598,8 @@
 
     let Model = ((_class = ((_temp = _class2 = class Model {
         // Holds activated - nested - relations (e.g. `['animal', 'animal.breed']`)
+
+        // How the model is known at the backend. This is useful when the model is in a relation that has a different name.
         get url() {
             const id = this[this.constructor.primaryKey];
             return `${this.urlRoot}${id ? `${id}/` : ''}`;
@@ -610,6 +620,12 @@
         set primaryKey(v) {
             throw new Error(
                 '`primaryKey` should be a static property on the model.'
+            );
+        }
+
+        set backendResourceName(v) {
+            throw new Error(
+                '`backendResourceName` should be a static property on the model.'
             );
         }
 
@@ -749,7 +765,12 @@
                     data[relBackendName] = myNewId;
                 }
                 const relBackendData = rel.toBackendAll(myNewId);
-                relations[relBackendName] = relBackendData.data;
+                // Sometimes the backend knows the relation by a different name, e.g. the relation is called
+                // `activities`, but the name in the backend is `activity`.
+                // In that case, you can add `static backendResourceName = 'activity';` to that model.
+                const realBackendName =
+                    rel.constructor.backendResourceName || relBackendName;
+                relations[realBackendName] = relBackendData.data;
                 lodash.forIn(relBackendData.relations, (relB, key) => {
                     relations[key] = relations[key]
                         ? relations[key].concat(relB)
@@ -1010,8 +1031,8 @@
                 this[currentRel].clear();
             });
         }
-    }), (_class2.primaryKey =
-        'id'), _temp)), ((_descriptor = _applyDecoratedDescriptor(
+    }), (_class2.primaryKey = 'id'), (_class2.backendResourceName =
+        ''), _temp)), ((_descriptor = _applyDecoratedDescriptor(
         _class.prototype,
         '__backendValidationErrors',
         [mobx.observable],
