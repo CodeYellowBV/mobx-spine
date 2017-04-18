@@ -28,6 +28,7 @@ export default class Store {
     api = null;
     __repository;
     __nestedRepository = {};
+    static backendResourceName = '';
 
     @computed get isLoading() {
         return this.__pendingRequestCount > 0;
@@ -35,6 +36,12 @@ export default class Store {
 
     @computed get length() {
         return this.models.length;
+    }
+
+    set backendResourceName(v) {
+        throw new Error(
+            '`backendResourceName` should be a static property on the store.'
+        );
     }
 
     constructor(options = {}) {

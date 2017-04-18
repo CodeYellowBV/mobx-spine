@@ -11,6 +11,7 @@ import {
     AnimalWithoutApi,
     AnimalWithoutUrl,
     AnimalCircular,
+    AnimalResourceName,
     Kind,
     Breed,
     Person,
@@ -421,6 +422,40 @@ test('toBackendAll with nested store relation', () => {
 
     const serialized = animal.toBackendAll();
     expect(serialized).toMatchSnapshot();
+});
+
+test('toBackendAll with `backendResourceName` property model', () => {
+    const animal = new AnimalResourceName(
+        {},
+        { relations: ['blaat', 'owners'] }
+    );
+
+    animal.parse({
+        id: 1,
+        blaat: {
+            id: 2,
+        },
+        owners: [
+            {
+                id: 3,
+            },
+        ],
+    });
+
+    const serialized = animal.toBackendAll();
+    expect(serialized).toMatchSnapshot();
+});
+
+test('backendResourceName defined as not static should throw error', () => {
+    class Zebra extends Model {
+        backendResourceName = 'blaat';
+    }
+
+    expect(() => {
+        return new Zebra();
+    }).toThrow(
+        '`backendResourceName` should be a static property on the model.'
+    );
 });
 
 test('toBackend with frontend-only prop', () => {

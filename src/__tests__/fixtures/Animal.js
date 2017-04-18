@@ -102,3 +102,27 @@ export class AnimalCircular extends Model {
         };
     }
 }
+
+export class KindResourceName extends Model {
+    api = new BinderApi();
+    static backendResourceName = 'kind';
+    @observable id = null;
+}
+
+export class PersonStoreResourceName extends Store {
+    Model = KindResourceName;
+    static backendResourceName = 'person';
+    api = new BinderApi();
+}
+
+export class AnimalResourceName extends Model {
+    api = new BinderApi();
+    @observable id = null;
+
+    relations() {
+        return {
+            blaat: KindResourceName,
+            owners: PersonStoreResourceName,
+        };
+    }
+}

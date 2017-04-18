@@ -1,5 +1,6 @@
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
+import { Store } from '../';
 import {
     Animal,
     AnimalStore,
@@ -258,6 +259,18 @@ test('clear models', () => {
     expect(animalStore.length).toBe(3);
     animalStore.clear();
     expect(animalStore.length).toBe(0);
+});
+
+test('backendResourceName defined as not static should throw error', () => {
+    class Zebra extends Store {
+        backendResourceName = 'blaat';
+    }
+
+    expect(() => {
+        return new Zebra();
+    }).toThrow(
+        '`backendResourceName` should be a static property on the store.'
+    );
 });
 
 test('One-level store relation', () => {

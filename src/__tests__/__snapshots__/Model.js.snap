@@ -1,5 +1,31 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`toBackendAll with \`backendResourceName\` property model 1`] = `
+Object {
+  "data": Array [
+    Object {
+      "blaat": 2,
+      "id": 1,
+      "owners": Array [
+        3,
+      ],
+    },
+  ],
+  "relations": Object {
+    "kind": Array [
+      Object {
+        "id": 2,
+      },
+    ],
+    "person": Array [
+      Object {
+        "id": 3,
+      },
+    ],
+  },
+}
+`;
+
 exports[`toBackendAll with deep nested relation 1`] = `
 Object {
   "data": Array [

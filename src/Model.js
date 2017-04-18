@@ -25,6 +25,8 @@ function generateNegativeId() {
 
 export default class Model {
     static primaryKey = 'id';
+    // How the model is known at the backend. This is useful when the model is in a relation that has a different name.
+    static backendResourceName = '';
     urlRoot;
 
     __attributes = [];
@@ -58,6 +60,12 @@ export default class Model {
     set primaryKey(v) {
         throw new Error(
             '`primaryKey` should be a static property on the model.'
+        );
+    }
+
+    set backendResourceName(v) {
+        throw new Error(
+            '`backendResourceName` should be a static property on the model.'
         );
     }
 
@@ -176,7 +184,12 @@ export default class Model {
                 data[relBackendName] = myNewId;
             }
             const relBackendData = rel.toBackendAll(myNewId);
-            relations[relBackendName] = relBackendData.data;
+            // Sometimes the backend knows the relation by a different name, e.g. the relation is called
+            // `activities`, but the name in the backend is `activity`.
+            // In that case, you can add `static backendResourceName = 'activity';` to that model.
+            const realBackendName =
+                rel.constructor.backendResourceName || relBackendName;
+            relations[realBackendName] = relBackendData.data;
             forIn(relBackendData.relations, (relB, key) => {
                 relations[key] = relations[key]
                     ? relations[key].concat(relB)
