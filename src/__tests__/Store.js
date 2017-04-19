@@ -182,6 +182,29 @@ test('remove from model without id', () => {
     expect(animalStore.map('name')).toEqual(['A']);
 });
 
+test('remove one model by id', () => {
+    const animalStore = new AnimalStore();
+    animalStore.parse(simpleData);
+
+    animalStore.removeById(3);
+    expect(animalStore.map('id')).toEqual([2, 10]);
+});
+
+test('remove multiple models by id', () => {
+    const animalStore = new AnimalStore();
+    animalStore.parse(simpleData);
+
+    animalStore.removeById([3, 10]);
+    expect(animalStore.map('id')).toEqual([2]);
+});
+
+test('remove model by id with invalid number', () => {
+    const animalStore = new AnimalStore();
+    expect(() => {
+        return animalStore.removeById(['q']);
+    }).toThrow('Cannot remove a model by id that is not a number: ["q"]');
+});
+
 test('add one model', () => {
     const animalStore = new AnimalStore();
     animalStore.parse(simpleData);

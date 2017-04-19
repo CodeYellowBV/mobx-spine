@@ -158,6 +158,26 @@ export default class Store {
         return models;
     }
 
+    @action removeById(ids) {
+        const singular = !isArray(ids);
+        ids = singular ? [ids] : ids.slice();
+        if (ids.some(isNaN)) {
+            throw new Error(
+                `Cannot remove a model by id that is not a number: ${JSON.stringify(ids)}`
+            );
+        }
+
+        const models = ids.map(id => this.get(id));
+
+        models.forEach(model => {
+            if (model) {
+                this.models.remove(model);
+            }
+        });
+
+        return models;
+    }
+
     @action clear() {
         this.models.clear();
     }
