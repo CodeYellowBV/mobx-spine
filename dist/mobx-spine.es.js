@@ -231,6 +231,26 @@ let Store = ((_class$1 = ((_temp$1 = _class2$1 = class Store {
         return models;
     }
 
+    removeById(ids) {
+        const singular = !isArray(ids);
+        ids = singular ? [ids] : ids.slice();
+        if (ids.some(isNaN)) {
+            throw new Error(
+                `Cannot remove a model by id that is not a number: ${JSON.stringify(ids)}`
+            );
+        }
+
+        const models = ids.map(id => this.get(id));
+
+        models.forEach(model => {
+            if (model) {
+                this.models.remove(model);
+            }
+        });
+
+        return models;
+    }
+
     clear() {
         this.models.clear();
     }
@@ -463,6 +483,12 @@ let Store = ((_class$1 = ((_temp$1 = _class2$1 = class Store {
     _class$1.prototype
 ), _applyDecoratedDescriptor$1(
     _class$1.prototype,
+    'removeById',
+    [action],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'removeById'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'clear',
     [action],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'),
@@ -578,6 +604,10 @@ function _applyDecoratedDescriptor(
 
 function generateNegativeId() {
     return -parseInt(uniqueId());
+}
+
+function concatInDict(dict, key, value) {
+    dict[key] = dict[key] ? dict[key].concat(value) : value;
 }
 
 let Model = ((_class = ((_temp = _class2 = class Model {
@@ -744,11 +774,9 @@ let Model = ((_class = ((_temp = _class2 = class Model {
             // In that case, you can add `static backendResourceName = 'activity';` to that model.
             const realBackendName =
                 rel.constructor.backendResourceName || relBackendName;
-            relations[realBackendName] = relBackendData.data;
+            concatInDict(relations, realBackendName, relBackendData.data);
             forIn(relBackendData.relations, (relB, key) => {
-                relations[key] = relations[key]
-                    ? relations[key].concat(relB)
-                    : relB;
+                concatInDict(relations, key, relB);
             });
         });
 
