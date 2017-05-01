@@ -22,7 +22,7 @@ test('should parse to model', () => {
     });
 
     expect(animal.birthDate).toBeInstanceOf(moment);
-    expect(animal.birthDate.format()).toBe('1995-03-22T00:00:00Z');
+    expect(animal.birthDate.format('YYYY-MM-DD')).toBe('1995-03-22');
 });
 
 test('should parse to model when null', () => {
@@ -39,7 +39,7 @@ test('should parse to model when null', () => {
 test('parse() should throw away time info', () => {
     const animal = new Animal({ birthDate: '2017-03-22T22:08:23+00:00' });
 
-    expect(animal.birthDate.format()).toBe('2017-03-22T00:00:00Z');
+    expect(animal.birthDate.format('YYYY-MM-DD')).toBe('2017-03-22');
 });
 
 test('should be serialized in toJS()', () => {
