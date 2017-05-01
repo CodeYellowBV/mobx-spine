@@ -1375,7 +1375,7 @@
                 if (value === null) {
                     return null;
                 }
-                return moment.utc(value, 'YYYY-MM-DD');
+                return moment(value, 'YYYY-MM-DD');
             },
             toJS(attr, value) {
                 if (value === null) {
@@ -1390,7 +1390,7 @@
                 if (value === null) {
                     return null;
                 }
-                return moment.utc(value);
+                return moment(value);
             },
             toJS(attr, value) {
                 if (value === null) {
