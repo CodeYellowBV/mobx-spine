@@ -36,7 +36,7 @@
     var _class$1;
     var _descriptor$1;
     var _descriptor2$1;
-    var _descriptor3;
+    var _descriptor3$1;
     var _descriptor4;
     var _class2$1;
     var _temp$1;
@@ -107,6 +107,9 @@
             );
         }
 
+        // Empty function, but can be overridden if you want to do something after initializing the model.
+        initialize() {}
+
         constructor(options = {}) {
             _initDefineProp$1(this, 'models', _descriptor$1, this);
 
@@ -115,7 +118,7 @@
             _initDefineProp$1(
                 this,
                 '__pendingRequestCount',
-                _descriptor3,
+                _descriptor3$1,
                 this
             );
 
@@ -142,6 +145,7 @@
             if (options.limit !== undefined) {
                 this.setLimit(options.limit);
             }
+            this.initialize();
         }
 
         __parseRelations(activeRelations) {
@@ -435,7 +439,7 @@
                 return {};
             },
         }
-    )), (_descriptor3 = _applyDecoratedDescriptor$1(
+    )), (_descriptor3$1 = _applyDecoratedDescriptor$1(
         _class$1.prototype,
         '__pendingRequestCount',
         [mobx.observable],
@@ -566,6 +570,7 @@
     var _class;
     var _descriptor;
     var _descriptor2;
+    var _descriptor3;
     var _class2;
     var _temp;
 
@@ -627,18 +632,20 @@
     }
 
     let Model = ((_class = ((_temp = _class2 = class Model {
-        // Holds activated - nested - relations (e.g. `['animal', 'animal.breed']`)
-
-        // How the model is known at the backend. This is useful when the model is in a relation that has a different name.
-        get url() {
-            const id = this[this.constructor.primaryKey];
-            return `${this.urlRoot}${id ? `${id}/` : ''}`;
-        }
         // A `cid` can be used to identify the model locally.
 
         // Holds activated - non-nested - relations (e.g. `['animal']`)
 
         // Holds original attributes with values, so `clear()` knows what to reset to (quite ugly).
+        get url() {
+            const id = this[this.constructor.primaryKey];
+            return `${this.urlRoot}${id ? `${id}/` : ''}`;
+        }
+        // URL query params that are added to fetch requests.
+
+        // Holds activated - nested - relations (e.g. `['animal', 'animal.breed']`)
+
+        // How the model is known at the backend. This is useful when the model is in a relation that has a different name.
         get isNew() {
             return !this[this.constructor.primaryKey];
         }
@@ -663,6 +670,9 @@
             return {};
         }
 
+        // Empty function, but can be overridden if you want to do something after initializing the model.
+        initialize() {}
+
         constructor(data, options = {}) {
             this.__attributes = [];
             this.__originalAttributes = {};
@@ -680,6 +690,8 @@
 
             _initDefineProp(this, '__pendingRequestCount', _descriptor2, this);
 
+            _initDefineProp(this, '__fetchParams', _descriptor3, this);
+
             this.__store = options.store;
             this.__repository = options.repository;
             // Find all attributes. Not all observables are an attribute.
@@ -695,6 +707,7 @@
             if (data) {
                 this.parse(data);
             }
+            this.initialize();
         }
 
         __parseRelations(activeRelations) {
@@ -831,6 +844,10 @@
                 return mobx.toJS(cast.toJS(attr, value));
             }
             return mobx.toJS(value);
+        }
+
+        setFetchParams(params) {
+            this.__fetchParams = Object.assign({}, params);
         }
 
         fromBackend({ data, repos, relMapping }) {
@@ -1040,6 +1057,7 @@
             this.__pendingRequestCount += 1;
             const data = Object.assign(
                 this.__getApi().buildFetchModelParams(this),
+                this.__fetchParams,
                 options.data
             );
             return this.__getApi().fetchModel({ url: this.url, data }).then(
@@ -1078,6 +1096,16 @@
             enumerable: true,
             initializer: function() {
                 return 0;
+            },
+        }
+    )), (_descriptor3 = _applyDecoratedDescriptor(
+        _class.prototype,
+        '__fetchParams',
+        [mobx.observable],
+        {
+            enumerable: true,
+            initializer: function() {
+                return {};
             },
         }
     )), _applyDecoratedDescriptor(
@@ -1255,6 +1283,8 @@
 
         buildFetchModelParams(model) {
             return {
+                // TODO: I really dislike that this is comma separated and not an array.
+                // We should fix this in the Binder API.
                 with: model.__activeRelations.join(',') || null,
             };
         }
