@@ -632,6 +632,20 @@ describe('requests', () => {
         });
     });
 
+    test('fetch with default params', () => {
+        const animal = new Animal({ id: 2 });
+        animal.setFetchParams({ projectId: 1 });
+        mock.onAny().replyOnce(config => {
+            expect(config.params).toEqual({
+                with: null,
+                projectId: 1,
+            });
+            return [200, {}];
+        });
+
+        return animal.fetch();
+    });
+
     test('save new with basic properties', () => {
         const animal = new Animal({ name: 'Doggo' });
         mock.onAny().replyOnce(config => {

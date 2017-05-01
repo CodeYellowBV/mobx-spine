@@ -47,6 +47,8 @@ export default class Model {
     cid = `m${uniqueId()}`;
     @observable __backendValidationErrors = {};
     @observable __pendingRequestCount = 0;
+    // URL query params that are added to fetch requests.
+    @observable __fetchParams = {};
 
     @computed get url() {
         const id = this[this.constructor.primaryKey];
@@ -224,6 +226,10 @@ export default class Model {
             return toJS(cast.toJS(attr, value));
         }
         return toJS(value);
+    }
+
+    setFetchParams(params) {
+        this.__fetchParams = Object.assign({}, params);
     }
 
     @action fromBackend({ data, repos, relMapping }) {
@@ -423,6 +429,7 @@ export default class Model {
         this.__pendingRequestCount += 1;
         const data = Object.assign(
             this.__getApi().buildFetchModelParams(this),
+            this.__fetchParams,
             options.data
         );
         return this.__getApi().fetchModel({ url: this.url, data }).then(
