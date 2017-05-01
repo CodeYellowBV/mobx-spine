@@ -7,6 +7,7 @@ import {
     Animal,
     AnimalStore,
     AnimalWithArray,
+    AnimalWithObject,
     AnimalWithFrontendProp,
     AnimalWithoutApi,
     AnimalWithoutUrl,
@@ -499,7 +500,7 @@ test('toBackend with observable array', () => {
     });
 });
 
-test('clear with basic properties', () => {
+test('clear with basic attribute', () => {
     const animal = new Animal({
         id: 2,
         name: 'Monkey',
@@ -527,7 +528,29 @@ test('clear with relations', () => {
     expect(animal.kind.id).toBe(null);
 });
 
-test('toJS with basic properties', () => {
+test('clear with array attribute', () => {
+    const animal = new AnimalWithArray();
+    animal.foo.push('bar');
+
+    expect(toJS(animal.foo)).toEqual(['bar']);
+
+    animal.clear();
+
+    expect(toJS(animal.foo)).toEqual([]);
+});
+
+test('clear with object attribute', () => {
+    const animal = new AnimalWithObject();
+    animal.foo.bar = true;
+
+    expect(toJS(animal.foo)).toEqual({ bar: true });
+
+    animal.clear();
+
+    expect(toJS(animal.foo)).toEqual({});
+});
+
+test('toJS with basic attributes', () => {
     const animal = new Animal({
         id: 4,
         name: 'japser',

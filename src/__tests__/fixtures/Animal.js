@@ -70,6 +70,10 @@ export class AnimalWithArray extends Model {
     @observable foo = [];
 }
 
+export class AnimalWithObject extends Model {
+    @observable foo = {};
+}
+
 export class AnimalWithFrontendProp extends Model {
     @observable id = null;
     @observable _frontend = null;
