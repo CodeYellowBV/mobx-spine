@@ -44,6 +44,9 @@ export default class Store {
         );
     }
 
+    // Empty function, but can be overridden if you want to do something after initializing the model.
+    initialize() {}
+
     constructor(options = {}) {
         if (!isPlainObject(options)) {
             throw Error(
@@ -61,6 +64,7 @@ export default class Store {
         if (options.limit !== undefined) {
             this.setLimit(options.limit);
         }
+        this.initialize();
     }
 
     __parseRelations(activeRelations) {

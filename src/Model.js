@@ -79,6 +79,9 @@ export default class Model {
         return {};
     }
 
+    // Empty function, but can be overridden if you want to do something after initializing the model.
+    initialize() {}
+
     constructor(data, options = {}) {
         this.__store = options.store;
         this.__repository = options.repository;
@@ -95,6 +98,7 @@ export default class Model {
         if (data) {
             this.parse(data);
         }
+        this.initialize();
     }
 
     @action __parseRelations(activeRelations) {

@@ -81,6 +81,18 @@ test('primaryKey defined as not static should throw error', () => {
     }).toThrow('`primaryKey` should be a static property on the model.');
 });
 
+test('initialize() method should be called', () => {
+    const initMock = jest.fn();
+    class Zebra extends Model {
+        initialize() {
+            initMock();
+        }
+    }
+
+    new Zebra();
+    expect(initMock.mock.calls.length).toBe(1);
+});
+
 test('URL should be correct without primary key', () => {
     const animal = new Animal();
 

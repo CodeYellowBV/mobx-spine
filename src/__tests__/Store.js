@@ -61,6 +61,18 @@ test('Initialize store with invalid option', () => {
     }).toThrow('Unknown option passed to store: foo');
 });
 
+test('initialize() method should be called', () => {
+    const initMock = jest.fn();
+    class Zebra extends Store {
+        initialize() {
+            initMock();
+        }
+    }
+
+    new Zebra();
+    expect(initMock.mock.calls.length).toBe(1);
+});
+
 // TODO; see https://github.com/CodeYellowBV/mobx-spine/issues/6
 xtest('Initialize store in constructor', () => {
     const animalStore = new AnimalStore(simpleData);
