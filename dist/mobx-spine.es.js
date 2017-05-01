@@ -3,6 +3,8 @@ import {
     computed,
     extendObservable,
     isObservable,
+    isObservableArray,
+    isObservableObject,
     observable,
     toJS,
 } from 'mobx';
@@ -677,7 +679,15 @@ let Model = ((_class = ((_temp = _class2 = class Model {
         forIn(this, (value, key) => {
             if (!key.startsWith('__') && isObservable(this, key)) {
                 this.__attributes.push(key);
-                this.__originalAttributes[key] = value;
+                let newValue = value;
+                // An array or object observable can be mutated, so we want to ensure we always have
+                // the original not-yet-mutated object/array.
+                if (isObservableArray(value)) {
+                    newValue = value.slice();
+                } else if (isObservableObject(value)) {
+                    newValue = Object.assign({}, value);
+                }
+                this.__originalAttributes[key] = newValue;
             }
         });
         if (options.relations) {
