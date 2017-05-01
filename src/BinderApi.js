@@ -98,6 +98,8 @@ export default class BinderApi {
 
     buildFetchModelParams(model) {
         return {
+            // TODO: I really dislike that this is comma separated and not an array.
+            // We should fix this in the Binder API.
             with: model.__activeRelations.join(',') || null,
         };
     }
