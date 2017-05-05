@@ -789,6 +789,18 @@ describe('requests', () => {
         return animal.saveAll();
     });
 
+    test('save all with empty response from backend', () => {
+        const animal = new Animal(
+            { name: 'Doggo', kind: { name: 'Dog' } },
+            { relations: ['kind'] }
+        );
+        mock.onAny().replyOnce(config => {
+            return [201, {}];
+        });
+
+        return animal.saveAll();
+    });
+
     test('save all fail', () => {
         const animal = new Animal({});
         mock.onAny().replyOnce(() => {
