@@ -6,6 +6,7 @@ import {
     AnimalStore,
     AnimalStoreWithoutApi,
     AnimalStoreWithoutUrl,
+    AnimalStoreWithUrlFunction,
     Breed,
     PersonStore,
 } from './fixtures/Animal';
@@ -380,6 +381,16 @@ describe('requests', () => {
             expect(animalStore.length).toBe(2);
             expect(animalStore.map('id')).toEqual([2, 3]);
         });
+    });
+
+    test('fetch with url as function', () => {
+        const animalStore = new AnimalStoreWithUrlFunction();
+        mock.onAny().replyOnce(config => {
+            expect(config.url).toBe('/api/animal/1/');
+            return [200, animalsData];
+        });
+
+        return animalStore.fetch();
     });
 
     test('fetch with relations', () => {

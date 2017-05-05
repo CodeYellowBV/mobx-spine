@@ -65,6 +65,15 @@ export class AnimalStore extends Store {
     url = '/api/animal/';
 }
 
+export class AnimalStoreWithUrlFunction extends Store {
+    Model = Animal;
+    api = new BinderApi();
+    randomId = 1;
+    url() {
+        return `/api/animal/${this.randomId}/`;
+    }
+}
+
 // I have no creativity left after 17h, sorry. Also ssssh.
 export class AnimalWithArray extends Model {
     @observable foo = [];

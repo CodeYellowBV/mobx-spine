@@ -8,6 +8,7 @@ import {
     forIn,
     at,
     isPlainObject,
+    result,
 } from 'lodash';
 
 const AVAILABLE_CONST_OPTIONS = ['relations', 'limit'];
@@ -193,13 +194,15 @@ export default class Store {
             this.params,
             options.data
         );
-        return this.__getApi().fetchStore({ url: this.url, data }).then(
-            action(res => {
-                this.__pendingRequestCount -= 1;
-                this.__state.totalRecords = res.totalRecords;
-                this.fromBackend(res);
-            })
-        );
+        return this.__getApi()
+            .fetchStore({ url: result(this, 'url'), data })
+            .then(
+                action(res => {
+                    this.__pendingRequestCount -= 1;
+                    this.__state.totalRecords = res.totalRecords;
+                    this.fromBackend(res);
+                })
+            );
     }
 
     toJS() {
