@@ -1329,7 +1329,7 @@
                 with: data.relations,
             }).then(res => {
                 return {
-                    data: res.data[0],
+                    data: res.data && res.data.length > 0 ? res.data[0] : null,
                     repos: res.with,
                     relMapping: res.with_mapping,
                 };

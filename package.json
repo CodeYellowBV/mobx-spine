@@ -1,6 +1,6 @@
 {
   "name": "mobx-spine",
-  "version": "0.11.2",
+  "version": "0.11.3",
   "license": "ISC",
   "author": "Kees Kluskens <kees@webduck.nl>",
   "description": "MobX with support for models, relations and an API.",
