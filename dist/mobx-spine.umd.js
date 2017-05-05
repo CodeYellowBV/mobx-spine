@@ -276,13 +276,15 @@
                 this.params,
                 options.data
             );
-            return this.__getApi().fetchStore({ url: this.url, data }).then(
-                mobx.action(res => {
-                    this.__pendingRequestCount -= 1;
-                    this.__state.totalRecords = res.totalRecords;
-                    this.fromBackend(res);
-                })
-            );
+            return this.__getApi()
+                .fetchStore({ url: lodash.result(this, 'url'), data })
+                .then(
+                    mobx.action(res => {
+                        this.__pendingRequestCount -= 1;
+                        this.__state.totalRecords = res.totalRecords;
+                        this.fromBackend(res);
+                    })
+                );
         }
 
         toJS() {

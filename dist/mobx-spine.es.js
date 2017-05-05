@@ -20,6 +20,7 @@ import {
     map,
     mapKeys,
     mapValues,
+    result,
     snakeCase,
     uniqueId,
 } from 'lodash';
@@ -268,13 +269,15 @@ let Store = ((_class$1 = ((_temp$1 = _class2$1 = class Store {
             this.params,
             options.data
         );
-        return this.__getApi().fetchStore({ url: this.url, data }).then(
-            action(res => {
-                this.__pendingRequestCount -= 1;
-                this.__state.totalRecords = res.totalRecords;
-                this.fromBackend(res);
-            })
-        );
+        return this.__getApi()
+            .fetchStore({ url: result(this, 'url'), data })
+            .then(
+                action(res => {
+                    this.__pendingRequestCount -= 1;
+                    this.__state.totalRecords = res.totalRecords;
+                    this.fromBackend(res);
+                })
+            );
     }
 
     toJS() {
