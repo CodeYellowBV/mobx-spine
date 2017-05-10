@@ -178,8 +178,9 @@ export default class Model {
         return output;
     }
 
-    toBackendAll(newId) {
+    toBackendAll(newId, options = {}) {
         // TODO: This implementation is more a proof of concept; it's very shitty coded.
+        const includeRelations = options.relations || [];
         const data = this.toBackend();
         const relations = {};
 
@@ -203,16 +204,37 @@ export default class Model {
                 );
                 data[relBackendName] = myNewId;
             }
-            const relBackendData = rel.toBackendAll(myNewId);
-            // Sometimes the backend knows the relation by a different name, e.g. the relation is called
-            // `activities`, but the name in the backend is `activity`.
-            // In that case, you can add `static backendResourceName = 'activity';` to that model.
-            const realBackendName =
-                rel.constructor.backendResourceName || relBackendName;
-            concatInDict(relations, realBackendName, relBackendData.data);
-            forIn(relBackendData.relations, (relB, key) => {
-                concatInDict(relations, key, relB);
+
+            // `includeRelations` can look like `['kind.breed', 'owner']`
+            // Check to see if `currentRel` matches the first part of the relation (`kind` or `owner`)
+            const includeRelationData = includeRelations.filter(rel => {
+                const nestedRels = rel.split('.');
+                return nestedRels.length > 0
+                    ? nestedRels[0] === currentRel
+                    : false;
             });
+            if (includeRelationData.length > 0) {
+                // We want to pass through nested relations to the next relation, but pop of the first level.
+                const relativeRelations = includeRelationData
+                    .map(rel => {
+                        const nestedRels = rel.split('.');
+                        nestedRels.shift();
+                        return nestedRels.join('.');
+                    })
+                    .filter(rel => !!rel);
+                const relBackendData = rel.toBackendAll(myNewId, {
+                    relations: relativeRelations,
+                });
+                // Sometimes the backend knows the relation by a different name, e.g. the relation is called
+                // `activities`, but the name in the backend is `activity`.
+                // In that case, you can add `static backendResourceName = 'activity';` to that model.
+                const realBackendName =
+                    rel.constructor.backendResourceName || relBackendName;
+                concatInDict(relations, realBackendName, relBackendData.data);
+                forIn(relBackendData.relations, (relB, key) => {
+                    concatInDict(relations, key, relB);
+                });
+            }
         });
 
         return { data: [data], relations };
@@ -385,13 +407,13 @@ export default class Model {
             );
     }
 
-    @action saveAll() {
+    @action saveAll(options = {}) {
         this.__backendValidationErrors = {};
         this.__pendingRequestCount += 1;
         return this.__getApi()
             .saveAllModels({
                 url: this.urlRoot,
-                data: this.toBackendAll(),
+                data: this.toBackendAll(null, { relations: options.relations }),
             })
             .then(
                 action(res => {

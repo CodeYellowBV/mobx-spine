@@ -372,7 +372,36 @@ test('toBackendAll with model relation', () => {
 
     animal.kind.parse({ id: 5 });
 
+    const serialized = animal.toBackendAll(null, {
+        relations: ['kind.breed', 'owner'],
+    });
+    expect(serialized).toMatchSnapshot();
+});
+
+test('toBackendAll without relations', () => {
+    const animal = new Animal(
+        {
+            id: 4,
+        },
+        { relations: ['kind.breed', 'owner'] }
+    );
+
+    animal.kind.parse({ id: 5 });
+    // Purposefully pass no paramters to toBackendAll()
     const serialized = animal.toBackendAll();
+    expect(serialized).toMatchSnapshot();
+});
+
+test('toBackendAll with partial relations', () => {
+    const animal = new Animal(
+        {
+            name: 'Doggo',
+            kind: { name: 'Dog' },
+            owner: { name: 'Henk', town: { name: 'Ehv' } },
+        },
+        { relations: ['kind', 'owner.town'] }
+    );
+    const serialized = animal.toBackendAll(null, { relations: ['owner'] });
     expect(serialized).toMatchSnapshot();
 });
 
@@ -393,7 +422,7 @@ test('toBackendAll with store relation', () => {
         { id: 10, name: 'R' },
     ]);
 
-    const serialized = animal.toBackendAll();
+    const serialized = animal.toBackendAll(null, { relations: ['pastOwners'] });
     expect(serialized).toMatchSnapshot();
 });
 
@@ -410,7 +439,9 @@ test('toBackendAll with deep nested relation', () => {
         breed: { name: 'MyBreed', location: { name: 'Amerika' } },
     });
 
-    const serialized = animal.toBackendAll();
+    const serialized = animal.toBackendAll(null, {
+        relations: ['kind.location', 'kind.breed.location'],
+    });
     expect(serialized).toMatchSnapshot();
 });
 
@@ -433,7 +464,9 @@ test('toBackendAll with nested store relation', () => {
         },
     ]);
 
-    const serialized = animal.toBackendAll();
+    const serialized = animal.toBackendAll(null, {
+        relations: ['pastOwners.town'],
+    });
     expect(serialized).toMatchSnapshot();
 });
 
@@ -460,7 +493,9 @@ test('toBackendAll with `backendResourceName` property model', () => {
         ],
     });
 
-    const serialized = animal.toBackendAll();
+    const serialized = animal.toBackendAll(null, {
+        relations: ['blaat', 'owners', 'pastOwners'],
+    });
     expect(serialized).toMatchSnapshot();
 });
 
@@ -786,7 +821,7 @@ describe('requests', () => {
             return [201, animalMultiPutResponse];
         });
 
-        return animal.saveAll();
+        return animal.saveAll({ relations: ['kind'] });
     });
 
     test('save all with empty response from backend', () => {

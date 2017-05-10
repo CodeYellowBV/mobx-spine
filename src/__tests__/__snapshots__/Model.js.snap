@@ -144,6 +144,28 @@ Object {
 }
 `;
 
+exports[`toBackendAll with partial relations 1`] = `
+Object {
+  "data": Array [
+    Object {
+      "id": -5,
+      "kind": -6,
+      "name": "Doggo",
+      "owner": -7,
+    },
+  ],
+  "relations": Object {
+    "owner": Array [
+      Object {
+        "id": -7,
+        "name": "Henk",
+        "town": -8,
+      },
+    ],
+  },
+}
+`;
+
 exports[`toBackendAll with store relation 1`] = `
 Object {
   "data": Array [
@@ -173,5 +195,19 @@ Object {
       },
     ],
   },
+}
+`;
+
+exports[`toBackendAll without relations 1`] = `
+Object {
+  "data": Array [
+    Object {
+      "id": 4,
+      "kind": 5,
+      "name": "",
+      "owner": -5,
+    },
+  ],
+  "relations": Object {},
 }
 `;
