@@ -1,6 +1,7 @@
-import { mapKeys, mapValues, get } from 'lodash';
+import { mapKeys, mapValues, snakeCase, get } from 'lodash';
 import axios from 'axios';
 import snakeToCamel from './snakeToCamel';
+import camelToSnake from './camelToSnake';
 
 // Function ripped from Django docs.
 // See: https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
@@ -100,7 +101,7 @@ export default class BinderApi {
         return {
             // TODO: I really dislike that this is comma separated and not an array.
             // We should fix this in the Binder API.
-            with: model.__activeRelations.join(',') || null,
+            with: model.__activeRelations.map(camelToSnake).join(',') || null,
         };
     }
 

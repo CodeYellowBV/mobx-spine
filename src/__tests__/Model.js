@@ -702,6 +702,23 @@ describe('requests', () => {
         });
     });
 
+    test('fetch with camelCased relations', () => {
+        const animal = new Animal(
+            { id: 2 },
+            {
+                relations: ['pastOwners'],
+            }
+        );
+        mock.onAny().replyOnce(config => {
+            expect(config.params).toEqual({
+                with: 'past_owners',
+            });
+            return [200, animalsWithPastOwnersAndTownData];
+        });
+
+        return animal.fetch();
+    });
+
     test('fetch with default params', () => {
         const animal = new Animal({ id: 2 });
         animal.setFetchParams({ projectId: 1 });
