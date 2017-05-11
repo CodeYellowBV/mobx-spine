@@ -297,6 +297,22 @@ test('clear models', () => {
     expect(animalStore.length).toBe(0);
 });
 
+test('virtualStore with basic properties', () => {
+    const animalStore = new AnimalStore();
+    animalStore.parse(simpleData);
+
+    const virtual = animalStore.virtualStore({
+        filter: m => m.name.includes('e'),
+    });
+    expect(virtual.map('id')).toEqual([2, 3]);
+    const newModel = animalStore.add({ id: 5, name: 'eeeee' });
+    expect(virtual.map('id')).toEqual([2, 3, 5]);
+    animalStore.remove(newModel);
+    expect(virtual.map('id')).toEqual([2, 3]);
+    animalStore.get(2).name = 'aaaaa';
+    expect(virtual.map('id')).toEqual([3]);
+});
+
 test('backendResourceName defined as not static should throw error', () => {
     class Zebra extends Store {
         backendResourceName = 'blaat';

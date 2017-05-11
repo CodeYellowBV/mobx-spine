@@ -1,4 +1,4 @@
-import { observable, computed, action } from 'mobx';
+import { observable, computed, action, autorun } from 'mobx';
 import {
     isArray,
     map,
@@ -292,6 +292,20 @@ export default class Store {
         });
 
         return { data, relations };
+    }
+
+    // Create a new instance of this store with a predicate applied.
+    // This new store will be automatically kept in-sync with all models that adhere to the predicate.
+    virtualStore({ filter }) {
+        const store = new this.constructor({
+            relations: this.__activeRelations,
+        });
+        // Oh gawd MobX is so awesome.
+        autorun(() => {
+            const models = this.filter(filter);
+            store.models.replace(models);
+        });
+        return store;
     }
 
     // Helper methods to read models.
