@@ -357,10 +357,11 @@
             return Promise.resolve();
         }
 
-        toBackendAll(newIds = []) {
+        toBackendAll(newIds = [], options = {}) {
             const modelData = this.models.map((model, i) => {
                 return model.toBackendAll(
-                    newIds && newIds[i] !== undefined ? newIds[i] : null
+                    newIds && newIds[i] !== undefined ? newIds[i] : null,
+                    { relations: options.relations }
                 );
             });
 
@@ -377,6 +378,20 @@
             });
 
             return { data, relations };
+        }
+
+        // Create a new instance of this store with a predicate applied.
+        // This new store will be automatically kept in-sync with all models that adhere to the predicate.
+        virtualStore({ filter: filter$$1 }) {
+            const store = new this.constructor({
+                relations: this.__activeRelations,
+            });
+            // Oh gawd MobX is so awesome.
+            mobx.autorun(() => {
+                const models = this.filter(filter$$1);
+                store.models.replace(models);
+            });
+            return store;
         }
 
         // Helper methods to read models.
@@ -792,8 +807,9 @@
             return output;
         }
 
-        toBackendAll(newId) {
+        toBackendAll(newId, options = {}) {
             // TODO: This implementation is more a proof of concept; it's very shitty coded.
+            const includeRelations = options.relations || [];
             const data = this.toBackend();
             const relations = {};
 
@@ -817,16 +833,41 @@
                     );
                     data[relBackendName] = myNewId;
                 }
-                const relBackendData = rel.toBackendAll(myNewId);
-                // Sometimes the backend knows the relation by a different name, e.g. the relation is called
-                // `activities`, but the name in the backend is `activity`.
-                // In that case, you can add `static backendResourceName = 'activity';` to that model.
-                const realBackendName =
-                    rel.constructor.backendResourceName || relBackendName;
-                concatInDict(relations, realBackendName, relBackendData.data);
-                lodash.forIn(relBackendData.relations, (relB, key) => {
-                    concatInDict(relations, key, relB);
+
+                // `includeRelations` can look like `['kind.breed', 'owner']`
+                // Check to see if `currentRel` matches the first part of the relation (`kind` or `owner`)
+                const includeRelationData = includeRelations.filter(rel => {
+                    const nestedRels = rel.split('.');
+                    return nestedRels.length > 0
+                        ? nestedRels[0] === currentRel
+                        : false;
                 });
+                if (includeRelationData.length > 0) {
+                    // We want to pass through nested relations to the next relation, but pop of the first level.
+                    const relativeRelations = includeRelationData
+                        .map(rel => {
+                            const nestedRels = rel.split('.');
+                            nestedRels.shift();
+                            return nestedRels.join('.');
+                        })
+                        .filter(rel => !!rel);
+                    const relBackendData = rel.toBackendAll(myNewId, {
+                        relations: relativeRelations,
+                    });
+                    // Sometimes the backend knows the relation by a different name, e.g. the relation is called
+                    // `activities`, but the name in the backend is `activity`.
+                    // In that case, you can add `static backendResourceName = 'activity';` to that model.
+                    const realBackendName =
+                        rel.constructor.backendResourceName || relBackendName;
+                    concatInDict(
+                        relations,
+                        realBackendName,
+                        relBackendData.data
+                    );
+                    lodash.forIn(relBackendData.relations, (relB, key) => {
+                        concatInDict(relations, key, relB);
+                    });
+                }
             });
 
             return { data: [data], relations };
@@ -995,7 +1036,7 @@
                 .then(
                     mobx.action(res => {
                         this.__pendingRequestCount -= 1;
-                        this.fromBackend(res);
+                        this.saveFromBackend(res);
                     })
                 )
                 .catch(
@@ -1009,18 +1050,20 @@
                 );
         }
 
-        saveAll() {
+        saveAll(options = {}) {
             this.__backendValidationErrors = {};
             this.__pendingRequestCount += 1;
             return this.__getApi()
                 .saveAllModels({
                     url: this.urlRoot,
-                    data: this.toBackendAll(),
+                    data: this.toBackendAll(null, {
+                        relations: options.relations,
+                    }),
                 })
                 .then(
                     mobx.action(res => {
                         this.__pendingRequestCount -= 1;
-                        this.fromBackend(res);
+                        this.saveFromBackend(res);
                     })
                 )
                 .catch(
@@ -1030,6 +1073,12 @@
                         throw err;
                     })
                 );
+        }
+
+        // This is just a pass-through to make it easier to override parsing backend responses from the backend.
+        // Sometimes the backend won't return the model after a save because e.g. it is created async.
+        saveFromBackend(res) {
+            return this.fromBackend(res);
         }
 
         // TODO: This is a bit hacky...
@@ -1195,6 +1244,14 @@
         _class.prototype
     )), _class);
 
+    // lodash's `snakeCase` method removes dots from the string; this breaks mobx-spine
+    function camelToSnake(s) {
+        if (s.startsWith('_')) {
+            return s;
+        }
+        return s.replace(/([A-Z])/g, $1 => '_' + $1.toLowerCase());
+    }
+
     // Function ripped from Django docs.
     // See: https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
     function csrfSafeMethod(method) {
@@ -1295,7 +1352,8 @@
             return {
                 // TODO: I really dislike that this is comma separated and not an array.
                 // We should fix this in the Binder API.
-                with: model.__activeRelations.join(',') || null,
+                with: model.__activeRelations.map(camelToSnake).join(',') ||
+                    null,
             };
         }
 
