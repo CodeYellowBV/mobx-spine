@@ -1,4 +1,4 @@
-import { mapKeys, mapValues, snakeCase, get } from 'lodash';
+import { mapKeys, mapValues, get } from 'lodash';
 import axios from 'axios';
 import snakeToCamel from './snakeToCamel';
 import camelToSnake from './camelToSnake';
