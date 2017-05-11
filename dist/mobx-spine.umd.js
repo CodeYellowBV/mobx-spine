@@ -30,8 +30,34 @@
         if (s.startsWith('_')) {
             return s;
         }
-        return s.replace(/_\w/g, m => m[1].toUpperCase());
+        return s.replace(/_\w/g, function(m) {
+            return m[1].toUpperCase();
+        });
     }
+
+    var classCallCheck = function(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError('Cannot call a class as a function');
+        }
+    };
+
+    var createClass = (function() {
+        function defineProperties(target, props) {
+            for (var i = 0; i < props.length; i++) {
+                var descriptor = props[i];
+                descriptor.enumerable = descriptor.enumerable || false;
+                descriptor.configurable = true;
+                if ('value' in descriptor) descriptor.writable = true;
+                Object.defineProperty(target, descriptor.key, descriptor);
+            }
+        }
+
+        return function(Constructor, protoProps, staticProps) {
+            if (protoProps) defineProperties(Constructor.prototype, protoProps);
+            if (staticProps) defineProperties(Constructor, staticProps);
+            return Constructor;
+        };
+    })();
 
     var _class$1;
     var _descriptor$1;
@@ -90,27 +116,45 @@
         return desc;
     }
 
-    const AVAILABLE_CONST_OPTIONS = ['relations', 'limit'];
+    var AVAILABLE_CONST_OPTIONS = ['relations', 'limit'];
 
-    let Store = ((_class$1 = ((_temp$1 = _class2$1 = class Store {
-        get isLoading() {
-            return this.__pendingRequestCount > 0;
-        }
-        // Holds the fetch parameters
-        get length() {
-            return this.models.length;
-        }
+    var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
+        createClass(Store, [
+            {
+                key: 'initialize',
 
-        set backendResourceName(v) {
-            throw new Error(
-                '`backendResourceName` should be a static property on the store.'
-            );
-        }
+                // Empty function, but can be overridden if you want to do something after initializing the model.
+                value: function initialize() {},
+            },
+            {
+                key: 'isLoading',
+                get: function get$$1() {
+                    return this.__pendingRequestCount > 0;
+                },
+                // Holds the fetch parameters
+            },
+            {
+                key: 'length',
+                get: function get$$1() {
+                    return this.models.length;
+                },
+            },
+            {
+                key: 'backendResourceName',
+                set: function set$$1(v) {
+                    throw new Error(
+                        '`backendResourceName` should be a static property on the store.'
+                    );
+                },
+            },
+        ]);
 
-        // Empty function, but can be overridden if you want to do something after initializing the model.
-        initialize() {}
+        function Store() {
+            var options = arguments.length > 0 && arguments[0] !== undefined
+                ? arguments[0]
+                : {};
+            classCallCheck(this, Store);
 
-        constructor(options = {}) {
             _initDefineProp$1(this, 'models', _descriptor$1, this);
 
             _initDefineProp$1(this, 'params', _descriptor2$1, this);
@@ -134,9 +178,9 @@
                     'Store only accepts an object with options. Chain `.parse(data)` to add models.'
                 );
             }
-            lodash.forIn(options, (value, option) => {
+            lodash.forIn(options, function(value, option) {
                 if (!AVAILABLE_CONST_OPTIONS.includes(option)) {
-                    throw Error(`Unknown option passed to store: ${option}`);
+                    throw Error('Unknown option passed to store: ' + option);
                 }
             });
             if (options.relations) {
@@ -148,301 +192,443 @@
             this.initialize();
         }
 
-        __parseRelations(activeRelations) {
-            this.__activeRelations = activeRelations;
-        }
+        createClass(Store, [
+            {
+                key: '__parseRelations',
+                value: function __parseRelations(activeRelations) {
+                    this.__activeRelations = activeRelations;
+                },
+            },
+            {
+                key: '__addFromRepository',
+                value: function __addFromRepository() {
+                    var _this = this;
 
-        __addFromRepository(ids = []) {
-            ids = lodash.isArray(ids) ? ids : [ids];
+                    var ids = arguments.length > 0 && arguments[0] !== undefined
+                        ? arguments[0]
+                        : [];
 
-            const records = lodash.at(
-                lodash.keyBy(this.__repository, this.Model.primaryKey),
-                ids
-            );
-            this.models.replace(
-                records.map(record => {
-                    return new this.Model(record, {
+                    ids = lodash.isArray(ids) ? ids : [ids];
+
+                    var records = lodash.at(
+                        lodash.keyBy(this.__repository, this.Model.primaryKey),
+                        ids
+                    );
+                    this.models.replace(
+                        records.map(function(record) {
+                            return new _this.Model(record, {
+                                store: _this,
+                                relations: _this.__activeRelations,
+                            });
+                        })
+                    );
+                },
+            },
+            {
+                key: '__getApi',
+                value: function __getApi() {
+                    if (!this.api) {
+                        throw new Error(
+                            'You are trying to perform a API request without an `api` property defined on the store.'
+                        );
+                    }
+                    if (!this.url) {
+                        throw new Error(
+                            'You are trying to perform a API request without an `url` property defined on the store.'
+                        );
+                    }
+                    return this.api;
+                },
+            },
+            {
+                key: 'fromBackend',
+                value: function fromBackend(_ref) {
+                    var _this2 = this;
+
+                    var data = _ref.data,
+                        repos = _ref.repos,
+                        relMapping = _ref.relMapping;
+
+                    this.models.replace(
+                        data.map(function(record) {
+                            // TODO: I'm not happy at all about how this looks.
+                            // We'll need to finetune some things, but hey, for now it works.
+                            var model = _this2._newModel();
+                            model.fromBackend({
+                                data: record,
+                                repos: repos,
+                                relMapping: relMapping,
+                            });
+                            return model;
+                        })
+                    );
+                },
+            },
+            {
+                key: '_newModel',
+                value: function _newModel() {
+                    var model = arguments.length > 0 &&
+                        arguments[0] !== undefined
+                        ? arguments[0]
+                        : null;
+
+                    return new this.Model(model, {
                         store: this,
                         relations: this.__activeRelations,
                     });
-                })
-            );
-        }
+                },
+            },
+            {
+                key: 'parse',
+                value: function parse(models) {
+                    if (!lodash.isArray(models)) {
+                        throw new Error(
+                            'Parameter supplied to parse() is not an array.'
+                        );
+                    }
+                    this.models.replace(models.map(this._newModel.bind(this)));
 
-        __getApi() {
-            if (!this.api) {
-                throw new Error(
-                    'You are trying to perform a API request without an `api` property defined on the store.'
-                );
-            }
-            if (!this.url) {
-                throw new Error(
-                    'You are trying to perform a API request without an `url` property defined on the store.'
-                );
-            }
-            return this.api;
-        }
+                    return this;
+                },
+            },
+            {
+                key: 'add',
+                value: function add(models) {
+                    var _this3 = this;
 
-        fromBackend({ data, repos, relMapping }) {
-            this.models.replace(
-                data.map(record => {
-                    // TODO: I'm not happy at all about how this looks.
-                    // We'll need to finetune some things, but hey, for now it works.
-                    const model = this._newModel();
-                    model.fromBackend({
-                        data: record,
-                        repos,
-                        relMapping,
+                    var singular = !lodash.isArray(models);
+                    models = singular ? [models] : models.slice();
+
+                    var modelInstances = models.map(this._newModel.bind(this));
+
+                    modelInstances.forEach(function(modelInstance) {
+                        var primaryValue =
+                            modelInstance[_this3.Model.primaryKey];
+                        if (primaryValue && _this3.get(primaryValue)) {
+                            throw Error(
+                                'A model with the same primary key value "' +
+                                    primaryValue +
+                                    '" already exists in this store.'
+                            );
+                        }
+                        _this3.models.push(modelInstance);
                     });
-                    return model;
-                })
-            );
-        }
 
-        _newModel(model = null) {
-            return new this.Model(model, {
-                store: this,
-                relations: this.__activeRelations,
-            });
-        }
+                    return singular ? modelInstances[0] : modelInstances;
+                },
+            },
+            {
+                key: 'remove',
+                value: function remove(models) {
+                    var _this4 = this;
 
-        parse(models) {
-            if (!lodash.isArray(models)) {
-                throw new Error(
-                    'Parameter supplied to parse() is not an array.'
-                );
-            }
-            this.models.replace(models.map(this._newModel.bind(this)));
+                    var singular = !lodash.isArray(models);
+                    models = singular ? [models] : models.slice();
 
-            return this;
-        }
+                    models.forEach(function(model) {
+                        return _this4.models.remove(model);
+                    });
 
-        add(models) {
-            const singular = !lodash.isArray(models);
-            models = singular ? [models] : models.slice();
+                    return models;
+                },
+            },
+            {
+                key: 'removeById',
+                value: function removeById(ids) {
+                    var _this5 = this;
 
-            const modelInstances = models.map(this._newModel.bind(this));
+                    var singular = !lodash.isArray(ids);
+                    ids = singular ? [ids] : ids.slice();
+                    if (ids.some(isNaN)) {
+                        throw new Error(
+                            'Cannot remove a model by id that is not a number: ' +
+                                JSON.stringify(ids)
+                        );
+                    }
 
-            modelInstances.forEach(modelInstance => {
-                const primaryValue = modelInstance[this.Model.primaryKey];
-                if (primaryValue && this.get(primaryValue)) {
-                    throw Error(
-                        `A model with the same primary key value "${primaryValue}" already exists in this store.`
+                    var models = ids.map(function(id) {
+                        return _this5.get(id);
+                    });
+
+                    models.forEach(function(model) {
+                        if (model) {
+                            _this5.models.remove(model);
+                        }
+                    });
+
+                    return models;
+                },
+            },
+            {
+                key: 'clear',
+                value: function clear() {
+                    this.models.clear();
+                },
+            },
+            {
+                key: 'fetch',
+                value: function fetch() {
+                    var _this6 = this;
+
+                    var options = arguments.length > 0 &&
+                        arguments[0] !== undefined
+                        ? arguments[0]
+                        : {};
+
+                    this.__pendingRequestCount += 1;
+                    var data = Object.assign(
+                        this.__getApi().buildFetchStoreParams(this),
+                        this.params,
+                        options.data
                     );
-                }
-                this.models.push(modelInstance);
-            });
+                    return this.__getApi()
+                        .fetchStore({
+                            url: lodash.result(this, 'url'),
+                            data: data,
+                        })
+                        .then(
+                            mobx.action(function(res) {
+                                _this6.__pendingRequestCount -= 1;
+                                _this6.__state.totalRecords = res.totalRecords;
+                                _this6.fromBackend(res);
+                            })
+                        );
+                },
+            },
+            {
+                key: 'toJS',
+                value: function toJS$$1() {
+                    return this.models.map(function(model) {
+                        return model.toJS();
+                    });
+                },
 
-            return singular ? modelInstances[0] : modelInstances;
-        }
+                // Methods for pagination.
+            },
+            {
+                key: 'getPageOffset',
+                value: function getPageOffset() {
+                    return (this.__state.currentPage - 1) * this.__state.limit;
+                },
+            },
+            {
+                key: 'setLimit',
+                value: function setLimit(limit) {
+                    if (limit && !Number.isInteger(limit)) {
+                        throw new Error(
+                            'Page limit should be a number or falsy value.'
+                        );
+                    }
+                    this.__state.limit = limit || null;
+                },
+            },
+            {
+                key: 'getNextPage',
+                value: function getNextPage() {
+                    if (!this.hasNextPage) {
+                        throw new Error('There is no next page.');
+                    }
+                    this.__state.currentPage += 1;
+                    return this.fetch();
+                },
+            },
+            {
+                key: 'getPreviousPage',
+                value: function getPreviousPage() {
+                    if (!this.hasPreviousPage) {
+                        throw new Error('There is no previous page.');
+                    }
+                    this.__state.currentPage -= 1;
+                    return this.fetch();
+                },
+            },
+            {
+                key: 'setPage',
+                value: function setPage() {
+                    var page = arguments.length > 0 &&
+                        arguments[0] !== undefined
+                        ? arguments[0]
+                        : 1;
+                    var options = arguments.length > 1 &&
+                        arguments[1] !== undefined
+                        ? arguments[1]
+                        : {};
 
-        remove(models) {
-            const singular = !lodash.isArray(models);
-            models = singular ? [models] : models.slice();
+                    if (!Number.isInteger(page)) {
+                        throw new Error('Page should be a number.');
+                    }
+                    if (page > this.totalPages || page < 1) {
+                        throw new Error(
+                            'Page should be between 1 and ' +
+                                this.totalPages +
+                                '.'
+                        );
+                    }
+                    this.__state.currentPage = page;
+                    if (options.fetch === undefined || options.fetch) {
+                        return this.fetch();
+                    }
+                    return Promise.resolve();
+                },
+            },
+            {
+                key: 'toBackendAll',
+                value: function toBackendAll() {
+                    var newIds = arguments.length > 0 &&
+                        arguments[0] !== undefined
+                        ? arguments[0]
+                        : [];
+                    var options = arguments.length > 1 &&
+                        arguments[1] !== undefined
+                        ? arguments[1]
+                        : {};
 
-            models.forEach(model => this.models.remove(model));
+                    var modelData = this.models.map(function(model, i) {
+                        return model.toBackendAll(
+                            newIds && newIds[i] !== undefined
+                                ? newIds[i]
+                                : null,
+                            { relations: options.relations }
+                        );
+                    });
 
-            return models;
-        }
+                    var data = [];
+                    var relations = {};
 
-        removeById(ids) {
-            const singular = !lodash.isArray(ids);
-            ids = singular ? [ids] : ids.slice();
-            if (ids.some(isNaN)) {
-                throw new Error(
-                    `Cannot remove a model by id that is not a number: ${JSON.stringify(ids)}`
-                );
-            }
+                    modelData.forEach(function(model) {
+                        data = data.concat(model.data);
+                        lodash.forIn(model.relations, function(relModel, key) {
+                            relations[key] = relations[key]
+                                ? relations[key].concat(relModel)
+                                : relModel;
+                        });
+                    });
 
-            const models = ids.map(id => this.get(id));
+                    return { data: data, relations: relations };
+                },
 
-            models.forEach(model => {
-                if (model) {
-                    this.models.remove(model);
-                }
-            });
+                // Create a new instance of this store with a predicate applied.
+                // This new store will be automatically kept in-sync with all models that adhere to the predicate.
+            },
+            {
+                key: 'virtualStore',
+                value: function virtualStore(_ref2) {
+                    var _this7 = this;
 
-            return models;
-        }
+                    var filter$$1 = _ref2.filter;
 
-        clear() {
-            this.models.clear();
-        }
+                    var store = new this.constructor({
+                        relations: this.__activeRelations,
+                    });
+                    // Oh gawd MobX is so awesome.
+                    mobx.autorun(function() {
+                        var models = _this7.filter(filter$$1);
+                        store.models.replace(models);
+                    });
+                    return store;
+                },
 
-        fetch(options = {}) {
-            this.__pendingRequestCount += 1;
-            const data = Object.assign(
-                this.__getApi().buildFetchStoreParams(this),
-                this.params,
-                options.data
-            );
-            return this.__getApi()
-                .fetchStore({ url: lodash.result(this, 'url'), data })
-                .then(
-                    mobx.action(res => {
-                        this.__pendingRequestCount -= 1;
-                        this.__state.totalRecords = res.totalRecords;
-                        this.fromBackend(res);
-                    })
-                );
-        }
-
-        toJS() {
-            return this.models.map(model => model.toJS());
-        }
-
-        // Methods for pagination.
-
-        getPageOffset() {
-            return (this.__state.currentPage - 1) * this.__state.limit;
-        }
-
-        setLimit(limit) {
-            if (limit && !Number.isInteger(limit)) {
-                throw new Error(
-                    'Page limit should be a number or falsy value.'
-                );
-            }
-            this.__state.limit = limit || null;
-        }
-
-        get totalPages() {
-            if (!this.__state.limit) {
-                return 0;
-            }
-            return Math.ceil(this.__state.totalRecords / this.__state.limit);
-        }
-
-        get currentPage() {
-            return this.__state.currentPage;
-        }
-
-        get hasNextPage() {
-            return this.__state.currentPage + 1 <= this.totalPages;
-        }
-
-        get hasPreviousPage() {
-            return this.__state.currentPage > 1;
-        }
-
-        getNextPage() {
-            if (!this.hasNextPage) {
-                throw new Error('There is no next page.');
-            }
-            this.__state.currentPage += 1;
-            return this.fetch();
-        }
-
-        getPreviousPage() {
-            if (!this.hasPreviousPage) {
-                throw new Error('There is no previous page.');
-            }
-            this.__state.currentPage -= 1;
-            return this.fetch();
-        }
-
-        setPage(page = 1, options = {}) {
-            if (!Number.isInteger(page)) {
-                throw new Error('Page should be a number.');
-            }
-            if (page > this.totalPages || page < 1) {
-                throw new Error(
-                    `Page should be between 1 and ${this.totalPages}.`
-                );
-            }
-            this.__state.currentPage = page;
-            if (options.fetch === undefined || options.fetch) {
-                return this.fetch();
-            }
-            return Promise.resolve();
-        }
-
-        toBackendAll(newIds = [], options = {}) {
-            const modelData = this.models.map((model, i) => {
-                return model.toBackendAll(
-                    newIds && newIds[i] !== undefined ? newIds[i] : null,
-                    { relations: options.relations }
-                );
-            });
-
-            let data = [];
-            const relations = {};
-
-            modelData.forEach(model => {
-                data = data.concat(model.data);
-                lodash.forIn(model.relations, (relModel, key) => {
-                    relations[key] = relations[key]
-                        ? relations[key].concat(relModel)
-                        : relModel;
-                });
-            });
-
-            return { data, relations };
-        }
-
-        // Create a new instance of this store with a predicate applied.
-        // This new store will be automatically kept in-sync with all models that adhere to the predicate.
-        virtualStore({ filter: filter$$1 }) {
-            const store = new this.constructor({
-                relations: this.__activeRelations,
-            });
-            // Oh gawd MobX is so awesome.
-            mobx.autorun(() => {
-                const models = this.filter(filter$$1);
-                store.models.replace(models);
-            });
-            return store;
-        }
-
-        // Helper methods to read models.
-
-        get(id) {
-            // The id can be defined as a string or int, but we want it to work in both cases.
-            return this.models.find(
-                model => model[model.constructor.primaryKey] == id // eslint-disable-line eqeqeq
-            );
-        }
-
-        map(predicate) {
-            return lodash.map(this.models, predicate);
-        }
-
-        mapByPrimaryKey() {
-            return this.map(this.Model.primaryKey);
-        }
-
-        filter(predicate) {
-            return lodash.filter(this.models, predicate);
-        }
-
-        find(predicate) {
-            return lodash.find(this.models, predicate);
-        }
-
-        each(predicate) {
-            return this.models.forEach(predicate);
-        }
-
-        at(index) {
-            const zeroLength = this.length - 1;
-            if (index > zeroLength) {
-                throw new Error(
-                    `Index ${index} is out of bounds (max ${zeroLength}).`
-                );
-            }
-            if (index < 0) {
-                index += this.length;
-            }
-            return this.models[index];
-        }
-    }), (_class2$1.backendResourceName =
+                // Helper methods to read models.
+            },
+            {
+                key: 'get',
+                value: function get$$1(id) {
+                    // The id can be defined as a string or int, but we want it to work in both cases.
+                    return this.models.find(
+                        function(model) {
+                            return model[model.constructor.primaryKey] == id;
+                        } // eslint-disable-line eqeqeq
+                    );
+                },
+            },
+            {
+                key: 'map',
+                value: function map$$1(predicate) {
+                    return lodash.map(this.models, predicate);
+                },
+            },
+            {
+                key: 'mapByPrimaryKey',
+                value: function mapByPrimaryKey() {
+                    return this.map(this.Model.primaryKey);
+                },
+            },
+            {
+                key: 'filter',
+                value: function filter$$1(predicate) {
+                    return lodash.filter(this.models, predicate);
+                },
+            },
+            {
+                key: 'find',
+                value: function find$$1(predicate) {
+                    return lodash.find(this.models, predicate);
+                },
+            },
+            {
+                key: 'each',
+                value: function each(predicate) {
+                    return this.models.forEach(predicate);
+                },
+            },
+            {
+                key: 'at',
+                value: function at$$1(index) {
+                    var zeroLength = this.length - 1;
+                    if (index > zeroLength) {
+                        throw new Error(
+                            'Index ' +
+                                index +
+                                ' is out of bounds (max ' +
+                                zeroLength +
+                                ').'
+                        );
+                    }
+                    if (index < 0) {
+                        index += this.length;
+                    }
+                    return this.models[index];
+                },
+            },
+            {
+                key: 'totalPages',
+                get: function get$$1() {
+                    if (!this.__state.limit) {
+                        return 0;
+                    }
+                    return Math.ceil(
+                        this.__state.totalRecords / this.__state.limit
+                    );
+                },
+            },
+            {
+                key: 'currentPage',
+                get: function get$$1() {
+                    return this.__state.currentPage;
+                },
+            },
+            {
+                key: 'hasNextPage',
+                get: function get$$1() {
+                    return this.__state.currentPage + 1 <= this.totalPages;
+                },
+            },
+            {
+                key: 'hasPreviousPage',
+                get: function get$$1() {
+                    return this.__state.currentPage > 1;
+                },
+            },
+        ]);
+        return Store;
+    })()), (_class2$1.backendResourceName =
         ''), _temp$1)), ((_descriptor$1 = _applyDecoratedDescriptor$1(
         _class$1.prototype,
         'models',
         [mobx.observable],
         {
             enumerable: true,
-            initializer: function() {
+            initializer: function initializer() {
                 return [];
             },
         }
@@ -452,7 +638,7 @@
         [mobx.observable],
         {
             enumerable: true,
-            initializer: function() {
+            initializer: function initializer() {
                 return {};
             },
         }
@@ -462,7 +648,7 @@
         [mobx.observable],
         {
             enumerable: true,
-            initializer: function() {
+            initializer: function initializer() {
                 return 0;
             },
         }
@@ -472,7 +658,7 @@
         [mobx.observable],
         {
             enumerable: true,
-            initializer: function() {
+            initializer: function initializer() {
                 return {
                     currentPage: 1,
                     limit: 25,
@@ -648,55 +834,81 @@
         dict[key] = dict[key] ? dict[key].concat(value) : value;
     }
 
-    let Model = ((_class = ((_temp = _class2 = class Model {
-        // A `cid` can be used to identify the model locally.
+    var Model = ((_class = ((_temp = _class2 = (function() {
+        createClass(Model, [
+            {
+                key: 'casts',
+                value: function casts() {
+                    return {};
+                },
 
-        // Holds activated - non-nested - relations (e.g. `['animal']`)
+                // Empty function, but can be overridden if you want to do something after initializing the model.
+            },
+            {
+                key: 'initialize',
+                value: function initialize() {},
+            },
+            {
+                key: 'url',
 
-        // Holds original attributes with values, so `clear()` knows what to reset to (quite ugly).
-        get url() {
-            const id = this[this.constructor.primaryKey];
-            return `${this.urlRoot}${id ? `${id}/` : ''}`;
-        }
-        // URL query params that are added to fetch requests.
+                // A `cid` can be used to identify the model locally.
 
-        // Holds activated - nested - relations (e.g. `['animal', 'animal.breed']`)
+                // Holds activated - non-nested - relations (e.g. `['animal']`)
 
-        // How the model is known at the backend. This is useful when the model is in a relation that has a different name.
-        get isNew() {
-            return !this[this.constructor.primaryKey];
-        }
+                // Holds original attributes with values, so `clear()` knows what to reset to (quite ugly).
+                get: function get$$1() {
+                    var id = this[this.constructor.primaryKey];
+                    return '' + this.urlRoot + (id ? id + '/' : '');
+                },
+                // URL query params that are added to fetch requests.
 
-        get isLoading() {
-            return this.__pendingRequestCount > 0;
-        }
+                // Holds activated - nested - relations (e.g. `['animal', 'animal.breed']`)
 
-        set primaryKey(v) {
-            throw new Error(
-                '`primaryKey` should be a static property on the model.'
-            );
-        }
+                // How the model is known at the backend. This is useful when the model is in a relation that has a different name.
+            },
+            {
+                key: 'isNew',
+                get: function get$$1() {
+                    return !this[this.constructor.primaryKey];
+                },
+            },
+            {
+                key: 'isLoading',
+                get: function get$$1() {
+                    return this.__pendingRequestCount > 0;
+                },
+            },
+            {
+                key: 'primaryKey',
+                set: function set$$1(v) {
+                    throw new Error(
+                        '`primaryKey` should be a static property on the model.'
+                    );
+                },
+            },
+            {
+                key: 'backendResourceName',
+                set: function set$$1(v) {
+                    throw new Error(
+                        '`backendResourceName` should be a static property on the model.'
+                    );
+                },
+            },
+        ]);
 
-        set backendResourceName(v) {
-            throw new Error(
-                '`backendResourceName` should be a static property on the model.'
-            );
-        }
+        function Model(data) {
+            var _this = this;
 
-        casts() {
-            return {};
-        }
-
-        // Empty function, but can be overridden if you want to do something after initializing the model.
-        initialize() {}
-
-        constructor(data, options = {}) {
+            var options = arguments.length > 1 && arguments[1] !== undefined
+                ? arguments[1]
+                : {};
+            classCallCheck(this, Model);
             this.__attributes = [];
             this.__originalAttributes = {};
             this.__activeRelations = [];
             this.__activeCurrentRelations = [];
             this.api = null;
-            this.cid = `m${lodash.uniqueId()}`;
+            this.cid = 'm' + lodash.uniqueId();
 
             _initDefineProp(
                 this,
@@ -712,10 +924,10 @@
             this.__store = options.store;
             this.__repository = options.repository;
             // Find all attributes. Not all observables are an attribute.
-            lodash.forIn(this, (value, key) => {
-                if (!key.startsWith('__') && mobx.isObservable(this, key)) {
-                    this.__attributes.push(key);
-                    let newValue = value;
+            lodash.forIn(this, function(value, key) {
+                if (!key.startsWith('__') && mobx.isObservable(_this, key)) {
+                    _this.__attributes.push(key);
+                    var newValue = value;
                     // An array or object observable can be mutated, so we want to ensure we always have
                     // the original not-yet-mutated object/array.
                     if (mobx.isObservableArray(value)) {
@@ -723,7 +935,7 @@
                     } else if (mobx.isObservableObject(value)) {
                         newValue = Object.assign({}, value);
                     }
-                    this.__originalAttributes[key] = newValue;
+                    _this.__originalAttributes[key] = newValue;
                 }
             });
             if (options.relations) {
@@ -735,415 +947,539 @@
             this.initialize();
         }
 
-        __parseRelations(activeRelations) {
-            this.__activeRelations = activeRelations;
-            // TODO: No idea why getting the relations only works when it's a Function.
-            const relations = this.relations && this.relations();
-            const relModels = {};
-            activeRelations.forEach(aRel => {
-                // Find the relation name before the first dot, and include all other relations after it
-                // Example: input `animal.kind.breed` output -> `['animal', 'kind.breed']`
-                const relNames = aRel.match(/([^.]+)\.(.+)/);
+        createClass(Model, [
+            {
+                key: '__parseRelations',
+                value: function __parseRelations(activeRelations) {
+                    var _this2 = this;
 
-                const currentRel = relNames ? relNames[1] : aRel;
-                const otherRelNames = relNames && relNames[2];
-                const currentProp = relModels[currentRel];
-                const otherRels = otherRelNames && [otherRelNames];
-                // When two nested relations are defined next to each other (e.g. `['kind.breed', 'kind.location']`),
-                // the relation `kind` only needs to be initialized once.
-                relModels[currentRel] = currentProp
-                    ? currentProp.concat(otherRels)
-                    : otherRels;
-                if (!this.__activeCurrentRelations.includes(currentRel)) {
-                    this.__activeCurrentRelations.push(currentRel);
-                }
-            });
-            mobx.extendObservable(
-                this,
-                lodash.mapValues(relModels, (otherRelNames, relName) => {
-                    const RelModel = relations[relName];
-                    if (!RelModel) {
-                        throw new Error(
-                            `Specified relation "${relName}" does not exist on model.`
-                        );
-                    }
-                    const options = { relations: otherRelNames };
-                    if (
-                        this.__store && this.__store.__nestedRepository[relName]
-                    ) {
-                        options.repository = this.__store.__nestedRepository[
+                    this.__activeRelations = activeRelations;
+                    // TODO: No idea why getting the relations only works when it's a Function.
+                    var relations = this.relations && this.relations();
+                    var relModels = {};
+                    activeRelations.forEach(function(aRel) {
+                        // Find the relation name before the first dot, and include all other relations after it
+                        // Example: input `animal.kind.breed` output -> `['animal', 'kind.breed']`
+                        var relNames = aRel.match(/([^.]+)\.(.+)/);
+
+                        var currentRel = relNames ? relNames[1] : aRel;
+                        var otherRelNames = relNames && relNames[2];
+                        var currentProp = relModels[currentRel];
+                        var otherRels = otherRelNames && [otherRelNames];
+                        // When two nested relations are defined next to each other (e.g. `['kind.breed', 'kind.location']`),
+                        // the relation `kind` only needs to be initialized once.
+                        relModels[currentRel] = currentProp
+                            ? currentProp.concat(otherRels)
+                            : otherRels;
+                        if (
+                            !_this2.__activeCurrentRelations.includes(
+                                currentRel
+                            )
+                        ) {
+                            _this2.__activeCurrentRelations.push(currentRel);
+                        }
+                    });
+                    mobx.extendObservable(
+                        this,
+                        lodash.mapValues(relModels, function(
+                            otherRelNames,
                             relName
-                        ];
-                    }
-                    if (RelModel.prototype instanceof Store) {
-                        return new RelModel(options);
-                    }
-                    return new RelModel(null, options);
-                })
-            );
-        }
-
-        toBackend() {
-            const output = {};
-            this.__attributes.forEach(attr => {
-                if (!attr.startsWith('_')) {
-                    output[lodash.snakeCase(attr)] = this.__toJSAttr(
-                        attr,
-                        this[attr]
-                    );
-                }
-            });
-            // Add active relations as id.
-            this.__activeCurrentRelations.forEach(currentRel => {
-                const rel = this[currentRel];
-                const relBackendName = lodash.snakeCase(currentRel);
-                if (rel instanceof Model) {
-                    output[relBackendName] = rel[rel.constructor.primaryKey];
-                }
-                if (rel instanceof Store) {
-                    output[relBackendName] = rel.mapByPrimaryKey();
-                }
-            });
-            return output;
-        }
-
-        toBackendAll(newId, options = {}) {
-            // TODO: This implementation is more a proof of concept; it's very shitty coded.
-            const includeRelations = options.relations || [];
-            const data = this.toBackend();
-            const relations = {};
-
-            if (newId) {
-                data[this.constructor.primaryKey] = newId;
-            } else if (data[this.constructor.primaryKey] === null) {
-                data[this.constructor.primaryKey] = generateNegativeId();
-            }
-
-            this.__activeCurrentRelations.forEach(currentRel => {
-                const rel = this[currentRel];
-                let myNewId = null;
-                const relBackendName = lodash.snakeCase(currentRel);
-                if (data[relBackendName] === null) {
-                    myNewId = generateNegativeId();
-                    data[relBackendName] = myNewId;
-                }
-                if (lodash.isArray(data[relBackendName])) {
-                    myNewId = data[relBackendName].map(
-                        id => (id === null ? generateNegativeId() : id)
-                    );
-                    data[relBackendName] = myNewId;
-                }
-
-                // `includeRelations` can look like `['kind.breed', 'owner']`
-                // Check to see if `currentRel` matches the first part of the relation (`kind` or `owner`)
-                const includeRelationData = includeRelations.filter(rel => {
-                    const nestedRels = rel.split('.');
-                    return nestedRels.length > 0
-                        ? nestedRels[0] === currentRel
-                        : false;
-                });
-                if (includeRelationData.length > 0) {
-                    // We want to pass through nested relations to the next relation, but pop of the first level.
-                    const relativeRelations = includeRelationData
-                        .map(rel => {
-                            const nestedRels = rel.split('.');
-                            nestedRels.shift();
-                            return nestedRels.join('.');
+                        ) {
+                            var RelModel = relations[relName];
+                            if (!RelModel) {
+                                throw new Error(
+                                    'Specified relation "' +
+                                        relName +
+                                        '" does not exist on model.'
+                                );
+                            }
+                            var options = { relations: otherRelNames };
+                            if (
+                                _this2.__store &&
+                                _this2.__store.__nestedRepository[relName]
+                            ) {
+                                options.repository =
+                                    _this2.__store.__nestedRepository[relName];
+                            }
+                            if (RelModel.prototype instanceof Store) {
+                                return new RelModel(options);
+                            }
+                            return new RelModel(null, options);
                         })
-                        .filter(rel => !!rel);
-                    const relBackendData = rel.toBackendAll(myNewId, {
-                        relations: relativeRelations,
-                    });
-                    // Sometimes the backend knows the relation by a different name, e.g. the relation is called
-                    // `activities`, but the name in the backend is `activity`.
-                    // In that case, you can add `static backendResourceName = 'activity';` to that model.
-                    const realBackendName =
-                        rel.constructor.backendResourceName || relBackendName;
-                    concatInDict(
-                        relations,
-                        realBackendName,
-                        relBackendData.data
                     );
-                    lodash.forIn(relBackendData.relations, (relB, key) => {
-                        concatInDict(relations, key, relB);
-                    });
-                }
-            });
+                },
+            },
+            {
+                key: 'toBackend',
+                value: function toBackend() {
+                    var _this3 = this;
 
-            return { data: [data], relations };
-        }
-
-        toJS() {
-            const output = {};
-            this.__attributes.forEach(attr => {
-                output[attr] = this.__toJSAttr(attr, this[attr]);
-            });
-
-            this.__activeCurrentRelations.forEach(currentRel => {
-                const model = this[currentRel];
-                if (model) {
-                    output[currentRel] = model.toJS();
-                }
-            });
-            return output;
-        }
-
-        __toJSAttr(attr, value) {
-            const casts = this.casts();
-            const cast = casts[attr];
-            if (cast !== undefined) {
-                return mobx.toJS(cast.toJS(attr, value));
-            }
-            return mobx.toJS(value);
-        }
-
-        setFetchParams(params) {
-            this.__fetchParams = Object.assign({}, params);
-        }
-
-        fromBackend({ data, repos, relMapping }) {
-            // `data` contains properties for the current model.
-            // `repos` is an object of "repositories". A repository is
-            // e.g. "animal_kind", while the relation name would be "kind".
-            // `relMapping` maps relation names to repositories.
-            lodash.forIn(relMapping, (repoName, relName) => {
-                const repository = repos[repoName];
-                // All nested models get a repository. At this time we don't know yet
-                // what id the model should get, since the parent may or may not be set.
-                let model = lodash.get(this, snakeToCamel(relName));
-
-                // If we have a model which has a store relation which has a nested relation,
-                // the model doesn't exist yet
-                if (model === undefined) {
-                    // We need to find the first store in the chain
-                    // But we currently only support Model > Store > Model
-                    // If there are more Models/Store in the length the "find first store in chain"
-                    // needs to be implemented
-                    const rels = relName.split('.');
-                    let store;
-                    let nestedRel;
-
-                    // Find the first Store relation in the relation chain
-                    rels.some((rel, i) => {
-                        // Try rel, rel.rel, rel.rel.rel, etc.
-                        const subRelName = rels.slice(0, i + 1).join('.');
-                        const subRel = lodash.get(
-                            this,
-                            snakeToCamel(subRelName)
-                        );
-
-                        if (subRel instanceof Store) {
-                            store = subRel;
-                            // Now we found the store.
-                            // The store has models, and those models have another (model) relation.
-                            //
-                            // We need to set the a `__nestedRepository` in the store
-                            // That means that when models get added to the store,
-                            // Their relation is filled from the correct `__nestedRepository` in the store.
-                            //
-                            // So a Dog has PastOwners (store), the Owners in that store have a Town rel.
-                            // We set 'town': repository in the `__nestedRepository` of the PastOwners
-                            // When Owners get added, parsed, whatever, their town relation is set,
-                            // using `Store.__nestedRepository`.
-                            nestedRel = rels
-                                .slice(i + 1, rels.length)
-                                .join('.');
-                            return true;
+                    var output = {};
+                    this.__attributes.forEach(function(attr) {
+                        if (!attr.startsWith('_')) {
+                            output[lodash.snakeCase(attr)] = _this3.__toJSAttr(
+                                attr,
+                                _this3[attr]
+                            );
                         }
-                        return false;
                     });
-                    store.__nestedRepository[nestedRel] = repository;
-                } else {
-                    model.__repository = repository;
-                }
-            });
+                    // Add active relations as id.
+                    this.__activeCurrentRelations.forEach(function(currentRel) {
+                        var rel = _this3[currentRel];
+                        var relBackendName = lodash.snakeCase(currentRel);
+                        if (rel instanceof Model) {
+                            output[relBackendName] =
+                                rel[rel.constructor.primaryKey];
+                        }
+                        if (rel instanceof Store) {
+                            output[relBackendName] = rel.mapByPrimaryKey();
+                        }
+                    });
+                    return output;
+                },
+            },
+            {
+                key: 'toBackendAll',
+                value: function toBackendAll(newId) {
+                    var _this4 = this;
 
-            // Now all repositories are set on the relations, start parsing the actual data.
-            // `parse()` will recursively fill in all relations.
-            if (data) {
-                this.parse(data);
-            }
-        }
+                    var options = arguments.length > 1 &&
+                        arguments[1] !== undefined
+                        ? arguments[1]
+                        : {};
 
-        __getApi() {
-            if (!this.api) {
-                throw new Error(
-                    'You are trying to perform a API request without an `api` property defined on the model.'
-                );
-            }
-            if (!this.urlRoot) {
-                throw new Error(
-                    'You are trying to perform a API request without an `urlRoot` property defined on the model.'
-                );
-            }
-            return this.api;
-        }
+                    // TODO: This implementation is more a proof of concept; it's very shitty coded.
+                    var includeRelations = options.relations || [];
+                    var data = this.toBackend();
+                    var relations = {};
 
-        __addFromRepository(id) {
-            const relData = lodash.find(this.__repository, { id });
-            if (relData) {
-                this.parse(relData);
-            }
-        }
-
-        parse(data) {
-            if (!lodash.isPlainObject(data)) {
-                throw new Error(
-                    'Parameter supplied to parse() is not an object.'
-                );
-            }
-            lodash.forIn(data, (value, key) => {
-                const attr = snakeToCamel(key);
-                if (this.__attributes.includes(attr)) {
-                    this[attr] = this.__parseAttr(attr, value);
-                } else if (this.__activeCurrentRelations.includes(attr)) {
-                    // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
-                    // However, it can also be an object if there are nested relations (non flattened).
-                    if (
-                        lodash.isPlainObject(value) ||
-                        lodash.isPlainObject(lodash.get(value, '[0]'))
-                    ) {
-                        this[attr].parse(value);
-                    } else {
-                        this[attr].__addFromRepository(value);
+                    if (newId) {
+                        data[this.constructor.primaryKey] = newId;
+                    } else if (data[this.constructor.primaryKey] === null) {
+                        data[
+                            this.constructor.primaryKey
+                        ] = generateNegativeId();
                     }
-                }
-            });
 
-            return this;
-        }
-
-        __parseAttr(attr, value) {
-            const casts = this.casts();
-            const cast = casts[attr];
-            if (cast !== undefined) {
-                return cast.parse(attr, value);
-            }
-            return value;
-        }
-
-        save(options = {}) {
-            this.__backendValidationErrors = {};
-            this.__pendingRequestCount += 1;
-            // TODO: Allow data from an argument to be saved?
-            return this.__getApi()
-                .saveModel({
-                    url: this.url,
-                    data: this.toBackend(),
-                    params: options.params,
-                    isNew: this.isNew,
-                })
-                .then(
-                    mobx.action(res => {
-                        this.__pendingRequestCount -= 1;
-                        this.saveFromBackend(res);
-                    })
-                )
-                .catch(
-                    mobx.action(err => {
-                        this.__pendingRequestCount -= 1;
-                        if (err.valErrors) {
-                            this.__backendValidationErrors = err.valErrors;
+                    this.__activeCurrentRelations.forEach(function(currentRel) {
+                        var rel = _this4[currentRel];
+                        var myNewId = null;
+                        var relBackendName = lodash.snakeCase(currentRel);
+                        if (data[relBackendName] === null) {
+                            myNewId = generateNegativeId();
+                            data[relBackendName] = myNewId;
                         }
-                        throw err;
-                    })
-                );
-        }
-
-        saveAll(options = {}) {
-            this.__backendValidationErrors = {};
-            this.__pendingRequestCount += 1;
-            return this.__getApi()
-                .saveAllModels({
-                    url: this.urlRoot,
-                    data: this.toBackendAll(null, {
-                        relations: options.relations,
-                    }),
-                })
-                .then(
-                    mobx.action(res => {
-                        this.__pendingRequestCount -= 1;
-                        this.saveFromBackend(res);
-                    })
-                )
-                .catch(
-                    mobx.action(err => {
-                        this.__pendingRequestCount -= 1;
-                        // TODO: saveAll does not support handling backend validation errors yet.
-                        throw err;
-                    })
-                );
-        }
-
-        // This is just a pass-through to make it easier to override parsing backend responses from the backend.
-        // Sometimes the backend won't return the model after a save because e.g. it is created async.
-        saveFromBackend(res) {
-            return this.fromBackend(res);
-        }
-
-        // TODO: This is a bit hacky...
-        get backendValidationErrors() {
-            return this.__backendValidationErrors;
-        }
-
-        delete(options = {}) {
-            const removeFromStore = () =>
-                (this.__store ? this.__store.remove(this) : null);
-            if (options.immediate || this.isNew) {
-                removeFromStore();
-            }
-            if (this.isNew) {
-                return Promise.resolve();
-            }
-
-            this.__pendingRequestCount += 1;
-            return this.__getApi()
-                .deleteModel({ url: this.url, params: options.params })
-                .then(
-                    mobx.action(() => {
-                        this.__pendingRequestCount -= 1;
-                        if (!options.immediate) {
-                            removeFromStore();
+                        if (lodash.isArray(data[relBackendName])) {
+                            myNewId = data[relBackendName].map(function(id) {
+                                return id === null ? generateNegativeId() : id;
+                            });
+                            data[relBackendName] = myNewId;
                         }
-                    })
-                );
-        }
 
-        fetch(options = {}) {
-            if (this.isNew) {
-                throw new Error('Trying to fetch model without id!');
-            }
-            this.__pendingRequestCount += 1;
-            const data = Object.assign(
-                this.__getApi().buildFetchModelParams(this),
-                this.__fetchParams,
-                options.data
-            );
-            return this.__getApi().fetchModel({ url: this.url, data }).then(
-                mobx.action(res => {
-                    this.fromBackend(res);
-                    this.__pendingRequestCount -= 1;
-                })
-            );
-        }
+                        // `includeRelations` can look like `['kind.breed', 'owner']`
+                        // Check to see if `currentRel` matches the first part of the relation (`kind` or `owner`)
+                        var includeRelationData = includeRelations.filter(
+                            function(rel) {
+                                var nestedRels = rel.split('.');
+                                return nestedRels.length > 0
+                                    ? nestedRels[0] === currentRel
+                                    : false;
+                            }
+                        );
+                        if (includeRelationData.length > 0) {
+                            // We want to pass through nested relations to the next relation, but pop of the first level.
+                            var relativeRelations = includeRelationData
+                                .map(function(rel) {
+                                    var nestedRels = rel.split('.');
+                                    nestedRels.shift();
+                                    return nestedRels.join('.');
+                                })
+                                .filter(function(rel) {
+                                    return !!rel;
+                                });
+                            var relBackendData = rel.toBackendAll(myNewId, {
+                                relations: relativeRelations,
+                            });
+                            // Sometimes the backend knows the relation by a different name, e.g. the relation is called
+                            // `activities`, but the name in the backend is `activity`.
+                            // In that case, you can add `static backendResourceName = 'activity';` to that model.
+                            var realBackendName =
+                                rel.constructor.backendResourceName ||
+                                relBackendName;
+                            concatInDict(
+                                relations,
+                                realBackendName,
+                                relBackendData.data
+                            );
+                            lodash.forIn(relBackendData.relations, function(
+                                relB,
+                                key
+                            ) {
+                                concatInDict(relations, key, relB);
+                            });
+                        }
+                    });
 
-        clear() {
-            lodash.forIn(this.__originalAttributes, (value, key) => {
-                this[key] = value;
-            });
+                    return { data: [data], relations: relations };
+                },
+            },
+            {
+                key: 'toJS',
+                value: function toJS$$1() {
+                    var _this5 = this;
 
-            this.__activeCurrentRelations.forEach(currentRel => {
-                this[currentRel].clear();
-            });
-        }
-    }), (_class2.primaryKey = 'id'), (_class2.backendResourceName =
+                    var output = {};
+                    this.__attributes.forEach(function(attr) {
+                        output[attr] = _this5.__toJSAttr(attr, _this5[attr]);
+                    });
+
+                    this.__activeCurrentRelations.forEach(function(currentRel) {
+                        var model = _this5[currentRel];
+                        if (model) {
+                            output[currentRel] = model.toJS();
+                        }
+                    });
+                    return output;
+                },
+            },
+            {
+                key: '__toJSAttr',
+                value: function __toJSAttr(attr, value) {
+                    var casts = this.casts();
+                    var cast = casts[attr];
+                    if (cast !== undefined) {
+                        return mobx.toJS(cast.toJS(attr, value));
+                    }
+                    return mobx.toJS(value);
+                },
+            },
+            {
+                key: 'setFetchParams',
+                value: function setFetchParams(params) {
+                    this.__fetchParams = Object.assign({}, params);
+                },
+            },
+            {
+                key: 'fromBackend',
+                value: function fromBackend(_ref) {
+                    var _this6 = this;
+
+                    var data = _ref.data,
+                        repos = _ref.repos,
+                        relMapping = _ref.relMapping;
+
+                    // `data` contains properties for the current model.
+                    // `repos` is an object of "repositories". A repository is
+                    // e.g. "animal_kind", while the relation name would be "kind".
+                    // `relMapping` maps relation names to repositories.
+                    lodash.forIn(relMapping, function(repoName, relName) {
+                        var repository = repos[repoName];
+                        // All nested models get a repository. At this time we don't know yet
+                        // what id the model should get, since the parent may or may not be set.
+                        var model = lodash.get(_this6, snakeToCamel(relName));
+
+                        // If we have a model which has a store relation which has a nested relation,
+                        // the model doesn't exist yet
+                        if (model === undefined) {
+                            // We need to find the first store in the chain
+                            // But we currently only support Model > Store > Model
+                            // If there are more Models/Store in the length the "find first store in chain"
+                            // needs to be implemented
+                            var rels = relName.split('.');
+                            var store = void 0;
+                            var nestedRel = void 0;
+
+                            // Find the first Store relation in the relation chain
+                            rels.some(function(rel, i) {
+                                // Try rel, rel.rel, rel.rel.rel, etc.
+                                var subRelName = rels.slice(0, i + 1).join('.');
+                                var subRel = lodash.get(
+                                    _this6,
+                                    snakeToCamel(subRelName)
+                                );
+
+                                if (subRel instanceof Store) {
+                                    store = subRel;
+                                    // Now we found the store.
+                                    // The store has models, and those models have another (model) relation.
+                                    //
+                                    // We need to set the a `__nestedRepository` in the store
+                                    // That means that when models get added to the store,
+                                    // Their relation is filled from the correct `__nestedRepository` in the store.
+                                    //
+                                    // So a Dog has PastOwners (store), the Owners in that store have a Town rel.
+                                    // We set 'town': repository in the `__nestedRepository` of the PastOwners
+                                    // When Owners get added, parsed, whatever, their town relation is set,
+                                    // using `Store.__nestedRepository`.
+                                    nestedRel = rels
+                                        .slice(i + 1, rels.length)
+                                        .join('.');
+                                    return true;
+                                }
+                                return false;
+                            });
+                            store.__nestedRepository[nestedRel] = repository;
+                        } else {
+                            model.__repository = repository;
+                        }
+                    });
+
+                    // Now all repositories are set on the relations, start parsing the actual data.
+                    // `parse()` will recursively fill in all relations.
+                    if (data) {
+                        this.parse(data);
+                    }
+                },
+            },
+            {
+                key: '__getApi',
+                value: function __getApi() {
+                    if (!this.api) {
+                        throw new Error(
+                            'You are trying to perform a API request without an `api` property defined on the model.'
+                        );
+                    }
+                    if (!this.urlRoot) {
+                        throw new Error(
+                            'You are trying to perform a API request without an `urlRoot` property defined on the model.'
+                        );
+                    }
+                    return this.api;
+                },
+            },
+            {
+                key: '__addFromRepository',
+                value: function __addFromRepository(id) {
+                    var relData = lodash.find(this.__repository, { id: id });
+                    if (relData) {
+                        this.parse(relData);
+                    }
+                },
+            },
+            {
+                key: 'parse',
+                value: function parse(data) {
+                    var _this7 = this;
+
+                    if (!lodash.isPlainObject(data)) {
+                        throw new Error(
+                            'Parameter supplied to parse() is not an object.'
+                        );
+                    }
+                    lodash.forIn(data, function(value, key) {
+                        var attr = snakeToCamel(key);
+                        if (_this7.__attributes.includes(attr)) {
+                            _this7[attr] = _this7.__parseAttr(attr, value);
+                        } else if (
+                            _this7.__activeCurrentRelations.includes(attr)
+                        ) {
+                            // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
+                            // However, it can also be an object if there are nested relations (non flattened).
+                            if (
+                                lodash.isPlainObject(value) ||
+                                lodash.isPlainObject(lodash.get(value, '[0]'))
+                            ) {
+                                _this7[attr].parse(value);
+                            } else {
+                                _this7[attr].__addFromRepository(value);
+                            }
+                        }
+                    });
+
+                    return this;
+                },
+            },
+            {
+                key: '__parseAttr',
+                value: function __parseAttr(attr, value) {
+                    var casts = this.casts();
+                    var cast = casts[attr];
+                    if (cast !== undefined) {
+                        return cast.parse(attr, value);
+                    }
+                    return value;
+                },
+            },
+            {
+                key: 'save',
+                value: function save() {
+                    var _this8 = this;
+
+                    var options = arguments.length > 0 &&
+                        arguments[0] !== undefined
+                        ? arguments[0]
+                        : {};
+
+                    this.__backendValidationErrors = {};
+                    this.__pendingRequestCount += 1;
+                    // TODO: Allow data from an argument to be saved?
+                    return this.__getApi()
+                        .saveModel({
+                            url: this.url,
+                            data: this.toBackend(),
+                            params: options.params,
+                            isNew: this.isNew,
+                        })
+                        .then(
+                            mobx.action(function(res) {
+                                _this8.__pendingRequestCount -= 1;
+                                _this8.saveFromBackend(res);
+                            })
+                        )
+                        .catch(
+                            mobx.action(function(err) {
+                                _this8.__pendingRequestCount -= 1;
+                                if (err.valErrors) {
+                                    _this8.__backendValidationErrors =
+                                        err.valErrors;
+                                }
+                                throw err;
+                            })
+                        );
+                },
+            },
+            {
+                key: 'saveAll',
+                value: function saveAll() {
+                    var _this9 = this;
+
+                    var options = arguments.length > 0 &&
+                        arguments[0] !== undefined
+                        ? arguments[0]
+                        : {};
+
+                    this.__backendValidationErrors = {};
+                    this.__pendingRequestCount += 1;
+                    return this.__getApi()
+                        .saveAllModels({
+                            url: this.urlRoot,
+                            data: this.toBackendAll(null, {
+                                relations: options.relations,
+                            }),
+                        })
+                        .then(
+                            mobx.action(function(res) {
+                                _this9.__pendingRequestCount -= 1;
+                                _this9.saveFromBackend(res);
+                            })
+                        )
+                        .catch(
+                            mobx.action(function(err) {
+                                _this9.__pendingRequestCount -= 1;
+                                // TODO: saveAll does not support handling backend validation errors yet.
+                                throw err;
+                            })
+                        );
+                },
+
+                // This is just a pass-through to make it easier to override parsing backend responses from the backend.
+                // Sometimes the backend won't return the model after a save because e.g. it is created async.
+            },
+            {
+                key: 'saveFromBackend',
+                value: function saveFromBackend(res) {
+                    return this.fromBackend(res);
+                },
+
+                // TODO: This is a bit hacky...
+            },
+            {
+                key: 'delete',
+                value: function _delete() {
+                    var _this10 = this;
+
+                    var options = arguments.length > 0 &&
+                        arguments[0] !== undefined
+                        ? arguments[0]
+                        : {};
+
+                    var removeFromStore = function removeFromStore() {
+                        return _this10.__store
+                            ? _this10.__store.remove(_this10)
+                            : null;
+                    };
+                    if (options.immediate || this.isNew) {
+                        removeFromStore();
+                    }
+                    if (this.isNew) {
+                        return Promise.resolve();
+                    }
+
+                    this.__pendingRequestCount += 1;
+                    return this.__getApi()
+                        .deleteModel({ url: this.url, params: options.params })
+                        .then(
+                            mobx.action(function() {
+                                _this10.__pendingRequestCount -= 1;
+                                if (!options.immediate) {
+                                    removeFromStore();
+                                }
+                            })
+                        );
+                },
+            },
+            {
+                key: 'fetch',
+                value: function fetch() {
+                    var _this11 = this;
+
+                    var options = arguments.length > 0 &&
+                        arguments[0] !== undefined
+                        ? arguments[0]
+                        : {};
+
+                    if (this.isNew) {
+                        throw new Error('Trying to fetch model without id!');
+                    }
+                    this.__pendingRequestCount += 1;
+                    var data = Object.assign(
+                        this.__getApi().buildFetchModelParams(this),
+                        this.__fetchParams,
+                        options.data
+                    );
+                    return this.__getApi()
+                        .fetchModel({ url: this.url, data: data })
+                        .then(
+                            mobx.action(function(res) {
+                                _this11.fromBackend(res);
+                                _this11.__pendingRequestCount -= 1;
+                            })
+                        );
+                },
+            },
+            {
+                key: 'clear',
+                value: function clear() {
+                    var _this12 = this;
+
+                    lodash.forIn(this.__originalAttributes, function(
+                        value,
+                        key
+                    ) {
+                        _this12[key] = value;
+                    });
+
+                    this.__activeCurrentRelations.forEach(function(currentRel) {
+                        _this12[currentRel].clear();
+                    });
+                },
+            },
+            {
+                key: 'backendValidationErrors',
+                get: function get$$1() {
+                    return this.__backendValidationErrors;
+                },
+            },
+        ]);
+        return Model;
+    })()), (_class2.primaryKey = 'id'), (_class2.backendResourceName =
         ''), _temp)), ((_descriptor = _applyDecoratedDescriptor(
         _class.prototype,
         '__backendValidationErrors',
         [mobx.observable],
         {
             enumerable: true,
-            initializer: function() {
+            initializer: function initializer() {
                 return {};
             },
         }
@@ -1153,7 +1489,7 @@
         [mobx.observable],
         {
             enumerable: true,
-            initializer: function() {
+            initializer: function initializer() {
                 return 0;
             },
         }
@@ -1163,7 +1499,7 @@
         [mobx.observable],
         {
             enumerable: true,
-            initializer: function() {
+            initializer: function initializer() {
                 return {};
             },
         }
@@ -1246,7 +1582,9 @@
 
     // lodash's `snakeCase` method removes dots from the string; this breaks mobx-spine
     function camelToSnake(s) {
-        return s.replace(/([A-Z])/g, $1 => '_' + $1.toLowerCase());
+        return s.replace(/([A-Z])/g, function($1) {
+            return '_' + $1.toLowerCase();
+        });
     }
 
     // Function ripped from Django docs.
@@ -1257,184 +1595,247 @@
     }
 
     function parseBackendValidationErrors(response) {
-        const valErrors = lodash.get(response, 'data.error.validation_errors');
+        var valErrors = lodash.get(response, 'data.error.validation_errors');
         if (response.status === 400 && valErrors) {
-            const camelCasedErrors = lodash.mapKeys(valErrors, (value, key) =>
-                snakeToCamel(key)
-            );
-            return lodash.mapValues(camelCasedErrors, valError => {
-                return valError.map(obj => obj.code);
+            var camelCasedErrors = lodash.mapKeys(valErrors, function(
+                value,
+                key
+            ) {
+                return snakeToCamel(key);
+            });
+            return lodash.mapValues(camelCasedErrors, function(valError) {
+                return valError.map(function(obj) {
+                    return obj.code;
+                });
             });
         }
         return null;
     }
 
-    let BinderApi = class BinderApi {
-        constructor() {
+    var BinderApi = (function() {
+        function BinderApi() {
+            classCallCheck(this, BinderApi);
             this.baseUrl = null;
             this.csrfToken = null;
             this.defaultHeaders = {};
         }
 
-        __request(method, url, data, options) {
-            options || (options = {});
-            const useCsrfToken = csrfSafeMethod(method)
-                ? undefined
-                : this.csrfToken;
-            this.__testUrl(url);
+        createClass(BinderApi, [
+            {
+                key: '__request',
+                value: function __request(method, url, data, options) {
+                    options || (options = {});
+                    var useCsrfToken = csrfSafeMethod(method)
+                        ? undefined
+                        : this.csrfToken;
+                    this.__testUrl(url);
 
-            const axiosOptions = {
-                method,
-                baseURL: this.baseUrl,
-                url,
-                data: method !== 'get' && data ? data : undefined,
-                params: method === 'get' && data ? data : options.params,
-                headers: Object.assign(
-                    {
-                        'Content-Type': 'application/json',
-                        'X-Csrftoken': useCsrfToken,
-                    },
-                    this.defaultHeaders
-                ),
-            };
+                    var axiosOptions = {
+                        method: method,
+                        baseURL: this.baseUrl,
+                        url: url,
+                        data: method !== 'get' && data ? data : undefined,
+                        params: method === 'get' && data
+                            ? data
+                            : options.params,
+                        headers: Object.assign(
+                            {
+                                'Content-Type': 'application/json',
+                                'X-Csrftoken': useCsrfToken,
+                            },
+                            this.defaultHeaders
+                        ),
+                    };
 
-            Object.assign(axiosOptions, options);
+                    Object.assign(axiosOptions, options);
 
-            const xhr = axios(axiosOptions);
+                    var xhr = axios(axiosOptions);
 
-            // We fork the promise tree as we want to have the error traverse to the listeners
-            if (this.onRequestError && options.skipRequestError !== true) {
-                xhr.catch(this.onRequestError);
-            }
+                    // We fork the promise tree as we want to have the error traverse to the listeners
+                    if (
+                        this.onRequestError && options.skipRequestError !== true
+                    ) {
+                        xhr.catch(this.onRequestError);
+                    }
 
-            const onSuccess = options.skipFormatter === true
-                ? Promise.resolve()
-                : this.__responseFormatter;
-            return xhr.then(onSuccess);
-        }
-
-        __responseFormatter(res) {
-            return res.data;
-        }
-
-        __testUrl(url) {
-            if (!url.endsWith('/')) {
-                throw new Error(
-                    `Binder does not accept urls that do not have a trailing slash: ${url}`
-                );
-            }
-        }
-
-        get(url, data, options) {
-            return this.__request('get', url, data, options);
-        }
-
-        post(url, data, options) {
-            return this.__request('post', url, data, options);
-        }
-
-        patch(url, data, options) {
-            return this.__request('patch', url, data, options);
-        }
-
-        put(url, data, options) {
-            return this.__request('put', url, data, options);
-        }
-
-        delete(url, data, options) {
-            return this.__request('delete', url, data, options);
-        }
-
-        buildFetchModelParams(model) {
-            return {
-                // TODO: I really dislike that this is comma separated and not an array.
-                // We should fix this in the Binder API.
-                with: model.__activeRelations.map(camelToSnake).join(',') ||
-                    null,
-            };
-        }
-
-        fetchModel({ url, data }) {
-            return this.get(url, data).then(res => {
-                return {
-                    data: res.data,
-                    repos: res.with,
-                    relMapping: res.with_mapping,
-                };
-            });
-        }
-
-        saveModel({ url, data, params, isNew }) {
-            const method = isNew ? 'post' : 'patch';
-            return this[method](url, data, { params })
-                .then(newData => {
-                    return { data: newData };
-                })
-                .catch(err => {
-                    if (err.response) {
-                        err.valErrors = parseBackendValidationErrors(
-                            err.response
+                    var onSuccess = options.skipFormatter === true
+                        ? Promise.resolve()
+                        : this.__responseFormatter;
+                    return xhr.then(onSuccess);
+                },
+            },
+            {
+                key: '__responseFormatter',
+                value: function __responseFormatter(res) {
+                    return res.data;
+                },
+            },
+            {
+                key: '__testUrl',
+                value: function __testUrl(url) {
+                    if (!url.endsWith('/')) {
+                        throw new Error(
+                            'Binder does not accept urls that do not have a trailing slash: ' +
+                                url
                         );
                     }
-                    throw err;
-                });
-        }
+                },
+            },
+            {
+                key: 'get',
+                value: function get$$1(url, data, options) {
+                    return this.__request('get', url, data, options);
+                },
+            },
+            {
+                key: 'post',
+                value: function post(url, data, options) {
+                    return this.__request('post', url, data, options);
+                },
+            },
+            {
+                key: 'patch',
+                value: function patch(url, data, options) {
+                    return this.__request('patch', url, data, options);
+                },
+            },
+            {
+                key: 'put',
+                value: function put(url, data, options) {
+                    return this.__request('put', url, data, options);
+                },
+            },
+            {
+                key: 'delete',
+                value: function _delete(url, data, options) {
+                    return this.__request('delete', url, data, options);
+                },
+            },
+            {
+                key: 'buildFetchModelParams',
+                value: function buildFetchModelParams(model) {
+                    return {
+                        // TODO: I really dislike that this is comma separated and not an array.
+                        // We should fix this in the Binder API.
+                        with: model.__activeRelations
+                            .map(camelToSnake)
+                            .join(',') || null,
+                    };
+                },
+            },
+            {
+                key: 'fetchModel',
+                value: function fetchModel(_ref) {
+                    var url = _ref.url, data = _ref.data;
 
-        saveAllModels({ url, data }) {
-            return this.put(url, {
-                data: data.data,
-                with: data.relations,
-            }).then(res => {
-                return {
-                    data: res.data && res.data.length > 0 ? res.data[0] : null,
-                    repos: res.with,
-                    relMapping: res.with_mapping,
-                };
-            });
-        }
+                    return this.get(url, data).then(function(res) {
+                        return {
+                            data: res.data,
+                            repos: res.with,
+                            relMapping: res.with_mapping,
+                        };
+                    });
+                },
+            },
+            {
+                key: 'saveModel',
+                value: function saveModel(_ref2) {
+                    var url = _ref2.url,
+                        data = _ref2.data,
+                        params = _ref2.params,
+                        isNew = _ref2.isNew;
 
-        deleteModel({ url, params }) {
-            // TODO: kind of silly now, but we'll probably want better error handling soon.
-            return this.delete(url, null, { params });
-        }
+                    var method = isNew ? 'post' : 'patch';
+                    return this[method](url, data, { params: params })
+                        .then(function(newData) {
+                            return { data: newData };
+                        })
+                        .catch(function(err) {
+                            if (err.response) {
+                                err.valErrors = parseBackendValidationErrors(
+                                    err.response
+                                );
+                            }
+                            throw err;
+                        });
+                },
+            },
+            {
+                key: 'saveAllModels',
+                value: function saveAllModels(_ref3) {
+                    var url = _ref3.url, data = _ref3.data;
 
-        buildFetchStoreParams(store) {
-            const offset = store.getPageOffset();
-            return {
-                with: store.__activeRelations.join(',') || null,
-                limit: store.__state.limit,
-                // Hide offset if zero so the request looks cleaner in DevTools.
-                offset: offset || null,
-            };
-        }
+                    return this.put(url, {
+                        data: data.data,
+                        with: data.relations,
+                    }).then(function(res) {
+                        return {
+                            data: res.data && res.data.length > 0
+                                ? res.data[0]
+                                : null,
+                            repos: res.with,
+                            relMapping: res.with_mapping,
+                        };
+                    });
+                },
+            },
+            {
+                key: 'deleteModel',
+                value: function deleteModel(_ref4) {
+                    var url = _ref4.url, params = _ref4.params;
 
-        fetchStore({ url, data }) {
-            return this.get(url, data).then(res => {
-                return {
-                    data: res.data,
-                    repos: res.with,
-                    relMapping: res.with_mapping,
-                    totalRecords: res.meta.total_records,
-                };
-            });
-        }
-    };
+                    // TODO: kind of silly now, but we'll probably want better error handling soon.
+                    return this.delete(url, null, { params: params });
+                },
+            },
+            {
+                key: 'buildFetchStoreParams',
+                value: function buildFetchStoreParams(store) {
+                    var offset = store.getPageOffset();
+                    return {
+                        with: store.__activeRelations.join(',') || null,
+                        limit: store.__state.limit,
+                        // Hide offset if zero so the request looks cleaner in DevTools.
+                        offset: offset || null,
+                    };
+                },
+            },
+            {
+                key: 'fetchStore',
+                value: function fetchStore(_ref5) {
+                    var url = _ref5.url, data = _ref5.data;
+
+                    return this.get(url, data).then(function(res) {
+                        return {
+                            data: res.data,
+                            repos: res.with,
+                            relMapping: res.with_mapping,
+                            totalRecords: res.meta.total_records,
+                        };
+                    });
+                },
+            },
+        ]);
+        return BinderApi;
+    })();
 
     function checkMomentInstance(attr, value) {
         if (!moment.isMoment(value)) {
-            throw new Error(`Attribute \`${attr}\` is not a moment instance.`);
+            throw new Error(
+                'Attribute `' + attr + '` is not a moment instance.'
+            );
         }
     }
 
     var Casts = {
         date: {
-            parse(attr, value) {
+            parse: function parse(attr, value) {
                 if (value === null) {
                     return null;
                 }
                 return moment(value, 'YYYY-MM-DD');
             },
-            toJS(attr, value) {
+            toJS: function toJS$$1(attr, value) {
                 if (value === null) {
                     return null;
                 }
@@ -1443,13 +1844,13 @@
             },
         },
         datetime: {
-            parse(attr, value) {
+            parse: function parse(attr, value) {
                 if (value === null) {
                     return null;
                 }
                 return moment(value);
             },
-            toJS(attr, value) {
+            toJS: function toJS$$1(attr, value) {
                 if (value === null) {
                     return null;
                 }
@@ -1457,7 +1858,7 @@
                 return value.format();
             },
         },
-        enum: expectedValues => {
+        enum: function _enum(expectedValues) {
             if (!lodash.isArray(expectedValues)) {
                 throw new Error(
                     'Invalid argument suplied to `Casts.enum`, expected an instance of array.'
@@ -1471,7 +1872,12 @@
                     return value;
                 }
                 throw new Error(
-                    `Value set to attribute \`${attr}\`, ${JSON.stringify(value)}, is not one of the allowed enum: ${JSON.stringify(expectedValues)}`
+                    'Value set to attribute `' +
+                        attr +
+                        '`, ' +
+                        JSON.stringify(value) +
+                        ', is not one of the allowed enum: ' +
+                        JSON.stringify(expectedValues)
                 );
             }
             return {
