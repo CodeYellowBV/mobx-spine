@@ -735,6 +735,7 @@ describe('requests', () => {
 
     test('save new with basic properties', () => {
         const animal = new Animal({ name: 'Doggo' });
+        const spy = jest.spyOn(animal, 'saveFromBackend');
         mock.onAny().replyOnce(config => {
             expect(config.url).toBe('/api/animal/');
             expect(config.method).toBe('post');
@@ -744,6 +745,10 @@ describe('requests', () => {
 
         return animal.save().then(() => {
             expect(animal.id).toBe(10);
+            expect(spy).toHaveBeenCalled();
+
+            spy.mockReset();
+            spy.mockRestore();
         });
     });
 
@@ -797,6 +802,7 @@ describe('requests', () => {
             { name: 'Doggo', kind: { name: 'Dog' } },
             { relations: ['kind'] }
         );
+        const spy = jest.spyOn(animal, 'saveFromBackend');
         mock.onAny().replyOnce(config => {
             expect(config.url).toBe('/api/animal/');
             expect(config.method).toBe('put');
@@ -804,8 +810,12 @@ describe('requests', () => {
         });
 
         return animal.saveAll().then(() => {
+            expect(spy).toHaveBeenCalled();
             expect(animal.id).toBe(10);
             expect(animal.kind.id).toBe(4);
+
+            spy.mockReset();
+            spy.mockRestore();
         });
     });
 

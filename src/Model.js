@@ -393,7 +393,7 @@ export default class Model {
             .then(
                 action(res => {
                     this.__pendingRequestCount -= 1;
-                    this.fromBackend(res);
+                    this.saveFromBackend(res);
                 })
             )
             .catch(
@@ -418,7 +418,7 @@ export default class Model {
             .then(
                 action(res => {
                     this.__pendingRequestCount -= 1;
-                    this.fromBackend(res);
+                    this.saveFromBackend(res);
                 })
             )
             .catch(
@@ -428,6 +428,12 @@ export default class Model {
                     throw err;
                 })
             );
+    }
+
+    // This is just a pass-through to make it easier to override parsing backend responses from the backend.
+    // Sometimes the backend won't return the model after a save because e.g. it is created async.
+    saveFromBackend(res) {
+        return this.fromBackend(res);
     }
 
     // TODO: This is a bit hacky...
