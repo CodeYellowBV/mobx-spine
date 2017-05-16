@@ -10,6 +10,7 @@ import {
     isPlainObject,
     result,
 } from 'lodash';
+import { invariant } from './utils';
 
 const AVAILABLE_CONST_OPTIONS = ['relations', 'limit'];
 
@@ -40,7 +41,8 @@ export default class Store {
     }
 
     set backendResourceName(v) {
-        throw new Error(
+        invariant(
+            false,
             '`backendResourceName` should be a static property on the store.'
         );
     }
@@ -49,15 +51,15 @@ export default class Store {
     initialize() {}
 
     constructor(options = {}) {
-        if (!isPlainObject(options)) {
-            throw Error(
-                'Store only accepts an object with options. Chain `.parse(data)` to add models.'
-            );
-        }
+        invariant(
+            isPlainObject(options),
+            'Store only accepts an object with options. Chain `.parse(data)` to add models.'
+        );
         forIn(options, (value, option) => {
-            if (!AVAILABLE_CONST_OPTIONS.includes(option)) {
-                throw Error(`Unknown option passed to store: ${option}`);
-            }
+            invariant(
+                AVAILABLE_CONST_OPTIONS.includes(option),
+                `Unknown option passed to store: ${option}`
+            );
         });
         if (options.relations) {
             this.__parseRelations(options.relations);
@@ -90,16 +92,14 @@ export default class Store {
     }
 
     __getApi() {
-        if (!this.api) {
-            throw new Error(
-                'You are trying to perform a API request without an `api` property defined on the store.'
-            );
-        }
-        if (!this.url) {
-            throw new Error(
-                'You are trying to perform a API request without an `url` property defined on the store.'
-            );
-        }
+        invariant(
+            this.api,
+            'You are trying to perform a API request without an `api` property defined on the store.'
+        );
+        invariant(
+            this.url,
+            'You are trying to perform a API request without an `url` property defined on the store.'
+        );
         return this.api;
     }
 
@@ -127,9 +127,10 @@ export default class Store {
     }
 
     @action parse(models) {
-        if (!isArray(models)) {
-            throw new Error('Parameter supplied to parse() is not an array.');
-        }
+        invariant(
+            isArray(models),
+            'Parameter supplied to parse() is not an array.'
+        );
         this.models.replace(models.map(this._newModel.bind(this)));
 
         return this;
@@ -143,11 +144,10 @@ export default class Store {
 
         modelInstances.forEach(modelInstance => {
             const primaryValue = modelInstance[this.Model.primaryKey];
-            if (primaryValue && this.get(primaryValue)) {
-                throw Error(
-                    `A model with the same primary key value "${primaryValue}" already exists in this store.`
-                );
-            }
+            invariant(
+                !primaryValue || !this.get(primaryValue),
+                `A model with the same primary key value "${primaryValue}" already exists in this store.`
+            );
             this.models.push(modelInstance);
         });
 
@@ -166,11 +166,10 @@ export default class Store {
     @action removeById(ids) {
         const singular = !isArray(ids);
         ids = singular ? [ids] : ids.slice();
-        if (ids.some(isNaN)) {
-            throw new Error(
-                `Cannot remove a model by id that is not a number: ${JSON.stringify(ids)}`
-            );
-        }
+        invariant(
+            !ids.some(isNaN),
+            `Cannot remove a model by id that is not a number: ${JSON.stringify(ids)}`
+        );
 
         const models = ids.map(id => this.get(id));
 
@@ -216,9 +215,10 @@ export default class Store {
     }
 
     @action setLimit(limit) {
-        if (limit && !Number.isInteger(limit)) {
-            throw new Error('Page limit should be a number or falsy value.');
-        }
+        invariant(
+            !limit || Number.isInteger(limit),
+            'Page limit should be a number or falsy value.'
+        );
         this.__state.limit = limit || null;
     }
 
@@ -242,28 +242,23 @@ export default class Store {
     }
 
     @action getNextPage() {
-        if (!this.hasNextPage) {
-            throw new Error('There is no next page.');
-        }
+        invariant(this.hasNextPage, 'There is no next page.');
         this.__state.currentPage += 1;
         return this.fetch();
     }
 
     @action getPreviousPage() {
-        if (!this.hasPreviousPage) {
-            throw new Error('There is no previous page.');
-        }
+        invariant(this.hasPreviousPage, 'There is no previous page.');
         this.__state.currentPage -= 1;
         return this.fetch();
     }
 
     @action setPage(page = 1, options = {}) {
-        if (!Number.isInteger(page)) {
-            throw new Error('Page should be a number.');
-        }
-        if (page > this.totalPages || page < 1) {
-            throw new Error(`Page should be between 1 and ${this.totalPages}.`);
-        }
+        invariant(Number.isInteger(page), 'Page should be a number.');
+        invariant(
+            page <= this.totalPages && page >= 1,
+            `Page should be between 1 and ${this.totalPages}.`
+        );
         this.__state.currentPage = page;
         if (options.fetch === undefined || options.fetch) {
             return this.fetch();
@@ -339,11 +334,10 @@ export default class Store {
 
     at(index) {
         const zeroLength = this.length - 1;
-        if (index > zeroLength) {
-            throw new Error(
-                `Index ${index} is out of bounds (max ${zeroLength}).`
-            );
-        }
+        invariant(
+            index <= zeroLength,
+            `Index ${index} is out of bounds (max ${zeroLength}).`
+        );
         if (index < 0) {
             index += this.length;
         }

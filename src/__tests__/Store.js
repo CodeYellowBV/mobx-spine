@@ -652,6 +652,14 @@ describe('Pagination', () => {
         );
     });
 
+    test('setPage with zero number', () => {
+        const animalStore = new AnimalStore();
+
+        expect(() => animalStore.setPage(0)).toThrow(
+            'Page should be between 1 and 0.'
+        );
+    });
+
     test('setPage with not existent page', () => {
         mock.onAny().replyOnce(() => {
             return [200, pagination1Data];

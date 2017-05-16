@@ -20,6 +20,7 @@ import {
 } from 'lodash';
 import snakeToCamel from './snakeToCamel';
 import Store from './Store';
+import { invariant } from './utils';
 
 function generateNegativeId() {
     return -parseInt(uniqueId());
@@ -66,13 +67,15 @@ export default class Model {
     }
 
     set primaryKey(v) {
-        throw new Error(
+        invariant(
+            false,
             '`primaryKey` should be a static property on the model.'
         );
     }
 
     set backendResourceName(v) {
-        throw new Error(
+        invariant(
+            false,
             '`backendResourceName` should be a static property on the model.'
         );
     }
@@ -130,11 +133,10 @@ export default class Model {
             relModels[currentRel] = currentProp
                 ? currentProp.concat(otherRels)
                 : otherRels;
-            if (this.__attributes.includes(currentRel)) {
-                throw new Error(
-                    `Cannot define \`${currentRel}\` as both an attribute and a relation. You probably need to remove the attribute.`
-                );
-            }
+            invariant(
+                !this.__attributes.includes(currentRel),
+                `Cannot define \`${currentRel}\` as both an attribute and a relation. You probably need to remove the attribute.`
+            );
             if (!this.__activeCurrentRelations.includes(currentRel)) {
                 this.__activeCurrentRelations.push(currentRel);
             }
@@ -143,11 +145,10 @@ export default class Model {
             this,
             mapValues(relModels, (otherRelNames, relName) => {
                 const RelModel = relations[relName];
-                if (!RelModel) {
-                    throw new Error(
-                        `Specified relation "${relName}" does not exist on model.`
-                    );
-                }
+                invariant(
+                    RelModel,
+                    `Specified relation "${relName}" does not exist on model.`
+                );
                 const options = { relations: otherRelNames };
                 if (this.__store && this.__store.__nestedRepository[relName]) {
                     options.repository = this.__store.__nestedRepository[
@@ -333,16 +334,14 @@ export default class Model {
     }
 
     __getApi() {
-        if (!this.api) {
-            throw new Error(
-                'You are trying to perform a API request without an `api` property defined on the model.'
-            );
-        }
-        if (!this.urlRoot) {
-            throw new Error(
-                'You are trying to perform a API request without an `urlRoot` property defined on the model.'
-            );
-        }
+        invariant(
+            this.api,
+            'You are trying to perform a API request without an `api` property defined on the model.'
+        );
+        invariant(
+            this.urlRoot,
+            'You are trying to perform a API request without an `urlRoot` property defined on the model.'
+        );
         return this.api;
     }
 
@@ -354,9 +353,10 @@ export default class Model {
     }
 
     @action parse(data) {
-        if (!isPlainObject(data)) {
-            throw new Error('Parameter supplied to parse() is not an object.');
-        }
+        invariant(
+            isPlainObject(data),
+            'Parameter supplied to parse() is not an object.'
+        );
         forIn(data, (value, key) => {
             const attr = snakeToCamel(key);
             if (this.__attributes.includes(attr)) {
@@ -470,9 +470,7 @@ export default class Model {
     }
 
     @action fetch(options = {}) {
-        if (this.isNew) {
-            throw new Error('Trying to fetch model without id!');
-        }
+        invariant(!this.isNew, 'Trying to fetch model without id!');
         this.__pendingRequestCount += 1;
         const data = Object.assign(
             this.__getApi().buildFetchModelParams(this),

@@ -1,10 +1,12 @@
 import moment from 'moment';
 import { isArray } from 'lodash';
+import { invariant } from './utils';
 
 function checkMomentInstance(attr, value) {
-    if (!moment.isMoment(value)) {
-        throw new Error(`Attribute \`${attr}\` is not a moment instance.`);
-    }
+    invariant(
+        moment.isMoment(value),
+        `Attribute \`${attr}\` is not a moment instance.`
+    );
 }
 
 export default {
@@ -39,11 +41,10 @@ export default {
         },
     },
     enum: expectedValues => {
-        if (!isArray(expectedValues)) {
-            throw new Error(
-                'Invalid argument suplied to `Casts.enum`, expected an instance of array.'
-            );
-        }
+        invariant(
+            isArray(expectedValues),
+            'Invalid argument suplied to `Casts.enum`, expected an instance of array.'
+        );
         function checkExpectedValues(attr, value) {
             if (value === null) {
                 return null;
@@ -51,7 +52,8 @@ export default {
             if (expectedValues.includes(value)) {
                 return value;
             }
-            throw new Error(
+            invariant(
+                false,
                 `Value set to attribute \`${attr}\`, ${JSON.stringify(value)}, is not one of the allowed enum: ${JSON.stringify(expectedValues)}`
             );
         }
