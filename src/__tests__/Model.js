@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { toJS } from 'mobx';
+import { toJS, observable } from 'mobx';
 import MockAdapter from 'axios-mock-adapter';
 import _ from 'lodash';
 import { Model } from '../';
@@ -80,6 +80,22 @@ test('primaryKey defined as not static should throw error', () => {
     expect(() => {
         return new Zebra();
     }).toThrow('`primaryKey` should be a static property on the model.');
+});
+
+test('property defined as both attribute and relation should throw error', () => {
+    class Zebra extends Model {
+        @observable kind = '';
+
+        relation() {
+            return { kind: Kind };
+        }
+    }
+
+    expect(() => {
+        return new Zebra(null, { relations: ['kind'] });
+    }).toThrow(
+        'Cannot define `kind` as both an attribute and a relation. You probably need to remove the attribute.'
+    );
 });
 
 test('initialize() method should be called', () => {

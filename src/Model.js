@@ -130,6 +130,11 @@ export default class Model {
             relModels[currentRel] = currentProp
                 ? currentProp.concat(otherRels)
                 : otherRels;
+            if (this.__attributes.includes(currentRel)) {
+                throw new Error(
+                    `Cannot define \`${currentRel}\` as both an attribute and a relation. You probably need to remove the attribute.`
+                );
+            }
             if (!this.__activeCurrentRelations.includes(currentRel)) {
                 this.__activeCurrentRelations.push(currentRel);
             }
