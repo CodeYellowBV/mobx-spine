@@ -10,9 +10,12 @@ import {
     Breed,
     PersonStore,
 } from './fixtures/Animal';
+import { CustomerStore } from './fixtures/Customer';
 import animalsWithPastOwnersData
     from './fixtures/animals-with-past-owners.json';
 import animalsWithKindBreedData from './fixtures/animals-with-kind-breed.json';
+import customersWithTownRestaurants
+    from './fixtures/customers-with-town-restaurants.json';
 import animalsData from './fixtures/animals.json';
 import pagination1Data from './fixtures/pagination/1.json';
 import pagination2Data from './fixtures/pagination/2.json';
@@ -493,6 +496,38 @@ describe('requests', () => {
             expect(animalStore.at(0).id).toBe(1);
             expect(animalStore.at(0).kind.id).toBe(4);
             expect(animalStore.at(0).kind.breed.id).toBe(3);
+        });
+    });
+
+    test.only('fetch with complex nested relations', () => {
+        const customerStore = new CustomerStore({
+            relations: ['town.restaurants.chef'],
+        });
+        mock.onAny().replyOnce(config => {
+            expect(config.params).toEqual({
+                with: 'town.restaurants.chef',
+                limit: 25,
+                offset: null,
+            });
+            return [200, customersWithTownRestaurants];
+        });
+
+        return customerStore.fetch().then(() => {
+            expect(customerStore.at(0).id).toBe(1);
+            expect(customerStore.at(0).town.name).toBe('Hardinxveld');
+            expect(customerStore.at(0).town.restaurants.length).toBe(2);
+            expect(customerStore.at(0).town.restaurants.get(1).name).toBe(
+                'Fastfood'
+            );
+            expect(customerStore.at(0).town.restaurants.get(2).name).toBe(
+                'Seafood'
+            );
+            expect(customerStore.at(0).town.restaurants.get(1).chef.name).toBe(
+                'Snor'
+            );
+            expect(customerStore.at(0).town.restaurants.get(2).chef.name).toBe(
+                'Baard'
+            );
         });
     });
 
