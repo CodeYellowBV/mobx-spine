@@ -9,7 +9,6 @@ import {
     toJS,
 } from 'mobx';
 import {
-    snakeCase,
     forIn,
     mapValues,
     find,
@@ -18,9 +17,8 @@ import {
     isArray,
     uniqueId,
 } from 'lodash';
-import snakeToCamel from './snakeToCamel';
 import Store from './Store';
-import { invariant } from './utils';
+import { invariant, snakeToCamel, camelToSnake } from './utils';
 
 function generateNegativeId() {
     return -parseInt(uniqueId());
@@ -163,17 +161,30 @@ export default class Model {
         );
     }
 
+    // Many backends use snake_case for attribute names, so we convert to snake_case by default.
+    toBackendAttrKey(attrKey) {
+        return camelToSnake(attrKey);
+    }
+
+    // In the frontend we don't want to deal with those snake_case attr names.
+    fromBackendAttrKey(attrKey) {
+        return snakeToCamel(attrKey);
+    }
+
     toBackend() {
         const output = {};
         this.__attributes.forEach(attr => {
             if (!attr.startsWith('_')) {
-                output[snakeCase(attr)] = this.__toJSAttr(attr, this[attr]);
+                output[this.toBackendAttrKey(attr)] = this.__toJSAttr(
+                    attr,
+                    this[attr]
+                );
             }
         });
         // Add active relations as id.
         this.__activeCurrentRelations.forEach(currentRel => {
             const rel = this[currentRel];
-            const relBackendName = snakeCase(currentRel);
+            const relBackendName = this.toBackendAttrKey(currentRel);
             if (rel instanceof Model) {
                 output[relBackendName] = rel[rel.constructor.primaryKey];
             }
@@ -199,7 +210,7 @@ export default class Model {
         this.__activeCurrentRelations.forEach(currentRel => {
             const rel = this[currentRel];
             let myNewId = null;
-            const relBackendName = snakeCase(currentRel);
+            const relBackendName = this.toBackendAttrKey(currentRel);
             if (data[relBackendName] === null) {
                 myNewId = generateNegativeId();
                 data[relBackendName] = myNewId;
@@ -283,7 +294,7 @@ export default class Model {
             const repository = repos[repoName];
             // All nested models get a repository. At this time we don't know yet
             // what id the model should get, since the parent may or may not be set.
-            let model = get(this, snakeToCamel(relName));
+            let model = get(this, this.fromBackendAttrKey(relName));
 
             // If we have a model which has a store relation which has a nested relation,
             // the model doesn't exist yet
@@ -300,7 +311,10 @@ export default class Model {
                 rels.some((rel, i) => {
                     // Try rel, rel.rel, rel.rel.rel, etc.
                     const subRelName = rels.slice(0, i + 1).join('.');
-                    const subRel = get(this, snakeToCamel(subRelName));
+                    const subRel = get(
+                        this,
+                        this.fromBackendAttrKey(subRelName)
+                    );
 
                     if (subRel instanceof Store) {
                         store = subRel;
@@ -358,7 +372,7 @@ export default class Model {
             'Parameter supplied to parse() is not an object.'
         );
         forIn(data, (value, key) => {
-            const attr = snakeToCamel(key);
+            const attr = this.fromBackendAttrKey(key);
             if (this.__attributes.includes(attr)) {
                 this[attr] = this.__parseAttr(attr, value);
             } else if (this.__activeCurrentRelations.includes(attr)) {
@@ -448,7 +462,7 @@ export default class Model {
 
     @action delete(options = {}) {
         const removeFromStore = () =>
-            (this.__store ? this.__store.remove(this) : null);
+            this.__store ? this.__store.remove(this) : null;
         if (options.immediate || this.isNew) {
             removeFromStore();
         }
