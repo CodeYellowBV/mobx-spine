@@ -22,11 +22,28 @@ import {
     mapKeys,
     mapValues,
     result,
-    snakeCase,
+    sortBy,
     uniqueId,
 } from 'lodash';
 import axios from 'axios';
 import moment from 'moment';
+
+function invariant(condition) {
+    var message = arguments.length > 1 && arguments[1] !== undefined
+        ? arguments[1]
+        : 'Illegal state';
+
+    if (!condition) {
+        throw new Error('[mobx-spine] ' + message);
+    }
+}
+
+// lodash's `snakeCase` method removes dots from the string; this breaks mobx-spine
+function camelToSnake(s) {
+    return s.replace(/([A-Z])/g, function($1) {
+        return '_' + $1.toLowerCase();
+    });
+}
 
 // lodash's `camelCase` method removes dots from the string; this breaks mobx-spine
 function snakeToCamel(s) {
@@ -117,7 +134,7 @@ function _applyDecoratedDescriptor$1(
     return desc;
 }
 
-var AVAILABLE_CONST_OPTIONS = ['relations', 'limit'];
+var AVAILABLE_CONST_OPTIONS = ['relations', 'limit', 'comparator'];
 
 var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
     createClass(Store, [
@@ -143,7 +160,8 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         {
             key: 'backendResourceName',
             set: function set$$1(v) {
-                throw new Error(
+                invariant(
+                    false,
                     '`backendResourceName` should be a static property on the store.'
                 );
             },
@@ -169,21 +187,24 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         this.api = null;
         this.__nestedRepository = {};
 
-        if (!isPlainObject(options)) {
-            throw Error(
-                'Store only accepts an object with options. Chain `.parse(data)` to add models.'
-            );
-        }
+        invariant(
+            isPlainObject(options),
+            'Store only accepts an object with options. Chain `.parse(data)` to add models.'
+        );
         forIn(options, function(value, option) {
-            if (!AVAILABLE_CONST_OPTIONS.includes(option)) {
-                throw Error('Unknown option passed to store: ' + option);
-            }
+            invariant(
+                AVAILABLE_CONST_OPTIONS.includes(option),
+                'Unknown option passed to store: ' + option
+            );
         });
         if (options.relations) {
             this.__parseRelations(options.relations);
         }
         if (options.limit !== undefined) {
             this.setLimit(options.limit);
+        }
+        if (options.comparator) {
+            this.comparator = options.comparator;
         }
         this.initialize();
     }
@@ -218,21 +239,20 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                         });
                     })
                 );
+                this.sort();
             },
         },
         {
             key: '__getApi',
             value: function __getApi() {
-                if (!this.api) {
-                    throw new Error(
-                        'You are trying to perform a API request without an `api` property defined on the store.'
-                    );
-                }
-                if (!this.url) {
-                    throw new Error(
-                        'You are trying to perform a API request without an `url` property defined on the store.'
-                    );
-                }
+                invariant(
+                    this.api,
+                    'You are trying to perform a API request without an `api` property defined on the store.'
+                );
+                invariant(
+                    this.url,
+                    'You are trying to perform a API request without an `url` property defined on the store.'
+                );
                 return this.api;
             },
         },
@@ -258,6 +278,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                         return model;
                     })
                 );
+                this.sort();
             },
         },
         {
@@ -274,14 +295,37 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
             },
         },
         {
+            key: 'sort',
+            value: function sort() {
+                var options = arguments.length > 0 && arguments[0] !== undefined
+                    ? arguments[0]
+                    : {};
+
+                invariant(
+                    isPlainObject(options),
+                    'Expecting a plain object for options.'
+                );
+                // TODO: throw error when this.comparator is not set?
+                if (!this.comparator) {
+                    return this;
+                }
+                if (typeof this.comparator === 'string') {
+                    this.models.replace(this.sortBy(this.comparator));
+                } else {
+                    this.models.replace(this.models.sort(this.comparator));
+                }
+                return this;
+            },
+        },
+        {
             key: 'parse',
             value: function parse(models) {
-                if (!isArray(models)) {
-                    throw new Error(
-                        'Parameter supplied to parse() is not an array.'
-                    );
-                }
+                invariant(
+                    isArray(models),
+                    'Parameter supplied to parse() is not an array.'
+                );
                 this.models.replace(models.map(this._newModel.bind(this)));
+                this.sort();
 
                 return this;
             },
@@ -298,15 +342,15 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
 
                 modelInstances.forEach(function(modelInstance) {
                     var primaryValue = modelInstance[_this3.Model.primaryKey];
-                    if (primaryValue && _this3.get(primaryValue)) {
-                        throw Error(
-                            'A model with the same primary key value "' +
-                                primaryValue +
-                                '" already exists in this store.'
-                        );
-                    }
+                    invariant(
+                        !primaryValue || !_this3.get(primaryValue),
+                        'A model with the same primary key value "' +
+                            primaryValue +
+                            '" already exists in this store.'
+                    );
                     _this3.models.push(modelInstance);
                 });
+                this.sort();
 
                 return singular ? modelInstances[0] : modelInstances;
             },
@@ -333,12 +377,11 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
 
                 var singular = !isArray(ids);
                 ids = singular ? [ids] : ids.slice();
-                if (ids.some(isNaN)) {
-                    throw new Error(
-                        'Cannot remove a model by id that is not a number: ' +
-                            JSON.stringify(ids)
-                    );
-                }
+                invariant(
+                    !ids.some(isNaN),
+                    'Cannot remove a model by id that is not a number: ' +
+                        JSON.stringify(ids)
+                );
 
                 var models = ids.map(function(id) {
                     return _this5.get(id);
@@ -404,20 +447,17 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         {
             key: 'setLimit',
             value: function setLimit(limit) {
-                if (limit && !Number.isInteger(limit)) {
-                    throw new Error(
-                        'Page limit should be a number or falsy value.'
-                    );
-                }
+                invariant(
+                    !limit || Number.isInteger(limit),
+                    'Page limit should be a number or falsy value.'
+                );
                 this.__state.limit = limit || null;
             },
         },
         {
             key: 'getNextPage',
             value: function getNextPage() {
-                if (!this.hasNextPage) {
-                    throw new Error('There is no next page.');
-                }
+                invariant(this.hasNextPage, 'There is no next page.');
                 this.__state.currentPage += 1;
                 return this.fetch();
             },
@@ -425,9 +465,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         {
             key: 'getPreviousPage',
             value: function getPreviousPage() {
-                if (!this.hasPreviousPage) {
-                    throw new Error('There is no previous page.');
-                }
+                invariant(this.hasPreviousPage, 'There is no previous page.');
                 this.__state.currentPage -= 1;
                 return this.fetch();
             },
@@ -442,14 +480,11 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                     ? arguments[1]
                     : {};
 
-                if (!Number.isInteger(page)) {
-                    throw new Error('Page should be a number.');
-                }
-                if (page > this.totalPages || page < 1) {
-                    throw new Error(
-                        'Page should be between 1 and ' + this.totalPages + '.'
-                    );
-                }
+                invariant(Number.isInteger(page), 'Page should be a number.');
+                invariant(
+                    page <= this.totalPages && page >= 1,
+                    'Page should be between 1 and ' + this.totalPages + '.'
+                );
                 this.__state.currentPage = page;
                 if (options.fetch === undefined || options.fetch) {
                     return this.fetch();
@@ -497,15 +532,17 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
             value: function virtualStore(_ref2) {
                 var _this7 = this;
 
-                var filter$$1 = _ref2.filter;
+                var filter$$1 = _ref2.filter, comparator = _ref2.comparator;
 
                 var store = new this.constructor({
                     relations: this.__activeRelations,
+                    comparator: comparator,
                 });
                 // Oh gawd MobX is so awesome.
                 autorun(function() {
                     var models = _this7.filter(filter$$1);
                     store.models.replace(models);
+                    store.sort();
                 });
                 return store;
             },
@@ -554,18 +591,23 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
             },
         },
         {
+            key: 'sortBy',
+            value: function sortBy$$1(iteratees) {
+                return sortBy(this.models, iteratees);
+            },
+        },
+        {
             key: 'at',
             value: function at$$1(index) {
                 var zeroLength = this.length - 1;
-                if (index > zeroLength) {
-                    throw new Error(
-                        'Index ' +
-                            index +
-                            ' is out of bounds (max ' +
-                            zeroLength +
-                            ').'
-                    );
-                }
+                invariant(
+                    index <= zeroLength,
+                    'Index ' +
+                        index +
+                        ' is out of bounds (max ' +
+                        zeroLength +
+                        ').'
+                );
                 if (index < 0) {
                     index += this.length;
                 }
@@ -662,9 +704,21 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
     _class$1.prototype
 ), _applyDecoratedDescriptor$1(
     _class$1.prototype,
+    '__addFromRepository',
+    [action],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, '__addFromRepository'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'fromBackend',
     [action],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'),
+    _class$1.prototype
+), _applyDecoratedDescriptor$1(
+    _class$1.prototype,
+    'sort',
+    [action],
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'sort'),
     _class$1.prototype
 ), _applyDecoratedDescriptor$1(
     _class$1.prototype,
@@ -861,7 +915,8 @@ var Model = ((_class = ((_temp = _class2 = (function() {
         {
             key: 'primaryKey',
             set: function set$$1(v) {
-                throw new Error(
+                invariant(
+                    false,
                     '`primaryKey` should be a static property on the model.'
                 );
             },
@@ -869,7 +924,8 @@ var Model = ((_class = ((_temp = _class2 = (function() {
         {
             key: 'backendResourceName',
             set: function set$$1(v) {
-                throw new Error(
+                invariant(
+                    false,
                     '`backendResourceName` should be a static property on the model.'
                 );
             },
@@ -946,6 +1002,12 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     relModels[currentRel] = currentProp
                         ? currentProp.concat(otherRels)
                         : otherRels;
+                    invariant(
+                        !_this2.__attributes.includes(currentRel),
+                        'Cannot define `' +
+                            currentRel +
+                            '` as both an attribute and a relation. You probably need to remove the attribute.'
+                    );
                     if (!_this2.__activeCurrentRelations.includes(currentRel)) {
                         _this2.__activeCurrentRelations.push(currentRel);
                     }
@@ -954,13 +1016,12 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     this,
                     mapValues(relModels, function(otherRelNames, relName) {
                         var RelModel = relations[relName];
-                        if (!RelModel) {
-                            throw new Error(
-                                'Specified relation "' +
-                                    relName +
-                                    '" does not exist on model.'
-                            );
-                        }
+                        invariant(
+                            RelModel,
+                            'Specified relation "' +
+                                relName +
+                                '" does not exist on model.'
+                        );
                         var options = { relations: otherRelNames };
                         if (
                             _this2.__store &&
@@ -976,6 +1037,22 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     })
                 );
             },
+
+            // Many backends use snake_case for attribute names, so we convert to snake_case by default.
+        },
+        {
+            key: 'toBackendAttrKey',
+            value: function toBackendAttrKey(attrKey) {
+                return camelToSnake(attrKey);
+            },
+
+            // In the frontend we don't want to deal with those snake_case attr names.
+        },
+        {
+            key: 'fromBackendAttrKey',
+            value: function fromBackendAttrKey(attrKey) {
+                return snakeToCamel(attrKey);
+            },
         },
         {
             key: 'toBackend',
@@ -985,16 +1062,15 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                 var output = {};
                 this.__attributes.forEach(function(attr) {
                     if (!attr.startsWith('_')) {
-                        output[snakeCase(attr)] = _this3.__toJSAttr(
-                            attr,
-                            _this3[attr]
-                        );
+                        output[
+                            _this3.toBackendAttrKey(attr)
+                        ] = _this3.__toJSAttr(attr, _this3[attr]);
                     }
                 });
                 // Add active relations as id.
                 this.__activeCurrentRelations.forEach(function(currentRel) {
                     var rel = _this3[currentRel];
-                    var relBackendName = snakeCase(currentRel);
+                    var relBackendName = _this3.toBackendAttrKey(currentRel);
                     if (rel instanceof Model) {
                         output[relBackendName] =
                             rel[rel.constructor.primaryKey];
@@ -1029,7 +1105,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                 this.__activeCurrentRelations.forEach(function(currentRel) {
                     var rel = _this4[currentRel];
                     var myNewId = null;
-                    var relBackendName = snakeCase(currentRel);
+                    var relBackendName = _this4.toBackendAttrKey(currentRel);
                     if (data[relBackendName] === null) {
                         myNewId = generateNegativeId();
                         data[relBackendName] = myNewId;
@@ -1138,7 +1214,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     var repository = repos[repoName];
                     // All nested models get a repository. At this time we don't know yet
                     // what id the model should get, since the parent may or may not be set.
-                    var model = get(_this6, snakeToCamel(relName));
+                    var model = get(_this6, _this6.fromBackendAttrKey(relName));
 
                     // If we have a model which has a store relation which has a nested relation,
                     // the model doesn't exist yet
@@ -1155,7 +1231,10 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                         rels.some(function(rel, i) {
                             // Try rel, rel.rel, rel.rel.rel, etc.
                             var subRelName = rels.slice(0, i + 1).join('.');
-                            var subRel = get(_this6, snakeToCamel(subRelName));
+                            var subRel = get(
+                                _this6,
+                                _this6.fromBackendAttrKey(subRelName)
+                            );
 
                             if (subRel instanceof Store) {
                                 store = subRel;
@@ -1193,16 +1272,14 @@ var Model = ((_class = ((_temp = _class2 = (function() {
         {
             key: '__getApi',
             value: function __getApi() {
-                if (!this.api) {
-                    throw new Error(
-                        'You are trying to perform a API request without an `api` property defined on the model.'
-                    );
-                }
-                if (!this.urlRoot) {
-                    throw new Error(
-                        'You are trying to perform a API request without an `urlRoot` property defined on the model.'
-                    );
-                }
+                invariant(
+                    this.api,
+                    'You are trying to perform a API request without an `api` property defined on the model.'
+                );
+                invariant(
+                    this.urlRoot,
+                    'You are trying to perform a API request without an `urlRoot` property defined on the model.'
+                );
                 return this.api;
             },
         },
@@ -1220,13 +1297,12 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             value: function parse(data) {
                 var _this7 = this;
 
-                if (!isPlainObject(data)) {
-                    throw new Error(
-                        'Parameter supplied to parse() is not an object.'
-                    );
-                }
+                invariant(
+                    isPlainObject(data),
+                    'Parameter supplied to parse() is not an object.'
+                );
                 forIn(data, function(value, key) {
-                    var attr = snakeToCamel(key);
+                    var attr = _this7.fromBackendAttrKey(key);
                     if (_this7.__attributes.includes(attr)) {
                         _this7[attr] = _this7.__parseAttr(attr, value);
                     } else if (_this7.__activeCurrentRelations.includes(attr)) {
@@ -1381,9 +1457,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     ? arguments[0]
                     : {};
 
-                if (this.isNew) {
-                    throw new Error('Trying to fetch model without id!');
-                }
+                invariant(!this.isNew, 'Trying to fetch model without id!');
                 this.__pendingRequestCount += 1;
                 var data = Object.assign(
                     this.__getApi().buildFetchModelParams(this),
@@ -1530,13 +1604,6 @@ var Model = ((_class = ((_temp = _class2 = (function() {
     _class.prototype
 )), _class);
 
-// lodash's `snakeCase` method removes dots from the string; this breaks mobx-spine
-function camelToSnake(s) {
-    return s.replace(/([A-Z])/g, function($1) {
-        return '_' + $1.toLowerCase();
-    });
-}
-
 // Function ripped from Django docs.
 // See: https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
 function csrfSafeMethod(method) {
@@ -1660,8 +1727,9 @@ var BinderApi = (function() {
                 return {
                     // TODO: I really dislike that this is comma separated and not an array.
                     // We should fix this in the Binder API.
-                    with: model.__activeRelations.map(camelToSnake).join(',') ||
-                        null,
+                    with: model.__activeRelations
+                        .map(model.toBackendAttrKey)
+                        .join(',') || null,
                 };
             },
         },
@@ -1762,9 +1830,10 @@ var BinderApi = (function() {
 })();
 
 function checkMomentInstance(attr, value) {
-    if (!moment.isMoment(value)) {
-        throw new Error('Attribute `' + attr + '` is not a moment instance.');
-    }
+    invariant(
+        moment.isMoment(value),
+        'Attribute `' + attr + '` is not a moment instance.'
+    );
 }
 
 var Casts = {
@@ -1799,11 +1868,10 @@ var Casts = {
         },
     },
     enum: function _enum(expectedValues) {
-        if (!isArray(expectedValues)) {
-            throw new Error(
-                'Invalid argument suplied to `Casts.enum`, expected an instance of array.'
-            );
-        }
+        invariant(
+            isArray(expectedValues),
+            'Invalid argument suplied to `Casts.enum`, expected an instance of array.'
+        );
         function checkExpectedValues(attr, value) {
             if (value === null) {
                 return null;
@@ -1811,7 +1879,8 @@ var Casts = {
             if (expectedValues.includes(value)) {
                 return value;
             }
-            throw new Error(
+            invariant(
+                false,
                 'Value set to attribute `' +
                     attr +
                     '`, ' +
