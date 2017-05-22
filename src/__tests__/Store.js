@@ -140,6 +140,16 @@ test('map models', () => {
     expect(animalStore.map('id')).toEqual([2, 3, 10]);
 });
 
+test('sortBy models', () => {
+    const animalStore = new AnimalStore().parse(simpleData);
+
+    expect(animalStore.sortBy('name').map(m => m.name)).toEqual([
+        'Boogie',
+        'Jojo',
+        'Monkey',
+    ]);
+});
+
 test('filter models', () => {
     const animalStore = new AnimalStore();
     animalStore.parse(simpleData);
@@ -366,6 +376,63 @@ test('fetch without url', () => {
     expect(() => animalStore.fetch()).toThrow(
         'You are trying to perform a API request without an `url` property defined on the store.'
     );
+});
+
+test('Comparator - manual sort on attribute', () => {
+    const animalStore = new AnimalStore();
+    animalStore.parse(simpleData);
+    animalStore.comparator = 'name';
+    animalStore.sort();
+
+    expect(animalStore.map('name')).toEqual(['Boogie', 'Jojo', 'Monkey']);
+});
+
+test('Comparator - manual sort with function', () => {
+    const animalStore = new AnimalStore();
+    animalStore.parse(simpleData);
+    animalStore.comparator = (a, b) => {
+        return b.id - a.id;
+    };
+    animalStore.sort();
+
+    expect(animalStore.map('id')).toEqual([10, 3, 2]);
+});
+
+test('Comparator - initial automatic sort', () => {
+    const animalStore = new AnimalStore({ comparator: 'name' });
+    animalStore.parse(simpleData);
+
+    expect(animalStore.map('name')).toEqual(['Boogie', 'Jojo', 'Monkey']);
+});
+
+test('Comparator - after add', () => {
+    const animalStore = new AnimalStore({ comparator: 'name' });
+    animalStore.parse(simpleData);
+    animalStore.add({ name: 'Cee' });
+
+    expect(animalStore.map('name')).toEqual([
+        'Boogie',
+        'Cee',
+        'Jojo',
+        'Monkey',
+    ]);
+});
+
+test('Sort with invalid parameter', () => {
+    const animalStore = new AnimalStore();
+    expect(() => animalStore.sort(() => null)).toThrow(
+        'Expecting a plain object for options.'
+    );
+});
+
+test('virtualStore with comparator', () => {
+    const animalStore = new AnimalStore();
+    animalStore.parse(simpleData);
+
+    const virtual = animalStore.virtualStore({
+        comparator: 'name',
+    });
+    expect(virtual.map('name')).toEqual(['Boogie', 'Jojo', 'Monkey']);
 });
 
 describe('requests', () => {

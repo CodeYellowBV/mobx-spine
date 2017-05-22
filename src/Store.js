@@ -5,6 +5,7 @@ import {
     filter,
     find,
     keyBy,
+    sortBy,
     forIn,
     at,
     isPlainObject,
@@ -12,7 +13,7 @@ import {
 } from 'lodash';
 import { invariant } from './utils';
 
-const AVAILABLE_CONST_OPTIONS = ['relations', 'limit'];
+const AVAILABLE_CONST_OPTIONS = ['relations', 'limit', 'comparator'];
 
 export default class Store {
     // Holds all models
@@ -67,6 +68,9 @@ export default class Store {
         if (options.limit !== undefined) {
             this.setLimit(options.limit);
         }
+        if (options.comparator) {
+            this.comparator = options.comparator;
+        }
         this.initialize();
     }
 
@@ -74,7 +78,7 @@ export default class Store {
         this.__activeRelations = activeRelations;
     }
 
-    __addFromRepository(ids = []) {
+    @action __addFromRepository(ids = []) {
         ids = isArray(ids) ? ids : [ids];
 
         const records = at(
@@ -89,6 +93,7 @@ export default class Store {
                 });
             })
         );
+        this.sort();
     }
 
     __getApi() {
@@ -117,6 +122,7 @@ export default class Store {
                 return model;
             })
         );
+        this.sort();
     }
 
     _newModel(model = null) {
@@ -126,12 +132,30 @@ export default class Store {
         });
     }
 
+    @action sort(options = {}) {
+        invariant(
+            isPlainObject(options),
+            'Expecting a plain object for options.'
+        );
+        // TODO: throw error when this.comparator is not set?
+        if (!this.comparator) {
+            return this;
+        }
+        if (typeof this.comparator === 'string') {
+            this.models.replace(this.sortBy(this.comparator));
+        } else {
+            this.models.replace(this.models.sort(this.comparator));
+        }
+        return this;
+    }
+
     @action parse(models) {
         invariant(
             isArray(models),
             'Parameter supplied to parse() is not an array.'
         );
         this.models.replace(models.map(this._newModel.bind(this)));
+        this.sort();
 
         return this;
     }
@@ -150,6 +174,7 @@ export default class Store {
             );
             this.models.push(modelInstance);
         });
+        this.sort();
 
         return singular ? modelInstances[0] : modelInstances;
     }
@@ -291,14 +316,16 @@ export default class Store {
 
     // Create a new instance of this store with a predicate applied.
     // This new store will be automatically kept in-sync with all models that adhere to the predicate.
-    virtualStore({ filter }) {
+    virtualStore({ filter, comparator }) {
         const store = new this.constructor({
             relations: this.__activeRelations,
+            comparator,
         });
         // Oh gawd MobX is so awesome.
         autorun(() => {
             const models = this.filter(filter);
             store.models.replace(models);
+            store.sort();
         });
         return store;
     }
@@ -330,6 +357,10 @@ export default class Store {
 
     each(predicate) {
         return this.models.forEach(predicate);
+    }
+
+    sortBy(iteratees) {
+        return sortBy(this.models, iteratees);
     }
 
     at(index) {
