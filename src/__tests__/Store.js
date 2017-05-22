@@ -499,7 +499,7 @@ describe('requests', () => {
         });
     });
 
-    test.only('fetch with complex nested relations', () => {
+    test('fetch with complex nested relations', () => {
         const customerStore = new CustomerStore({
             relations: ['town.restaurants.chef'],
         });
