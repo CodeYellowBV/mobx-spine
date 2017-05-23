@@ -16,6 +16,7 @@ import animalsWithPastOwnersData
 import animalsWithKindBreedData from './fixtures/animals-with-kind-breed.json';
 import customersWithTownRestaurants
     from './fixtures/customers-with-town-restaurants.json';
+import customersWithOldTowns from './fixtures/customers-with-old-towns.json';
 import animalsData from './fixtures/animals.json';
 import pagination1Data from './fixtures/pagination/1.json';
 import pagination2Data from './fixtures/pagination/2.json';
@@ -110,7 +111,7 @@ test('at model (non existent index)', () => {
     }).toThrow('Index 4 is out of bounds (max 2).');
 });
 
-test('Two level relation', () => {
+test('Model -> Model relation', () => {
     const animalStore = new AnimalStore({
         relations: ['kind.breed'],
     });
@@ -118,6 +119,24 @@ test('Two level relation', () => {
 
     const animal = animalStore.at(0);
     expect(animal.kind.breed).toBeInstanceOf(Breed);
+});
+
+test('Store -> Store relation', () => {
+    const customerStore = new CustomerStore({
+        relations: ['oldTowns.restaurants'],
+    });
+
+    customerStore.fromBackend({
+        data: customersWithOldTowns.data,
+        repos: customersWithOldTowns.with,
+        relMapping: customersWithOldTowns.with_mapping,
+    });
+
+    expect(customerStore.at(0).oldTowns.map('id')).toEqual([1, 2]);
+    expect(customerStore.at(0).oldTowns.at(0).restaurants.map('id')).toEqual([
+        10,
+        20,
+    ]);
 });
 
 test('get specific model', () => {

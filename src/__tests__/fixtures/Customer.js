@@ -33,6 +33,10 @@ export class Location extends Model {
     }
 }
 
+export class LocationStore extends Store {
+    Model = Location;
+}
+
 export class Customer extends Model {
     @observable id = null;
     @observable name = '';
@@ -40,6 +44,7 @@ export class Customer extends Model {
     relations() {
         return {
             town: Location,
+            oldTowns: LocationStore,
         };
     }
 }

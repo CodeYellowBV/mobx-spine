@@ -13,7 +13,12 @@ import {
 } from 'lodash';
 import { invariant } from './utils';
 
-const AVAILABLE_CONST_OPTIONS = ['relations', 'limit', 'comparator'];
+const AVAILABLE_CONST_OPTIONS = [
+    'relations',
+    'limit',
+    'comparator',
+    'repository',
+];
 
 export default class Store {
     // Holds all models
@@ -62,6 +67,7 @@ export default class Store {
                 `Unknown option passed to store: ${option}`
             );
         });
+        this.__repository = options.repository;
         if (options.relations) {
             this.__parseRelations(options.relations);
         }

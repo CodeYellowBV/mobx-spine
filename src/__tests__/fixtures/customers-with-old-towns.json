@@ -1,0 +1,43 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Henk",
+      "old_towns": [1, 2]
+    }
+  ],
+  "with": {
+    "town": [
+      {
+        "id": 1,
+        "name": "Hardinxveld",
+        "restaurants": [
+          10,
+          20
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Burgerking",
+        "restaurants": []
+      }
+    ],
+    "restaurant": [
+      {
+        "id": 10,
+        "name": "Fastfood"
+      },
+      {
+        "id": 20,
+        "name": "Seafood"
+      }
+    ]
+  },
+  "meta": {
+    "total_records": 1
+  },
+  "with_mapping": {
+    "old_towns": "town",
+    "old_towns.restaurants": "restaurant"
+  }
+}
