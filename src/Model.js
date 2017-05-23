@@ -321,7 +321,7 @@ export default class Model {
                         // Now we found the store.
                         // The store has models, and those models have another (model) relation.
                         //
-                        // We need to set the a `__nestedRepository` in the store
+                        // We need to set the `__nestedRepository` in the store
                         // That means that when models get added to the store,
                         // Their relation is filled from the correct `__nestedRepository` in the store.
                         //
@@ -330,6 +330,7 @@ export default class Model {
                         // When Owners get added, parsed, whatever, their town relation is set,
                         // using `Store.__nestedRepository`.
                         nestedRel = rels.slice(i + 1, rels.length).join('.');
+                        nestedRel = this.fromBackendAttrKey(nestedRel);
                         return true;
                     }
                     return false;

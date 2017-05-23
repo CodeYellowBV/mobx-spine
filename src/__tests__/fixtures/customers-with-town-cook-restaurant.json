@@ -1,0 +1,42 @@
+{
+  "data": {
+      "id": 1,
+      "name": "Henk",
+      "old_towns": [1]
+    }
+  ,
+  "with": {
+    "town": [
+      {
+        "id": 1,
+        "name": "Hardinxveld",
+        "best_cook": 50
+      }
+    ],
+    "restaurant": [
+      {
+        "id": 5,
+        "name": "Fastfood"
+      },
+      {
+        "id": 6,
+        "name": "Seafood"
+      }
+    ],
+    "cook": [
+      {
+        "id": 50,
+        "name": "Snor",
+        "work_places": [5, 6]
+      }
+    ]
+  },
+  "meta": {
+    "total_records": 1
+  },
+  "with_mapping": {
+    "old_towns.best_cook": "cook",
+    "old_towns": "town",
+    "old_towns.best_cook.work_places": "restaurant"
+  }
+}

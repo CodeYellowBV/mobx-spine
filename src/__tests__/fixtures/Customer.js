@@ -5,6 +5,12 @@ export class Cook extends Model {
     @observable id = null;
     @observable name = '';
     @observable profession = 'chef';
+
+    relations() {
+        return {
+            workPlaces: RestaurantStore, // eslint-disable-line no-use-before-define
+        };
+    }
 }
 
 export class Restaurant extends Model {
@@ -29,6 +35,7 @@ export class Location extends Model {
     relations() {
         return {
             restaurants: RestaurantStore,
+            bestCook: Cook,
         };
     }
 }
