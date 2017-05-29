@@ -28,6 +28,18 @@ function concatInDict(dict, key, value) {
     dict[key] = dict[key] ? dict[key].concat(value) : value;
 }
 
+// TODO: find a way to get a list of existing properties automatically.
+const FORBIDDEN_ATTRS = [
+    'url',
+    'urlRoot',
+    'api',
+    'isNew',
+    'isLoading',
+    'parse',
+    'save',
+    'clear',
+];
+
 export default class Model {
     static primaryKey = 'id';
     // How the model is known at the backend. This is useful when the model is in a relation that has a different name.
@@ -91,6 +103,10 @@ export default class Model {
         // Find all attributes. Not all observables are an attribute.
         forIn(this, (value, key) => {
             if (!key.startsWith('__') && isObservable(this, key)) {
+                invariant(
+                    !FORBIDDEN_ATTRS.includes(key),
+                    `Forbidden attribute key used: \`${key}\``
+                );
                 this.__attributes.push(key);
                 let newValue = value;
                 // An array or object observable can be mutated, so we want to ensure we always have

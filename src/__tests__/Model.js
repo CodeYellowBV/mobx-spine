@@ -548,6 +548,17 @@ test('backendResourceName defined as not static should throw error', () => {
     );
 });
 
+test('Attribute already used by mobx-spine should throw error', () => {
+    // E.g. the `url` property is used by mobx-spine, so you can't use it as an attribute.
+    class Zebra extends Model {
+        @observable url = '';
+    }
+
+    expect(() => {
+        return new Zebra();
+    }).toThrow('Forbidden attribute key used: `url`');
+});
+
 test('toBackend with frontend-only prop', () => {
     const animal = new AnimalWithFrontendProp({
         id: 3,
