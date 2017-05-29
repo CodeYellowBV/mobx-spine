@@ -223,7 +223,7 @@ test('Non existent relation should throw an error', () => {
     }).toThrow('Specified relation "ponyfoo" does not exist on model.');
 });
 
-test('Parsing two-level relation', () => {
+test('Parsing two-level relation (with repos)', () => {
     const animal = new Animal(null, {
         relations: ['kind.breed'],
     });
