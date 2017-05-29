@@ -13,6 +13,7 @@ import {
     forIn,
     mapValues,
     find,
+    filter,
     get,
     isPlainObject,
     isArray,
@@ -302,14 +303,23 @@ export default class Model {
         this.__fetchParams = Object.assign({}, params);
     }
 
+    __parseRepositoryToData(key, repository) {
+        if (isArray(key)) {
+            return filter(repository, m => key.includes(m.id));
+        }
+        return find(repository, { id: key });
+    }
+
     /**
      * We handle the fromBackend recursively.
-     * But when recursing, we don't send the full repository, we need to only send the part
+     * But when recursing, we don't send the full repository, we need to only send the repo
      * relevant to the relation.
      *
      * So when we have a customer with a town.restaurants relation,
-     * and we want to recurse, we only send { restaurants: [...] } to the town relation
-     * And send the stuff in the town: relation as data
+     * we get a "town.restaurants": "restaurant", relMapping from binder
+     *
+     * Here we create a scoped repository.
+     * The root gets a `town.restaurants` repo, but the `town` relation only gets the `restaurants` repo
      */
     __scopeBackendResponse(data, targetRelName, repos, mapping) {
         let scopedData = null;
@@ -321,18 +331,10 @@ export default class Model {
             const repository = repos[repoName];
             relName = this.fromBackendAttrKey(relName);
 
-            // NOTE:
-            // we want to give the data to the relation,
-            // however model relations want {} and store relations want []
             if (targetRelName === relName) {
                 relevant = true;
-                const relFk = data[relName];
-
-                if (isArray(relFk)) {
-                    scopedData = repository;
-                } else {
-                    scopedData = find(repository, { id: relFk });
-                }
+                const relKey = data[this.toBackendAttrKey(relName)];
+                scopedData = this.__parseRepositoryToData(relKey, repository);
                 return;
             }
 
@@ -354,11 +356,16 @@ export default class Model {
         return { scopedData, scopedRepos, scopedRelMapping };
     }
 
+    // `data` contains properties for the current model.
+    // `repos` is an object of "repositories". A repository is
+    // e.g. "animal_kind", while the relation name would be "kind".
+    // `relMapping` maps relation names to repositories.
     @action fromBackend({ data, repos, relMapping }) {
-        // We handle the fromBackend recursively,
-        // so when we have `town.restaurants.chef`
-        // we only need `town`
-        // That's why we use __activeCurrentRelations instead of __activeRelations
+        // We handle the fromBackend recursively. On each relation of the source model
+        // fromBackend gets called as well, but with data scoped for itself
+        //
+        // So when we have a model with a `town.restaurants.chef` relation,
+        // we call fromBackend on the `town` relation.
         each(this.__activeCurrentRelations, relName => {
             const rel = this[relName];
             const resScoped = this.__scopeBackendResponse(
@@ -379,62 +386,6 @@ export default class Model {
                 relMapping: scopedRelMapping,
             });
         });
-        // `data` contains properties for the current model.
-        // `repos` is an object of "repositories". A repository is
-        // e.g. "animal_kind", while the relation name would be "kind".
-        // `relMapping` maps relation names to repositories.
-        // forIn(relMapping, (repoName, relName) => {
-        //     const repository = repos[repoName];
-        //     // All nested models get a repository. At this time we don't know yet
-        //     // what id the model should get, since the parent may or may not be set.
-        //     let model = get(this, this.fromBackendAttrKey(relName));
-
-        //     if (model) {
-        //     }
-
-        //     // If we have a model which has a store relation which has a nested relation,
-        //     // the model doesn't exist yet
-        //     if (model === undefined) {
-        //         // We need to find the first store in the chain
-        //         // But we currently only support Model > Store > Model
-        //         // If there are more Models/Store in the length the "find first store in chain"
-        //         // needs to be implemented
-        //         const rels = relName.split('.');
-        //         let store;
-        //         let nestedRel;
-
-        //         // Find the first Store relation in the relation chain
-        //         rels.some((rel, i) => {
-        //             // Try rel, rel.rel, rel.rel.rel, etc.
-        //             const subRelName = rels.slice(0, i + 1).join('.');
-        //             const subRel = get(
-        //                 this,
-        //                 this.fromBackendAttrKey(subRelName)
-        //             );
-
-        //             if (subRel instanceof Store) {
-        //                 store = subRel;
-        //                 // Now we found the store.
-        //                 // The store has models, and those models have another (model) relation.
-        //                 //
-        //                 // We need to set the a `__nestedRepository` in the store
-        //                 // That means that when models get added to the store,
-        //                 // Their relation is filled from the correct `__nestedRepository` in the store.
-        //                 //
-        //                 // So a Dog has PastOwners (store), the Owners in that store have a Town rel.
-        //                 // We set 'town': repository in the `__nestedRepository` of the PastOwners
-        //                 // When Owners get added, parsed, whatever, their town relation is set,
-        //                 // using `Store.__nestedRepository`.
-        //                 nestedRel = rels.slice(i + 1, rels.length).join('.');
-        //                 return true;
-        //             }
-        //             return false;
-        //         });
-        //         store.__nestedRepository[nestedRel] = repository;
-        //     } else {
-        //         model.__repository = repository;
-        //     }
-        // });
 
         // Now all repositories are set on the relations, start parsing the actual data.
         // `parse()` will recursively fill in all relations.
@@ -455,13 +406,6 @@ export default class Model {
         return this.api;
     }
 
-    // __addFromRepository(id) {
-    //     const relData = find(this.__repository, { id });
-    //     if (relData) {
-    //         this.parse(relData);
-    //     }
-    // }
-
     @action parse(data) {
         invariant(
             isPlainObject(data),
@@ -476,8 +420,6 @@ export default class Model {
                 // However, it can also be an object if there are nested relations (non flattened).
                 if (isPlainObject(value) || isPlainObject(get(value, '[0]'))) {
                     this[attr].parse(value);
-                } else {
-                    // this[attr].__addFromRepository(value);
                 }
             }
         });
