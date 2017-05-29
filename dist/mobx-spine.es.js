@@ -10,14 +10,13 @@ import {
     toJS,
 } from 'mobx';
 import {
-    at,
+    each,
     filter,
     find,
     forIn,
     get,
     isArray,
     isPlainObject,
-    keyBy,
     map,
     mapKeys,
     mapValues,
@@ -134,7 +133,12 @@ function _applyDecoratedDescriptor$1(
     return desc;
 }
 
-var AVAILABLE_CONST_OPTIONS = ['relations', 'limit', 'comparator'];
+var AVAILABLE_CONST_OPTIONS = [
+    'relations',
+    'limit',
+    'comparator',
+    'repository',
+];
 
 var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
     createClass(Store, [
@@ -146,10 +150,11 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         },
         {
             key: 'isLoading',
+
+            // Holds the fetch parameters
             get: function get$$1() {
                 return this.__pendingRequestCount > 0;
             },
-            // Holds the fetch parameters
         },
         {
             key: 'length',
@@ -185,7 +190,6 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         this.__activeRelations = [];
         this.Model = null;
         this.api = null;
-        this.__nestedRepository = {};
 
         invariant(
             isPlainObject(options),
@@ -197,6 +201,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                 'Unknown option passed to store: ' + option
             );
         });
+        this.__repository = options.repository;
         if (options.relations) {
             this.__parseRelations(options.relations);
         }
@@ -217,32 +222,6 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
             },
         },
         {
-            key: '__addFromRepository',
-            value: function __addFromRepository() {
-                var _this = this;
-
-                var ids = arguments.length > 0 && arguments[0] !== undefined
-                    ? arguments[0]
-                    : [];
-
-                ids = isArray(ids) ? ids : [ids];
-
-                var records = at(
-                    keyBy(this.__repository, this.Model.primaryKey),
-                    ids
-                );
-                this.models.replace(
-                    records.map(function(record) {
-                        return new _this.Model(record, {
-                            store: _this,
-                            relations: _this.__activeRelations,
-                        });
-                    })
-                );
-                this.sort();
-            },
-        },
-        {
             key: '__getApi',
             value: function __getApi() {
                 invariant(
@@ -259,7 +238,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         {
             key: 'fromBackend',
             value: function fromBackend(_ref) {
-                var _this2 = this;
+                var _this = this;
 
                 var data = _ref.data,
                     repos = _ref.repos,
@@ -269,7 +248,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                     data.map(function(record) {
                         // TODO: I'm not happy at all about how this looks.
                         // We'll need to finetune some things, but hey, for now it works.
-                        var model = _this2._newModel();
+                        var model = _this._newModel();
                         model.fromBackend({
                             data: record,
                             repos: repos,
@@ -305,7 +284,6 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                     isPlainObject(options),
                     'Expecting a plain object for options.'
                 );
-                // TODO: throw error when this.comparator is not set?
                 if (!this.comparator) {
                     return this;
                 }
@@ -333,7 +311,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         {
             key: 'add',
             value: function add(models) {
-                var _this3 = this;
+                var _this2 = this;
 
                 var singular = !isArray(models);
                 models = singular ? [models] : models.slice();
@@ -341,14 +319,14 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                 var modelInstances = models.map(this._newModel.bind(this));
 
                 modelInstances.forEach(function(modelInstance) {
-                    var primaryValue = modelInstance[_this3.Model.primaryKey];
+                    var primaryValue = modelInstance[_this2.Model.primaryKey];
                     invariant(
-                        !primaryValue || !_this3.get(primaryValue),
+                        !primaryValue || !_this2.get(primaryValue),
                         'A model with the same primary key value "' +
                             primaryValue +
                             '" already exists in this store.'
                     );
-                    _this3.models.push(modelInstance);
+                    _this2.models.push(modelInstance);
                 });
                 this.sort();
 
@@ -358,13 +336,13 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         {
             key: 'remove',
             value: function remove(models) {
-                var _this4 = this;
+                var _this3 = this;
 
                 var singular = !isArray(models);
                 models = singular ? [models] : models.slice();
 
                 models.forEach(function(model) {
-                    return _this4.models.remove(model);
+                    return _this3.models.remove(model);
                 });
 
                 return models;
@@ -373,7 +351,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         {
             key: 'removeById',
             value: function removeById(ids) {
-                var _this5 = this;
+                var _this4 = this;
 
                 var singular = !isArray(ids);
                 ids = singular ? [ids] : ids.slice();
@@ -384,12 +362,12 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                 );
 
                 var models = ids.map(function(id) {
-                    return _this5.get(id);
+                    return _this4.get(id);
                 });
 
                 models.forEach(function(model) {
                     if (model) {
-                        _this5.models.remove(model);
+                        _this4.models.remove(model);
                     }
                 });
 
@@ -405,7 +383,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         {
             key: 'fetch',
             value: function fetch() {
-                var _this6 = this;
+                var _this5 = this;
 
                 var options = arguments.length > 0 && arguments[0] !== undefined
                     ? arguments[0]
@@ -421,9 +399,9 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                     .fetchStore({ url: result(this, 'url'), data: data })
                     .then(
                         action(function(res) {
-                            _this6.__pendingRequestCount -= 1;
-                            _this6.__state.totalRecords = res.totalRecords;
-                            _this6.fromBackend(res);
+                            _this5.__pendingRequestCount -= 1;
+                            _this5.__state.totalRecords = res.totalRecords;
+                            _this5.fromBackend(res);
                         })
                     );
             },
@@ -530,7 +508,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         {
             key: 'virtualStore',
             value: function virtualStore(_ref2) {
-                var _this7 = this;
+                var _this6 = this;
 
                 var filter$$1 = _ref2.filter, comparator = _ref2.comparator;
 
@@ -540,7 +518,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                 });
                 // Oh gawd MobX is so awesome.
                 autorun(function() {
-                    var models = _this7.filter(filter$$1);
+                    var models = _this6.filter(filter$$1);
                     store.models.replace(models);
                     store.sort();
                 });
@@ -586,7 +564,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         },
         {
             key: 'each',
-            value: function each(predicate) {
+            value: function each$$1(predicate) {
                 return this.models.forEach(predicate);
             },
         },
@@ -598,7 +576,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         },
         {
             key: 'at',
-            value: function at$$1(index) {
+            value: function at(index) {
                 var zeroLength = this.length - 1;
                 invariant(
                     index <= zeroLength,
@@ -701,12 +679,6 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
     'length',
     [computed],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'length'),
-    _class$1.prototype
-), _applyDecoratedDescriptor$1(
-    _class$1.prototype,
-    '__addFromRepository',
-    [action],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, '__addFromRepository'),
     _class$1.prototype
 ), _applyDecoratedDescriptor$1(
     _class$1.prototype,
@@ -868,6 +840,22 @@ function concatInDict(dict, key, value) {
     dict[key] = dict[key] ? dict[key].concat(value) : value;
 }
 
+// Find the relation name before the first dot, and include all other relations after it
+// Example: input `animal.kind.breed` output -> `['animal', 'kind.breed']`
+var RE_SPLIT_FIRST_RELATION = /([^.]+)\.(.+)/;
+
+// TODO: find a way to get a list of existing properties automatically.
+var FORBIDDEN_ATTRS = [
+    'url',
+    'urlRoot',
+    'api',
+    'isNew',
+    'isLoading',
+    'parse',
+    'save',
+    'clear',
+];
+
 var Model = ((_class = ((_temp = _class2 = (function() {
     createClass(Model, [
         {
@@ -957,6 +945,10 @@ var Model = ((_class = ((_temp = _class2 = (function() {
         // Find all attributes. Not all observables are an attribute.
         forIn(this, function(value, key) {
             if (!key.startsWith('__') && isObservable(_this, key)) {
+                invariant(
+                    !FORBIDDEN_ATTRS.includes(key),
+                    'Forbidden attribute key used: `' + key + '`'
+                );
                 _this.__attributes.push(key);
                 var newValue = value;
                 // An array or object observable can be mutated, so we want to ensure we always have
@@ -989,9 +981,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                 var relations = this.relations && this.relations();
                 var relModels = {};
                 activeRelations.forEach(function(aRel) {
-                    // Find the relation name before the first dot, and include all other relations after it
-                    // Example: input `animal.kind.breed` output -> `['animal', 'kind.breed']`
-                    var relNames = aRel.match(/([^.]+)\.(.+)/);
+                    var relNames = aRel.match(RE_SPLIT_FIRST_RELATION);
 
                     var currentRel = relNames ? relNames[1] : aRel;
                     var otherRelNames = relNames && relNames[2];
@@ -1023,13 +1013,6 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                                 '" does not exist on model.'
                         );
                         var options = { relations: otherRelNames };
-                        if (
-                            _this2.__store &&
-                            _this2.__store.__nestedRepository[relName]
-                        ) {
-                            options.repository =
-                                _this2.__store.__nestedRepository[relName];
-                        }
                         if (RelModel.prototype instanceof Store) {
                             return new RelModel(options);
                         }
@@ -1198,68 +1181,120 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             },
         },
         {
-            key: 'fromBackend',
-            value: function fromBackend(_ref) {
+            key: '__parseRepositoryToData',
+            value: function __parseRepositoryToData(key, repository) {
+                if (isArray(key)) {
+                    return filter(repository, function(m) {
+                        return key.includes(m.id);
+                    });
+                }
+                return find(repository, { id: key });
+            },
+
+            /**
+         * We handle the fromBackend recursively.
+         * But when recursing, we don't send the full repository, we need to only send the repo
+         * relevant to the relation.
+         *
+         * So when we have a customer with a town.restaurants relation,
+         * we get a "town.restaurants": "restaurant", relMapping from Binder
+         *
+         * Here we create a scoped repository.
+         * The root gets a `town.restaurants` repo, but the `town` relation only gets the `restaurants` repo
+         */
+        },
+        {
+            key: '__scopeBackendResponse',
+            value: function __scopeBackendResponse(_ref) {
                 var _this6 = this;
 
                 var data = _ref.data,
+                    targetRelName = _ref.targetRelName,
                     repos = _ref.repos,
-                    relMapping = _ref.relMapping;
+                    mapping = _ref.mapping;
 
-                // `data` contains properties for the current model.
-                // `repos` is an object of "repositories". A repository is
-                // e.g. "animal_kind", while the relation name would be "kind".
-                // `relMapping` maps relation names to repositories.
-                forIn(relMapping, function(repoName, relName) {
+                var scopedData = null;
+                var relevant = false;
+                var scopedRepos = {};
+                var scopedRelMapping = {};
+
+                forIn(mapping, function(repoName, relName) {
                     var repository = repos[repoName];
-                    // All nested models get a repository. At this time we don't know yet
-                    // what id the model should get, since the parent may or may not be set.
-                    var model = get(_this6, _this6.fromBackendAttrKey(relName));
+                    relName = _this6.fromBackendAttrKey(relName);
 
-                    // If we have a model which has a store relation which has a nested relation,
-                    // the model doesn't exist yet
-                    if (model === undefined) {
-                        // We need to find the first store in the chain
-                        // But we currently only support Model > Store > Model
-                        // If there are more Models/Store in the length the "find first store in chain"
-                        // needs to be implemented
-                        var rels = relName.split('.');
-                        var store = void 0;
-                        var nestedRel = void 0;
-
-                        // Find the first Store relation in the relation chain
-                        rels.some(function(rel, i) {
-                            // Try rel, rel.rel, rel.rel.rel, etc.
-                            var subRelName = rels.slice(0, i + 1).join('.');
-                            var subRel = get(
-                                _this6,
-                                _this6.fromBackendAttrKey(subRelName)
-                            );
-
-                            if (subRel instanceof Store) {
-                                store = subRel;
-                                // Now we found the store.
-                                // The store has models, and those models have another (model) relation.
-                                //
-                                // We need to set the a `__nestedRepository` in the store
-                                // That means that when models get added to the store,
-                                // Their relation is filled from the correct `__nestedRepository` in the store.
-                                //
-                                // So a Dog has PastOwners (store), the Owners in that store have a Town rel.
-                                // We set 'town': repository in the `__nestedRepository` of the PastOwners
-                                // When Owners get added, parsed, whatever, their town relation is set,
-                                // using `Store.__nestedRepository`.
-                                nestedRel = rels
-                                    .slice(i + 1, rels.length)
-                                    .join('.');
-                                return true;
-                            }
-                            return false;
-                        });
-                        store.__nestedRepository[nestedRel] = repository;
-                    } else {
-                        model.__repository = repository;
+                    if (targetRelName === relName) {
+                        relevant = true;
+                        var relKey = data[_this6.toBackendAttrKey(relName)];
+                        scopedData = _this6.__parseRepositoryToData(
+                            relKey,
+                            repository
+                        );
+                        return;
                     }
+
+                    if (relName.startsWith(targetRelName + '.')) {
+                        // If we have town.restaurants and the targetRel = town
+                        // we need "restaurants" in the repository
+                        relevant = true;
+                        var relNames = relName.match(RE_SPLIT_FIRST_RELATION);
+                        var scopedRelName = relNames[2];
+                        scopedRepos[repoName] = repository;
+                        scopedRelMapping[scopedRelName] = repoName;
+                    }
+                });
+
+                if (!relevant) {
+                    return null;
+                }
+
+                return {
+                    scopedData: scopedData,
+                    scopedRepos: scopedRepos,
+                    scopedRelMapping: scopedRelMapping,
+                };
+            },
+
+            // `data` contains properties for the current model.
+            // `repos` is an object of "repositories". A repository is
+            // e.g. "animal_kind", while the relation name would be "kind".
+            // `relMapping` maps relation names to repositories.
+        },
+        {
+            key: 'fromBackend',
+            value: function fromBackend(_ref2) {
+                var _this7 = this;
+
+                var data = _ref2.data,
+                    repos = _ref2.repos,
+                    relMapping = _ref2.relMapping;
+
+                // We handle the fromBackend recursively. On each relation of the source model
+                // fromBackend gets called as well, but with data scoped for itself
+                //
+                // So when we have a model with a `town.restaurants.chef` relation,
+                // we call fromBackend on the `town` relation.
+                each(this.__activeCurrentRelations, function(relName) {
+                    var rel = _this7[relName];
+                    var resScoped = _this7.__scopeBackendResponse({
+                        data: data,
+                        targetRelName: relName,
+                        repos: repos,
+                        mapping: relMapping,
+                    });
+
+                    // Make sure we don't parse every relation for nothing
+                    if (!resScoped) {
+                        return;
+                    }
+                    var scopedData = resScoped.scopedData,
+                        scopedRepos = resScoped.scopedRepos,
+                        scopedRelMapping = resScoped.scopedRelMapping;
+
+                    rel.fromBackend({
+                        data: scopedData,
+                        repos: scopedRepos,
+                        relMapping: scopedRelMapping,
+                    });
                 });
 
                 // Now all repositories are set on the relations, start parsing the actual data.
@@ -1284,37 +1319,26 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             },
         },
         {
-            key: '__addFromRepository',
-            value: function __addFromRepository(id) {
-                var relData = find(this.__repository, { id: id });
-                if (relData) {
-                    this.parse(relData);
-                }
-            },
-        },
-        {
             key: 'parse',
             value: function parse(data) {
-                var _this7 = this;
+                var _this8 = this;
 
                 invariant(
                     isPlainObject(data),
                     'Parameter supplied to parse() is not an object.'
                 );
                 forIn(data, function(value, key) {
-                    var attr = _this7.fromBackendAttrKey(key);
-                    if (_this7.__attributes.includes(attr)) {
-                        _this7[attr] = _this7.__parseAttr(attr, value);
-                    } else if (_this7.__activeCurrentRelations.includes(attr)) {
+                    var attr = _this8.fromBackendAttrKey(key);
+                    if (_this8.__attributes.includes(attr)) {
+                        _this8[attr] = _this8.__parseAttr(attr, value);
+                    } else if (_this8.__activeCurrentRelations.includes(attr)) {
                         // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                         // However, it can also be an object if there are nested relations (non flattened).
                         if (
                             isPlainObject(value) ||
                             isPlainObject(get(value, '[0]'))
                         ) {
-                            _this7[attr].parse(value);
-                        } else {
-                            _this7[attr].__addFromRepository(value);
+                            _this8[attr].parse(value);
                         }
                     }
                 });
@@ -1336,7 +1360,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
         {
             key: 'save',
             value: function save() {
-                var _this8 = this;
+                var _this9 = this;
 
                 var options = arguments.length > 0 && arguments[0] !== undefined
                     ? arguments[0]
@@ -1354,15 +1378,15 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     })
                     .then(
                         action(function(res) {
-                            _this8.__pendingRequestCount -= 1;
-                            _this8.saveFromBackend(res);
+                            _this9.__pendingRequestCount -= 1;
+                            _this9.saveFromBackend(res);
                         })
                     )
                     .catch(
                         action(function(err) {
-                            _this8.__pendingRequestCount -= 1;
+                            _this9.__pendingRequestCount -= 1;
                             if (err.valErrors) {
-                                _this8.__backendValidationErrors =
+                                _this9.__backendValidationErrors =
                                     err.valErrors;
                             }
                             throw err;
@@ -1373,7 +1397,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
         {
             key: 'saveAll',
             value: function saveAll() {
-                var _this9 = this;
+                var _this10 = this;
 
                 var options = arguments.length > 0 && arguments[0] !== undefined
                     ? arguments[0]
@@ -1390,13 +1414,13 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     })
                     .then(
                         action(function(res) {
-                            _this9.__pendingRequestCount -= 1;
-                            _this9.saveFromBackend(res);
+                            _this10.__pendingRequestCount -= 1;
+                            _this10.saveFromBackend(res);
                         })
                     )
                     .catch(
                         action(function(err) {
-                            _this9.__pendingRequestCount -= 1;
+                            _this10.__pendingRequestCount -= 1;
                             // TODO: saveAll does not support handling backend validation errors yet.
                             throw err;
                         })
@@ -1417,15 +1441,15 @@ var Model = ((_class = ((_temp = _class2 = (function() {
         {
             key: 'delete',
             value: function _delete() {
-                var _this10 = this;
+                var _this11 = this;
 
                 var options = arguments.length > 0 && arguments[0] !== undefined
                     ? arguments[0]
                     : {};
 
                 var removeFromStore = function removeFromStore() {
-                    return _this10.__store
-                        ? _this10.__store.remove(_this10)
+                    return _this11.__store
+                        ? _this11.__store.remove(_this11)
                         : null;
                 };
                 if (options.immediate || this.isNew) {
@@ -1440,7 +1464,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     .deleteModel({ url: this.url, params: options.params })
                     .then(
                         action(function() {
-                            _this10.__pendingRequestCount -= 1;
+                            _this11.__pendingRequestCount -= 1;
                             if (!options.immediate) {
                                 removeFromStore();
                             }
@@ -1451,7 +1475,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
         {
             key: 'fetch',
             value: function fetch() {
-                var _this11 = this;
+                var _this12 = this;
 
                 var options = arguments.length > 0 && arguments[0] !== undefined
                     ? arguments[0]
@@ -1468,8 +1492,8 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     .fetchModel({ url: this.url, data: data })
                     .then(
                         action(function(res) {
-                            _this11.fromBackend(res);
-                            _this11.__pendingRequestCount -= 1;
+                            _this12.fromBackend(res);
+                            _this12.__pendingRequestCount -= 1;
                         })
                     );
             },
@@ -1477,14 +1501,14 @@ var Model = ((_class = ((_temp = _class2 = (function() {
         {
             key: 'clear',
             value: function clear() {
-                var _this12 = this;
+                var _this13 = this;
 
                 forIn(this.__originalAttributes, function(value, key) {
-                    _this12[key] = value;
+                    _this13[key] = value;
                 });
 
                 this.__activeCurrentRelations.forEach(function(currentRel) {
-                    _this12[currentRel].clear();
+                    _this13[currentRel].clear();
                 });
             },
         },
