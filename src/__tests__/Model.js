@@ -19,12 +19,15 @@ import {
     PersonStore,
     Location,
 } from './fixtures/Animal';
+import { Customer } from './fixtures/Customer';
 import animalKindBreedData from './fixtures/animal-with-kind-breed.json';
 import animalsWithPastOwnersAndTownData
     from './fixtures/animals-with-past-owners-and-town.json';
 import animalKindBreedDataNested
     from './fixtures/animal-with-kind-breed-nested.json';
 import animalMultiPutResponse from './fixtures/animals-multi-put-response.json';
+import customersWithTownCookRestaurant
+    from './fixtures/customers-with-town-cook-restaurant.json';
 import saveFailData from './fixtures/save-fail.json';
 
 beforeEach(() => {
@@ -324,6 +327,24 @@ test('Parsing store relation with model relation in it', () => {
     expect(animal.pastOwners.get(66).town.name).toBe('Breda');
 });
 
+test('Parsing Store -> Model -> Store relation', () => {
+    const customer = new Customer(null, {
+        relations: ['oldTowns.bestCook.workPlaces'],
+    });
+
+    customer.fromBackend({
+        data: customersWithTownCookRestaurant.data,
+        repos: customersWithTownCookRestaurant.with,
+        relMapping: customersWithTownCookRestaurant.with_mapping,
+    });
+
+    expect(customer.oldTowns.at(0).bestCook.id).toBe(50);
+    expect(customer.oldTowns.at(0).bestCook.workPlaces.map('id')).toEqual([
+        5,
+        6,
+    ]);
+});
+
 test('toBackend with basic properties', () => {
     const animal = new Animal({
         id: 3,
@@ -525,6 +546,17 @@ test('backendResourceName defined as not static should throw error', () => {
     }).toThrow(
         '`backendResourceName` should be a static property on the model.'
     );
+});
+
+test('Attribute already used by mobx-spine should throw error', () => {
+    // E.g. the `url` property is used by mobx-spine, so you can't use it as an attribute.
+    class Zebra extends Model {
+        @observable url = '';
+    }
+
+    expect(() => {
+        return new Zebra();
+    }).toThrow('Forbidden attribute key used: `url`');
 });
 
 test('toBackend with frontend-only prop', () => {
