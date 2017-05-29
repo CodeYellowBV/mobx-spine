@@ -4,10 +4,8 @@ import {
     map,
     filter,
     find,
-    keyBy,
     sortBy,
     forIn,
-    at,
     isPlainObject,
     result,
 } from 'lodash';
@@ -35,7 +33,6 @@ export default class Store {
     Model = null;
     api = null;
     __repository;
-    __nestedRepository = {};
     static backendResourceName = '';
 
     @computed get isLoading() {
@@ -82,24 +79,6 @@ export default class Store {
 
     __parseRelations(activeRelations) {
         this.__activeRelations = activeRelations;
-    }
-
-    @action __addFromRepository(ids = []) {
-        ids = isArray(ids) ? ids : [ids];
-
-        const records = at(
-            keyBy(this.__repository, this.Model.primaryKey),
-            ids
-        );
-        this.models.replace(
-            records.map(record => {
-                return new this.Model(record, {
-                    store: this,
-                    relations: this.__activeRelations,
-                });
-            })
-        );
-        this.sort();
     }
 
     __getApi() {
