@@ -4,10 +4,8 @@ import {
     map,
     filter,
     find,
-    keyBy,
     sortBy,
     forIn,
-    at,
     isPlainObject,
     result,
 } from 'lodash';
@@ -35,7 +33,6 @@ export default class Store {
     Model = null;
     api = null;
     __repository;
-    __nestedRepository = {};
     static backendResourceName = '';
 
     @computed get isLoading() {

@@ -30,6 +30,10 @@ function concatInDict(dict, key, value) {
     dict[key] = dict[key] ? dict[key].concat(value) : value;
 }
 
+// Find the relation name before the first dot, and include all other relations after it
+// Example: input `animal.kind.breed` output -> `['animal', 'kind.breed']`
+const RE_SPLIT_FIRST_RELATION = /([^.]+)\.(.+)/;
+
 // TODO: find a way to get a list of existing properties automatically.
 const FORBIDDEN_ATTRS = [
     'url',
@@ -136,9 +140,7 @@ export default class Model {
         const relations = this.relations && this.relations();
         const relModels = {};
         activeRelations.forEach(aRel => {
-            // Find the relation name before the first dot, and include all other relations after it
-            // Example: input `animal.kind.breed` output -> `['animal', 'kind.breed']`
-            const relNames = aRel.match(/([^.]+)\.(.+)/);
+            const relNames = aRel.match(RE_SPLIT_FIRST_RELATION);
 
             const currentRel = relNames ? relNames[1] : aRel;
             const otherRelNames = relNames && relNames[2];
@@ -311,12 +313,12 @@ export default class Model {
      * relevant to the relation.
      *
      * So when we have a customer with a town.restaurants relation,
-     * we get a "town.restaurants": "restaurant", relMapping from binder
+     * we get a "town.restaurants": "restaurant", relMapping from Binder
      *
      * Here we create a scoped repository.
      * The root gets a `town.restaurants` repo, but the `town` relation only gets the `restaurants` repo
      */
-    __scopeBackendResponse(data, targetRelName, repos, mapping) {
+    __scopeBackendResponse({ data, targetRelName, repos, mapping }) {
         let scopedData = null;
         let relevant = false;
         const scopedRepos = {};
@@ -333,11 +335,11 @@ export default class Model {
                 return;
             }
 
-            if (relName.startsWith(targetRelName)) {
+            if (relName.startsWith(`${targetRelName}.`)) {
                 // If we have town.restaurants and the targetRel = town
                 // we need "restaurants" in the repository
                 relevant = true;
-                const relNames = relName.match(/([^.]+)\.(.+)/);
+                const relNames = relName.match(RE_SPLIT_FIRST_RELATION);
                 const scopedRelName = relNames[2];
                 scopedRepos[repoName] = repository;
                 scopedRelMapping[scopedRelName] = repoName;
@@ -345,7 +347,7 @@ export default class Model {
         });
 
         if (!relevant) {
-            return false;
+            return null;
         }
 
         return { scopedData, scopedRepos, scopedRelMapping };
@@ -363,12 +365,12 @@ export default class Model {
         // we call fromBackend on the `town` relation.
         each(this.__activeCurrentRelations, relName => {
             const rel = this[relName];
-            const resScoped = this.__scopeBackendResponse(
+            const resScoped = this.__scopeBackendResponse({
                 data,
-                relName,
+                targetRelName: relName,
                 repos,
-                relMapping
-            );
+                mapping: relMapping,
+            });
 
             // Make sure we don't parse every relation for nothing
             if (!resScoped) {
