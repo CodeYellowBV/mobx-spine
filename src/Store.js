@@ -84,24 +84,6 @@ export default class Store {
         this.__activeRelations = activeRelations;
     }
 
-    @action __addFromRepository(ids = []) {
-        ids = isArray(ids) ? ids : [ids];
-
-        const records = at(
-            keyBy(this.__repository, this.Model.primaryKey),
-            ids
-        );
-        this.models.replace(
-            records.map(record => {
-                return new this.Model(record, {
-                    store: this,
-                    relations: this.__activeRelations,
-                });
-            })
-        );
-        this.sort();
-    }
-
     __getApi() {
         invariant(
             this.api,

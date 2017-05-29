@@ -166,11 +166,6 @@ export default class Model {
                     `Specified relation "${relName}" does not exist on model.`
                 );
                 const options = { relations: otherRelNames };
-                if (this.__store && this.__store.__nestedRepository[relName]) {
-                    options.repository = this.__store.__nestedRepository[
-                        relName
-                    ];
-                }
                 if (RelModel.prototype instanceof Store) {
                     return new RelModel(options);
                 }
