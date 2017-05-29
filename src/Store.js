@@ -143,7 +143,6 @@ export default class Store {
             isPlainObject(options),
             'Expecting a plain object for options.'
         );
-        // TODO: throw error when this.comparator is not set?
         if (!this.comparator) {
             return this;
         }
