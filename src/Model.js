@@ -226,16 +226,6 @@ export default class Model {
             const rel = this[currentRel];
             let myNewId = null;
             const relBackendName = this.toBackendAttrKey(currentRel);
-            if (data[relBackendName] === null) {
-                myNewId = generateNegativeId();
-                data[relBackendName] = myNewId;
-            }
-            if (isArray(data[relBackendName])) {
-                myNewId = data[relBackendName].map(
-                    id => (id === null ? generateNegativeId() : id)
-                );
-                data[relBackendName] = myNewId;
-            }
 
             // `includeRelations` can look like `['kind.breed', 'owner']`
             // Check to see if `currentRel` matches the first part of the relation (`kind` or `owner`)
@@ -246,6 +236,16 @@ export default class Model {
                     : false;
             });
             if (includeRelationData.length > 0) {
+                if (data[relBackendName] === null) {
+                    myNewId = generateNegativeId();
+                    data[relBackendName] = myNewId;
+                } else if (isArray(data[relBackendName])) {
+                    myNewId = data[relBackendName].map(
+                        id => (id === null ? generateNegativeId() : id)
+                    );
+                    data[relBackendName] = myNewId;
+                }
+
                 // We want to pass through nested relations to the next relation, but pop of the first level.
                 const relativeRelations = includeRelationData
                     .map(rel => {

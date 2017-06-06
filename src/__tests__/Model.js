@@ -424,7 +424,7 @@ test('toBackendAll without relations', () => {
     );
 
     animal.kind.parse({ id: 5 });
-    // Purposefully pass no paramters to toBackendAll()
+    // Purposefully pass no parameters to toBackendAll()
     const serialized = animal.toBackendAll();
     expect(serialized).toMatchSnapshot();
 });

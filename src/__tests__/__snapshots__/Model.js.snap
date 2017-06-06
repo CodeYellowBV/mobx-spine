@@ -149,17 +149,17 @@ Object {
   "data": Array [
     Object {
       "id": -5,
-      "kind": -6,
+      "kind": null,
       "name": "Doggo",
-      "owner": -7,
+      "owner": -6,
     },
   ],
   "relations": Object {
     "owner": Array [
       Object {
-        "id": -7,
+        "id": -6,
         "name": "Henk",
-        "town": -8,
+        "town": null,
       },
     ],
   },
@@ -205,7 +205,7 @@ Object {
       "id": 4,
       "kind": 5,
       "name": "",
-      "owner": -5,
+      "owner": null,
     },
   ],
   "relations": Object {},
