@@ -55,7 +55,7 @@
     "mobx": "^3.0.2",
     "moment": "^2.18.1",
     "prettier": "^1.0.2",
-    "rollup": "^0.41.4",
+    "rollup": "^0.42.0",
     "rollup-plugin-babel": "^2.7.1"
   },
   "peerDependencies": {
