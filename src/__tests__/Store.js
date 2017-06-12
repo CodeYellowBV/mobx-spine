@@ -11,11 +11,9 @@ import {
     PersonStore,
 } from './fixtures/Animal';
 import { CustomerStore } from './fixtures/Customer';
-import animalsWithPastOwnersData
-    from './fixtures/animals-with-past-owners.json';
+import animalsWithPastOwnersData from './fixtures/animals-with-past-owners.json';
 import animalsWithKindBreedData from './fixtures/animals-with-kind-breed.json';
-import customersWithTownRestaurants
-    from './fixtures/customers-with-town-restaurants.json';
+import customersWithTownRestaurants from './fixtures/customers-with-town-restaurants.json';
 import customersWithOldTowns from './fixtures/customers-with-old-towns.json';
 import animalsData from './fixtures/animals.json';
 import pagination1Data from './fixtures/pagination/1.json';
@@ -343,6 +341,18 @@ test('virtualStore with basic properties', () => {
     expect(virtual.map('id')).toEqual([2, 3]);
     animalStore.get(2).name = 'aaaaa';
     expect(virtual.map('id')).toEqual([3]);
+});
+
+test('virtualStore unsubscribe', () => {
+    const animalStore = new AnimalStore().parse(simpleData);
+
+    const virtual = animalStore.virtualStore({
+        filter: m => m.name.includes('555'),
+    });
+    virtual.unsubscribeVirtualStore();
+    animalStore.add({ id: 5, name: '555' });
+    // Verify that the virtualStore is not updated anymore.
+    expect(virtual.map('id')).toEqual([]);
 });
 
 test('backendResourceName defined as not static should throw error', () => {

@@ -35,11 +35,13 @@ export default class Store {
     __repository;
     static backendResourceName = '';
 
-    @computed get isLoading() {
+    @computed
+    get isLoading() {
         return this.__pendingRequestCount > 0;
     }
 
-    @computed get length() {
+    @computed
+    get length() {
         return this.models.length;
     }
 
@@ -93,7 +95,8 @@ export default class Store {
         return this.api;
     }
 
-    @action fromBackend({ data, repos, relMapping }) {
+    @action
+    fromBackend({ data, repos, relMapping }) {
         this.models.replace(
             data.map(record => {
                 // TODO: I'm not happy at all about how this looks.
@@ -117,7 +120,8 @@ export default class Store {
         });
     }
 
-    @action sort(options = {}) {
+    @action
+    sort(options = {}) {
         invariant(
             isPlainObject(options),
             'Expecting a plain object for options.'
@@ -133,7 +137,8 @@ export default class Store {
         return this;
     }
 
-    @action parse(models) {
+    @action
+    parse(models) {
         invariant(
             isArray(models),
             'Parameter supplied to parse() is not an array.'
@@ -144,7 +149,8 @@ export default class Store {
         return this;
     }
 
-    @action add(models) {
+    @action
+    add(models) {
         const singular = !isArray(models);
         models = singular ? [models] : models.slice();
 
@@ -163,7 +169,8 @@ export default class Store {
         return singular ? modelInstances[0] : modelInstances;
     }
 
-    @action remove(models) {
+    @action
+    remove(models) {
         const singular = !isArray(models);
         models = singular ? [models] : models.slice();
 
@@ -172,12 +179,15 @@ export default class Store {
         return models;
     }
 
-    @action removeById(ids) {
+    @action
+    removeById(ids) {
         const singular = !isArray(ids);
         ids = singular ? [ids] : ids.slice();
         invariant(
             !ids.some(isNaN),
-            `Cannot remove a model by id that is not a number: ${JSON.stringify(ids)}`
+            `Cannot remove a model by id that is not a number: ${JSON.stringify(
+                ids
+            )}`
         );
 
         const models = ids.map(id => this.get(id));
@@ -191,11 +201,13 @@ export default class Store {
         return models;
     }
 
-    @action clear() {
+    @action
+    clear() {
         this.models.clear();
     }
 
-    @action fetch(options = {}) {
+    @action
+    fetch(options = {}) {
         this.__pendingRequestCount += 1;
         const data = Object.assign(
             this.__getApi().buildFetchStoreParams(this),
@@ -223,7 +235,8 @@ export default class Store {
         return (this.__state.currentPage - 1) * this.__state.limit;
     }
 
-    @action setLimit(limit) {
+    @action
+    setLimit(limit) {
         invariant(
             !limit || Number.isInteger(limit),
             'Page limit should be a number or falsy value.'
@@ -231,38 +244,45 @@ export default class Store {
         this.__state.limit = limit || null;
     }
 
-    @computed get totalPages() {
+    @computed
+    get totalPages() {
         if (!this.__state.limit) {
             return 0;
         }
         return Math.ceil(this.__state.totalRecords / this.__state.limit);
     }
 
-    @computed get currentPage() {
+    @computed
+    get currentPage() {
         return this.__state.currentPage;
     }
 
-    @computed get hasNextPage() {
+    @computed
+    get hasNextPage() {
         return this.__state.currentPage + 1 <= this.totalPages;
     }
 
-    @computed get hasPreviousPage() {
+    @computed
+    get hasPreviousPage() {
         return this.__state.currentPage > 1;
     }
 
-    @action getNextPage() {
+    @action
+    getNextPage() {
         invariant(this.hasNextPage, 'There is no next page.');
         this.__state.currentPage += 1;
         return this.fetch();
     }
 
-    @action getPreviousPage() {
+    @action
+    getPreviousPage() {
         invariant(this.hasPreviousPage, 'There is no previous page.');
         this.__state.currentPage -= 1;
         return this.fetch();
     }
 
-    @action setPage(page = 1, options = {}) {
+    @action
+    setPage(page = 1, options = {}) {
         invariant(Number.isInteger(page), 'Page should be a number.');
         invariant(
             page <= this.totalPages && page >= 1,
@@ -306,11 +326,12 @@ export default class Store {
             comparator,
         });
         // Oh gawd MobX is so awesome.
-        autorun(() => {
+        const events = autorun(() => {
             const models = this.filter(filter);
             store.models.replace(models);
             store.sort();
         });
+        store.unsubscribeVirtualStore = events;
         return store;
     }
 
