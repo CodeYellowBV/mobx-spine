@@ -512,6 +512,8 @@
                     {
                         key: 'toBackendAll',
                         value: function toBackendAll() {
+                            var _this6 = this;
+
                             var newIds = arguments.length > 0 &&
                                 arguments[0] !== undefined
                                 ? arguments[0]
@@ -542,6 +544,11 @@
                                     relations[key] = relations[key]
                                         ? relations[key].concat(relModel)
                                         : relModel;
+                                    // TODO: this primaryKey is not the primaryKey of the relation we're de-duplicating...
+                                    relations[key] = lodash.uniqBy(
+                                        relations[key],
+                                        _this6.Model.primaryKey
+                                    );
                                 });
                             });
 
@@ -554,7 +561,7 @@
                     {
                         key: 'virtualStore',
                         value: function virtualStore(_ref2) {
-                            var _this6 = this;
+                            var _this7 = this;
 
                             var filter$$1 = _ref2.filter,
                                 comparator = _ref2.comparator;
@@ -565,7 +572,7 @@
                             });
                             // Oh gawd MobX is so awesome.
                             var events = mobx.autorun(function() {
-                                var models = _this6.filter(filter$$1);
+                                var models = _this7.filter(filter$$1);
                                 store.models.replace(models);
                                 store.sort();
                             });
