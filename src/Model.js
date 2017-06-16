@@ -423,7 +423,9 @@ export default class Model {
     parse(data) {
         invariant(
             isPlainObject(data),
-            'Parameter supplied to parse() is not an object.'
+            `Parameter supplied to \`parse()\` is not an object, got: ${JSON.stringify(
+                data
+            )}`
         );
         forIn(data, (value, key) => {
             const attr = this.fromBackendAttrKey(key);

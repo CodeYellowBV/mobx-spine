@@ -393,7 +393,7 @@ test('Non-array given to parse() should throw an error', () => {
     expect(() => {
         const animalStore = new AnimalStore();
         return animalStore.parse(1);
-    }).toThrow('Parameter supplied to parse() is not an array.');
+    }).toThrow('Parameter supplied to `parse()` is not an array, got: 1');
 });
 
 test('fetch without api', () => {

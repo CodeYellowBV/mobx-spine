@@ -212,7 +212,7 @@ test('Non-object given to parse() should throw an error', () => {
     expect(() => {
         const animal = new Animal();
         return animal.parse(1);
-    }).toThrow('Parameter supplied to parse() is not an object.');
+    }).toThrow('Parameter supplied to `parse()` is not an object, got: 1');
 });
 
 test('Non existent relation should throw an error', () => {

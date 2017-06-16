@@ -141,7 +141,9 @@ export default class Store {
     parse(models) {
         invariant(
             isArray(models),
-            'Parameter supplied to parse() is not an array.'
+            `Parameter supplied to \`parse()\` is not an array, got: ${JSON.stringify(
+                models
+            )}`
         );
         this.models.replace(models.map(this._newModel.bind(this)));
         this.sort();
