@@ -1,5 +1,47 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`requests save all with existing model 1`] = `
+Object {
+  "data": Array [
+    Object {
+      "id": 10,
+      "kind": -2,
+      "name": "Doggo",
+    },
+  ],
+  "with": Object {
+    "kind": Array [
+      Object {
+        "id": -2,
+        "name": "Dog",
+      },
+    ],
+  },
+}
+`;
+
+exports[`toBackendAll should de-duplicate relations 1`] = `
+Object {
+  "data": Array [
+    Object {
+      "id": -1,
+      "name": "",
+      "past_owners": Array [
+        -2,
+      ],
+    },
+  ],
+  "relations": Object {
+    "past_owners": Array [
+      Object {
+        "id": -2,
+        "name": "Bar",
+      },
+    ],
+  },
+}
+`;
+
 exports[`toBackendAll with \`backendResourceName\` property model 1`] = `
 Object {
   "data": Array [
@@ -36,34 +78,34 @@ exports[`toBackendAll with deep nested relation 1`] = `
 Object {
   "data": Array [
     Object {
-      "id": -6,
-      "kind": -7,
+      "id": -1,
+      "kind": -2,
       "name": "",
     },
   ],
   "relations": Object {
     "breed": Array [
       Object {
-        "id": -9,
-        "location": -10,
+        "id": -4,
+        "location": -5,
         "name": "MyBreed",
       },
     ],
     "kind": Array [
       Object {
-        "breed": -9,
-        "id": -7,
-        "location": -8,
+        "breed": -4,
+        "id": -2,
+        "location": -3,
         "name": "Aap",
       },
     ],
     "location": Array [
       Object {
-        "id": -8,
+        "id": -3,
         "name": "Apenheul",
       },
       Object {
-        "id": -10,
+        "id": -5,
         "name": "Amerika",
       },
     ],
@@ -78,26 +120,26 @@ Object {
       "id": 4,
       "kind": 5,
       "name": "",
-      "owner": -6,
+      "owner": -4,
     },
   ],
   "relations": Object {
     "breed": Array [
       Object {
-        "id": -5,
+        "id": -3,
         "name": "",
       },
     ],
     "kind": Array [
       Object {
-        "breed": -5,
+        "breed": -3,
         "id": 5,
         "name": "",
       },
     ],
     "owner": Array [
       Object {
-        "id": -6,
+        "id": -4,
         "name": "",
       },
     ],
@@ -109,34 +151,34 @@ exports[`toBackendAll with nested store relation 1`] = `
 Object {
   "data": Array [
     Object {
-      "id": -6,
+      "id": -1,
       "name": "",
       "past_owners": Array [
-        -7,
-        -8,
+        -2,
+        -4,
       ],
     },
   ],
   "relations": Object {
     "past_owners": Array [
       Object {
-        "id": -7,
+        "id": -2,
         "name": "Henk",
-        "town": -9,
+        "town": -3,
       },
       Object {
-        "id": -8,
+        "id": -4,
         "name": "Krol",
-        "town": -10,
+        "town": -5,
       },
     ],
     "town": Array [
       Object {
-        "id": -9,
+        "id": -3,
         "name": "Eindhoven",
       },
       Object {
-        "id": -10,
+        "id": -5,
         "name": "Breda",
       },
     ],
@@ -148,16 +190,16 @@ exports[`toBackendAll with partial relations 1`] = `
 Object {
   "data": Array [
     Object {
-      "id": -5,
+      "id": -1,
       "kind": null,
       "name": "Doggo",
-      "owner": -6,
+      "owner": -3,
     },
   ],
   "relations": Object {
     "owner": Array [
       Object {
-        "id": -6,
+        "id": -3,
         "name": "Henk",
         "town": null,
       },
@@ -170,11 +212,11 @@ exports[`toBackendAll with store relation 1`] = `
 Object {
   "data": Array [
     Object {
-      "id": -5,
+      "id": -1,
       "name": "",
       "past_owners": Array [
-        -6,
-        -7,
+        -2,
+        -3,
         10,
       ],
     },
@@ -182,11 +224,11 @@ Object {
   "relations": Object {
     "past_owners": Array [
       Object {
-        "id": -6,
+        "id": -2,
         "name": "Bar",
       },
       Object {
-        "id": -7,
+        "id": -3,
         "name": "Foo",
       },
       Object {

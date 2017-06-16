@@ -21,13 +21,10 @@ import {
 } from './fixtures/Animal';
 import { Customer } from './fixtures/Customer';
 import animalKindBreedData from './fixtures/animal-with-kind-breed.json';
-import animalsWithPastOwnersAndTownData
-    from './fixtures/animals-with-past-owners-and-town.json';
-import animalKindBreedDataNested
-    from './fixtures/animal-with-kind-breed-nested.json';
+import animalsWithPastOwnersAndTownData from './fixtures/animals-with-past-owners-and-town.json';
+import animalKindBreedDataNested from './fixtures/animal-with-kind-breed-nested.json';
 import animalMultiPutResponse from './fixtures/animals-multi-put-response.json';
-import customersWithTownCookRestaurant
-    from './fixtures/customers-with-town-cook-restaurant.json';
+import customersWithTownCookRestaurant from './fixtures/customers-with-town-cook-restaurant.json';
 import saveFailData from './fixtures/save-fail.json';
 
 beforeEach(() => {
@@ -463,6 +460,22 @@ test('toBackendAll with store relation', () => {
     expect(serialized).toMatchSnapshot();
 });
 
+test('toBackendAll should de-duplicate relations', () => {
+    const animal = new Animal({}, { relations: ['pastOwners'] });
+
+    animal.pastOwners.parse([{ name: 'Bar' }, { name: 'Foo' }]);
+
+    // This is something you should never do, so maybe this is a bad test?
+    const animalBar = animal.pastOwners.at(0);
+    animal.pastOwners.models[1] = animalBar;
+
+    // This isn't the real test, just a check.
+    expect(animalBar.cid).toBe(animal.pastOwners.at(1).cid);
+
+    const serialized = animal.toBackendAll(null, { relations: ['pastOwners'] });
+    expect(serialized).toMatchSnapshot();
+});
+
 test('toBackendAll with deep nested relation', () => {
     // It's very important to test what happens when the same relation ('location') is used twice + is nested.
     const animal = new Animal(
@@ -876,23 +889,7 @@ describe('requests', () => {
             expect(config.url).toBe('/api/animal/');
             expect(config.method).toBe('put');
             const putData = JSON.parse(config.data);
-            expect(putData).toEqual({
-                data: [
-                    {
-                        id: 10,
-                        kind: -3,
-                        name: 'Doggo',
-                    },
-                ],
-                with: {
-                    kind: [
-                        {
-                            id: -3,
-                            name: 'Dog',
-                        },
-                    ],
-                },
-            });
+            expect(putData).toMatchSnapshot();
             return [201, animalMultiPutResponse];
         });
 

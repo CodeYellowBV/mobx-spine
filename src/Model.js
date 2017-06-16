@@ -18,13 +18,11 @@ import {
     isPlainObject,
     isArray,
     uniqueId,
+    uniq,
+    uniqBy,
 } from 'lodash';
 import Store from './Store';
 import { invariant, snakeToCamel, camelToSnake } from './utils';
-
-function generateNegativeId() {
-    return -parseInt(uniqueId());
-}
 
 function concatInDict(dict, key, value) {
     dict[key] = dict[key] ? dict[key].concat(value) : value;
@@ -69,16 +67,24 @@ export default class Model {
     // URL query params that are added to fetch requests.
     @observable __fetchParams = {};
 
-    @computed get url() {
+    // Useful to reference to this model in a relation - that is not yet saved to the backend.
+    generateNegativeId() {
+        return -parseInt(this.cid.replace('m', ''));
+    }
+
+    @computed
+    get url() {
         const id = this[this.constructor.primaryKey];
         return `${this.urlRoot}${id ? `${id}/` : ''}`;
     }
 
-    @computed get isNew() {
+    @computed
+    get isNew() {
         return !this[this.constructor.primaryKey];
     }
 
-    @computed get isLoading() {
+    @computed
+    get isLoading() {
         return this.__pendingRequestCount > 0;
     }
 
@@ -134,7 +140,8 @@ export default class Model {
         this.initialize();
     }
 
-    @action __parseRelations(activeRelations) {
+    @action
+    __parseRelations(activeRelations) {
         this.__activeRelations = activeRelations;
         // TODO: No idea why getting the relations only works when it's a Function.
         const relations = this.relations && this.relations();
@@ -219,7 +226,7 @@ export default class Model {
         if (newId) {
             data[this.constructor.primaryKey] = newId;
         } else if (data[this.constructor.primaryKey] === null) {
-            data[this.constructor.primaryKey] = generateNegativeId();
+            data[this.constructor.primaryKey] = this.generateNegativeId();
         }
 
         this.__activeCurrentRelations.forEach(currentRel => {
@@ -237,13 +244,14 @@ export default class Model {
             });
             if (includeRelationData.length > 0) {
                 if (data[relBackendName] === null) {
-                    myNewId = generateNegativeId();
+                    myNewId = rel.generateNegativeId();
                     data[relBackendName] = myNewId;
                 } else if (isArray(data[relBackendName])) {
                     myNewId = data[relBackendName].map(
-                        id => (id === null ? generateNegativeId() : id)
+                        (id, idx) =>
+                            id === null ? rel.at(idx).generateNegativeId() : id
                     );
-                    data[relBackendName] = myNewId;
+                    data[relBackendName] = uniq(myNewId);
                 }
 
                 // We want to pass through nested relations to the next relation, but pop of the first level.
@@ -263,6 +271,13 @@ export default class Model {
                 const realBackendName =
                     rel.constructor.backendResourceName || relBackendName;
                 concatInDict(relations, realBackendName, relBackendData.data);
+
+                // De-duplicate relations based on `primaryKey`.
+                relations[realBackendName] = uniqBy(
+                    relations[realBackendName],
+                    rel.constructor.primaryKey || rel.Model.primaryKey
+                );
+
                 forIn(relBackendData.relations, (relB, key) => {
                     concatInDict(relations, key, relB);
                 });
@@ -357,7 +372,8 @@ export default class Model {
     // `repos` is an object of "repositories". A repository is
     // e.g. "animal_kind", while the relation name would be "kind".
     // `relMapping` maps relation names to repositories.
-    @action fromBackend({ data, repos, relMapping }) {
+    @action
+    fromBackend({ data, repos, relMapping }) {
         // We handle the fromBackend recursively. On each relation of the source model
         // fromBackend gets called as well, but with data scoped for itself
         //
@@ -403,7 +419,8 @@ export default class Model {
         return this.api;
     }
 
-    @action parse(data) {
+    @action
+    parse(data) {
         invariant(
             isPlainObject(data),
             'Parameter supplied to parse() is not an object.'
@@ -433,7 +450,8 @@ export default class Model {
         return value;
     }
 
-    @action save(options = {}) {
+    @action
+    save(options = {}) {
         this.__backendValidationErrors = {};
         this.__pendingRequestCount += 1;
         // TODO: Allow data from an argument to be saved?
@@ -461,7 +479,8 @@ export default class Model {
             );
     }
 
-    @action saveAll(options = {}) {
+    @action
+    saveAll(options = {}) {
         this.__backendValidationErrors = {};
         this.__pendingRequestCount += 1;
         return this.__getApi()
@@ -491,11 +510,13 @@ export default class Model {
     }
 
     // TODO: This is a bit hacky...
-    @computed get backendValidationErrors() {
+    @computed
+    get backendValidationErrors() {
         return this.__backendValidationErrors;
     }
 
-    @action delete(options = {}) {
+    @action
+    delete(options = {}) {
         const removeFromStore = () =>
             this.__store ? this.__store.remove(this) : null;
         if (options.immediate || this.isNew) {
@@ -518,7 +539,8 @@ export default class Model {
             );
     }
 
-    @action fetch(options = {}) {
+    @action
+    fetch(options = {}) {
         invariant(!this.isNew, 'Trying to fetch model without id!');
         this.__pendingRequestCount += 1;
         const data = Object.assign(
@@ -534,7 +556,8 @@ export default class Model {
         );
     }
 
-    @action clear() {
+    @action
+    clear() {
         forIn(this.__originalAttributes, (value, key) => {
             this[key] = value;
         });
