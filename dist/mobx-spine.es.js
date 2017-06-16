@@ -22,6 +22,8 @@ import {
     mapValues,
     result,
     sortBy,
+    uniq,
+    uniqBy,
     uniqueId,
 } from 'lodash';
 import axios from 'axios';
@@ -311,7 +313,8 @@ var Store = (
                     value: function parse(models) {
                         invariant(
                             isArray(models),
-                            'Parameter supplied to parse() is not an array.'
+                            'Parameter supplied to `parse()` is not an array, got: ' +
+                                JSON.stringify(models)
                         );
                         this.models.replace(
                             models.map(this._newModel.bind(this))
@@ -555,11 +558,12 @@ var Store = (
                             comparator: comparator,
                         });
                         // Oh gawd MobX is so awesome.
-                        autorun(function() {
+                        var events = autorun(function() {
                             var models = _this6.filter(filter$$1);
                             store.models.replace(models);
                             store.sort();
                         });
+                        store.unsubscribeVirtualStore = events;
                         return store;
                     },
 
@@ -906,10 +910,6 @@ function _applyDecoratedDescriptor(
     return desc;
 }
 
-function generateNegativeId() {
-    return -parseInt(uniqueId());
-}
-
 function concatInDict(dict, key, value) {
     dict[key] = dict[key] ? dict[key].concat(value) : value;
 }
@@ -935,6 +935,25 @@ var Model = (
         (_temp = _class2 = (function() {
             createClass(Model, [
                 {
+                    key: 'generateNegativeId',
+
+                    // Useful to reference to this model in a relation - that is not yet saved to the backend.
+
+                    // A `cid` can be used to identify the model locally.
+
+                    // Holds activated - non-nested - relations (e.g. `['animal']`)
+
+                    // Holds original attributes with values, so `clear()` knows what to reset to (quite ugly).
+                    value: function generateNegativeId() {
+                        return -parseInt(this.cid.replace('m', ''));
+                    },
+                    // URL query params that are added to fetch requests.
+
+                    // Holds activated - nested - relations (e.g. `['animal', 'animal.breed']`)
+
+                    // How the model is known at the backend. This is useful when the model is in a relation that has a different name.
+                },
+                {
                     key: 'casts',
                     value: function casts() {
                         return {};
@@ -948,21 +967,10 @@ var Model = (
                 },
                 {
                     key: 'url',
-
-                    // A `cid` can be used to identify the model locally.
-
-                    // Holds activated - non-nested - relations (e.g. `['animal']`)
-
-                    // Holds original attributes with values, so `clear()` knows what to reset to (quite ugly).
                     get: function get$$1() {
                         var id = this[this.constructor.primaryKey];
                         return '' + this.urlRoot + (id ? id + '/' : '');
                     },
-                    // URL query params that are added to fetch requests.
-
-                    // Holds activated - nested - relations (e.g. `['animal', 'animal.breed']`)
-
-                    // How the model is known at the backend. This is useful when the model is in a relation that has a different name.
                 },
                 {
                     key: 'isNew',
@@ -1184,7 +1192,7 @@ var Model = (
                         } else if (data[this.constructor.primaryKey] === null) {
                             data[
                                 this.constructor.primaryKey
-                            ] = generateNegativeId();
+                            ] = this.generateNegativeId();
                         }
 
                         this.__activeCurrentRelations.forEach(function(
@@ -1208,17 +1216,18 @@ var Model = (
                             );
                             if (includeRelationData.length > 0) {
                                 if (data[relBackendName] === null) {
-                                    myNewId = generateNegativeId();
+                                    myNewId = rel.generateNegativeId();
                                     data[relBackendName] = myNewId;
                                 } else if (isArray(data[relBackendName])) {
                                     myNewId = data[relBackendName].map(function(
-                                        id
+                                        id,
+                                        idx
                                     ) {
                                         return id === null
-                                            ? generateNegativeId()
+                                            ? rel.at(idx).generateNegativeId()
                                             : id;
                                     });
-                                    data[relBackendName] = myNewId;
+                                    data[relBackendName] = uniq(myNewId);
                                 }
 
                                 // We want to pass through nested relations to the next relation, but pop of the first level.
@@ -1245,6 +1254,14 @@ var Model = (
                                     realBackendName,
                                     relBackendData.data
                                 );
+
+                                // De-duplicate relations based on `primaryKey`.
+                                relations[realBackendName] = uniqBy(
+                                    relations[realBackendName],
+                                    rel.constructor.primaryKey ||
+                                        rel.Model.primaryKey
+                                );
+
                                 forIn(relBackendData.relations, function(
                                     relB,
                                     key
@@ -1446,7 +1463,8 @@ var Model = (
 
                         invariant(
                             isPlainObject(data),
-                            'Parameter supplied to parse() is not an object.'
+                            'Parameter supplied to `parse()` is not an object, got: ' +
+                                JSON.stringify(data)
                         );
                         forIn(data, function(value, key) {
                             var attr = _this8.fromBackendAttrKey(key);
