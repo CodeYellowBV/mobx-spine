@@ -8,6 +8,7 @@ import {
     forIn,
     isPlainObject,
     result,
+    uniqBy,
 } from 'lodash';
 import { invariant } from './utils';
 
@@ -314,6 +315,8 @@ export default class Store {
                 relations[key] = relations[key]
                     ? relations[key].concat(relModel)
                     : relModel;
+                // TODO: this primaryKey is not the primaryKey of the relation we're de-duplicating...
+                relations[key] = uniqBy(relations[key], this.Model.primaryKey);
             });
         });
 

@@ -36,6 +36,13 @@ Object {
       Object {
         "id": -2,
         "name": "Bar",
+        "town": -3,
+      },
+    ],
+    "town": Array [
+      Object {
+        "id": -3,
+        "name": "",
       },
     ],
   },

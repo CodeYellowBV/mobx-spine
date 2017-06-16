@@ -461,7 +461,7 @@ test('toBackendAll with store relation', () => {
 });
 
 test('toBackendAll should de-duplicate relations', () => {
-    const animal = new Animal({}, { relations: ['pastOwners'] });
+    const animal = new Animal({}, { relations: ['pastOwners.town'] });
 
     animal.pastOwners.parse([{ name: 'Bar' }, { name: 'Foo' }]);
 
@@ -472,7 +472,9 @@ test('toBackendAll should de-duplicate relations', () => {
     // This isn't the real test, just a check.
     expect(animalBar.cid).toBe(animal.pastOwners.at(1).cid);
 
-    const serialized = animal.toBackendAll(null, { relations: ['pastOwners'] });
+    const serialized = animal.toBackendAll(null, {
+        relations: ['pastOwners.town'],
+    });
     expect(serialized).toMatchSnapshot();
 });
 
