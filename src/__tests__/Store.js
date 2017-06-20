@@ -9,6 +9,7 @@ import {
     AnimalStoreWithUrlFunction,
     Breed,
     PersonStore,
+    PersonStoreResourceName,
 } from './fixtures/Animal';
 import { CustomerStore } from './fixtures/Customer';
 import animalsWithPastOwnersData from './fixtures/animals-with-past-owners.json';
@@ -496,6 +497,16 @@ describe('requests', () => {
             expect(animalStore.length).toBe(2);
             expect(animalStore.map('id')).toEqual([2, 3]);
         });
+    });
+
+    test('fetch with auto-generated URL', () => {
+        const personStore = new PersonStoreResourceName();
+        mock.onAny().replyOnce(config => {
+            expect(config.url).toBe('/person/');
+            return [200, animalsData];
+        });
+
+        return personStore.fetch();
     });
 
     test('fetch with url as function', () => {

@@ -13,6 +13,7 @@ import {
     AnimalWithoutUrl,
     AnimalCircular,
     AnimalResourceName,
+    KindResourceName,
     Kind,
     Breed,
     Person,
@@ -794,6 +795,16 @@ describe('requests', () => {
         });
 
         return animal.fetch();
+    });
+
+    test('fetch with auto-generated URL', () => {
+        const kind = new KindResourceName({ id: 2 });
+        mock.onAny().replyOnce(config => {
+            expect(config.url).toBe('/kind/2/');
+            return [200, {}];
+        });
+
+        return kind.fetch();
     });
 
     test('save new with basic properties', () => {

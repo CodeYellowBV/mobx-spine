@@ -20,6 +20,7 @@ import {
     uniqueId,
     uniq,
     uniqBy,
+    result,
 } from 'lodash';
 import Store from './Store';
 import { invariant, snakeToCamel, camelToSnake } from './utils';
@@ -48,7 +49,15 @@ export default class Model {
     static primaryKey = 'id';
     // How the model is known at the backend. This is useful when the model is in a relation that has a different name.
     static backendResourceName = '';
-    urlRoot;
+
+    urlRoot() {
+        // Try to auto-generate the URL.
+        const bname = this.constructor.backendResourceName;
+        if (bname) {
+            return `/${bname}/`;
+        }
+        return null;
+    }
 
     __attributes = [];
     // Holds original attributes with values, so `clear()` knows what to reset to (quite ugly).
@@ -75,7 +84,7 @@ export default class Model {
     @computed
     get url() {
         const id = this[this.constructor.primaryKey];
-        return `${this.urlRoot}${id ? `${id}/` : ''}`;
+        return `${result(this, 'urlRoot')}${id ? `${id}/` : ''}`;
     }
 
     @computed
@@ -413,7 +422,7 @@ export default class Model {
             'You are trying to perform a API request without an `api` property defined on the model.'
         );
         invariant(
-            this.urlRoot,
+            result(this, 'urlRoot'),
             'You are trying to perform a API request without an `urlRoot` property defined on the model.'
         );
         return this.api;
@@ -487,7 +496,7 @@ export default class Model {
         this.__pendingRequestCount += 1;
         return this.__getApi()
             .saveAllModels({
-                url: this.urlRoot,
+                url: result(this, 'urlRoot'),
                 data: this.toBackendAll(null, { relations: options.relations }),
             })
             .then(

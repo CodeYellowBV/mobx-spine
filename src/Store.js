@@ -36,6 +36,15 @@ export default class Store {
     __repository;
     static backendResourceName = '';
 
+    url() {
+        // Try to auto-generate the URL.
+        const bname = this.constructor.backendResourceName;
+        if (bname) {
+            return `/${bname}/`;
+        }
+        return null;
+    }
+
     @computed
     get isLoading() {
         return this.__pendingRequestCount > 0;
@@ -90,7 +99,7 @@ export default class Store {
             'You are trying to perform a API request without an `api` property defined on the store.'
         );
         invariant(
-            this.url,
+            result(this, 'url'),
             'You are trying to perform a API request without an `url` property defined on the store.'
         );
         return this.api;
