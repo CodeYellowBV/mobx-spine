@@ -100,9 +100,9 @@ export default class BinderApi {
         return {
             // TODO: I really dislike that this is comma separated and not an array.
             // We should fix this in the Binder API.
-            with: model.__activeRelations
-                .map(model.toBackendAttrKey)
-                .join(',') || null,
+            with:
+                model.__activeRelations.map(model.toBackendAttrKey).join(',') ||
+                    null,
         };
     }
 
@@ -130,16 +130,23 @@ export default class BinderApi {
             });
     }
 
-    saveAllModels({ url, data }) {
+    saveAllModels({ url, data, model }) {
         return this.put(url, {
             data: data.data,
             with: data.relations,
         }).then(res => {
-            return {
-                data: res.data && res.data.length > 0 ? res.data[0] : null,
-                repos: res.with,
-                relMapping: res.with_mapping,
-            };
+            // TODO: I really dislike this, but at the moment Binder doesn't return all models after saving the data.
+            // Instead, it only returns an ID map to map the negative fake IDs to real ones.
+            const backendName = model.constructor.backendResourceName;
+            if (res.idmap && backendName) {
+                const idMap = res.idmap[backendName].find(
+                    ids =>
+                        ids[0] === model[model.constructor.primaryKey] ||
+                        model.getNegativeId()
+                );
+                model[model.constructor.primaryKey] = idMap[1];
+            }
+            return res;
         });
     }
 

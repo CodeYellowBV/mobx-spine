@@ -77,7 +77,7 @@ export default class Model {
     @observable __fetchParams = {};
 
     // Useful to reference to this model in a relation - that is not yet saved to the backend.
-    generateNegativeId() {
+    getNegativeId() {
         return -parseInt(this.cid.replace('m', ''));
     }
 
@@ -235,7 +235,7 @@ export default class Model {
         if (newId) {
             data[this.constructor.primaryKey] = newId;
         } else if (data[this.constructor.primaryKey] === null) {
-            data[this.constructor.primaryKey] = this.generateNegativeId();
+            data[this.constructor.primaryKey] = this.getNegativeId();
         }
 
         this.__activeCurrentRelations.forEach(currentRel => {
@@ -253,12 +253,12 @@ export default class Model {
             });
             if (includeRelationData.length > 0) {
                 if (data[relBackendName] === null) {
-                    myNewId = rel.generateNegativeId();
+                    myNewId = rel.getNegativeId();
                     data[relBackendName] = myNewId;
                 } else if (isArray(data[relBackendName])) {
                     myNewId = data[relBackendName].map(
                         (id, idx) =>
-                            id === null ? rel.at(idx).generateNegativeId() : id
+                            id === null ? rel.at(idx).getNegativeId() : id
                     );
                     data[relBackendName] = uniq(myNewId);
                 }
@@ -497,6 +497,7 @@ export default class Model {
         return this.__getApi()
             .saveAllModels({
                 url: result(this, 'urlRoot'),
+                model: this,
                 data: this.toBackendAll(null, { relations: options.relations }),
             })
             .then(

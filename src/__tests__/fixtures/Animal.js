@@ -47,6 +47,7 @@ export class Kind extends Model {
 export class Animal extends Model {
     urlRoot = '/api/animal/';
     api = new BinderApi();
+    static backendResourceName = 'animal';
     @observable id = null;
     @observable name = '';
 
