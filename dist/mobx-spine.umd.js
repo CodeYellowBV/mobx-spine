@@ -141,6 +141,19 @@
             (_temp$1 = _class2$1 = (function() {
                 createClass(Store, [
                     {
+                        key: 'url',
+
+                        // Holds the fetch parameters
+                        value: function url() {
+                            // Try to auto-generate the URL.
+                            var bname = this.constructor.backendResourceName;
+                            if (bname) {
+                                return '/' + bname + '/';
+                            }
+                            return null;
+                        },
+                    },
+                    {
                         key: 'initialize',
 
                         // Empty function, but can be overridden if you want to do something after initializing the model.
@@ -148,8 +161,6 @@
                     },
                     {
                         key: 'isLoading',
-
-                        // Holds the fetch parameters
                         get: function get$$1() {
                             return this.__pendingRequestCount > 0;
                         },
@@ -233,7 +244,7 @@
                                 'You are trying to perform a API request without an `api` property defined on the store.'
                             );
                             invariant(
-                                this.url,
+                                lodash.result(this, 'url'),
                                 'You are trying to perform a API request without an `url` property defined on the store.'
                             );
                             return this.api;
@@ -974,23 +985,34 @@
             (_temp = _class2 = (function() {
                 createClass(Model, [
                     {
-                        key: 'generateNegativeId',
-
-                        // Useful to reference to this model in a relation - that is not yet saved to the backend.
-
-                        // A `cid` can be used to identify the model locally.
-
-                        // Holds activated - non-nested - relations (e.g. `['animal']`)
+                        key: 'urlRoot',
+                        value: function urlRoot() {
+                            // Try to auto-generate the URL.
+                            var bname = this.constructor.backendResourceName;
+                            if (bname) {
+                                return '/' + bname + '/';
+                            }
+                            return null;
+                        },
+                        // How the model is known at the backend. This is useful when the model is in a relation that has a different name.
 
                         // Holds original attributes with values, so `clear()` knows what to reset to (quite ugly).
-                        value: function generateNegativeId() {
-                            return -parseInt(this.cid.replace('m', ''));
-                        },
-                        // URL query params that are added to fetch requests.
 
                         // Holds activated - nested - relations (e.g. `['animal', 'animal.breed']`)
 
-                        // How the model is known at the backend. This is useful when the model is in a relation that has a different name.
+                        // Holds activated - non-nested - relations (e.g. `['animal']`)
+
+                        // A `cid` can be used to identify the model locally.
+
+                        // URL query params that are added to fetch requests.
+                    },
+                    {
+                        key: 'getNegativeId',
+
+                        // Useful to reference to this model in a relation - that is not yet saved to the backend.
+                        value: function getNegativeId() {
+                            return -parseInt(this.cid.replace('m', ''));
+                        },
                     },
                     {
                         key: 'casts',
@@ -1008,7 +1030,11 @@
                         key: 'url',
                         get: function get$$1() {
                             var id = this[this.constructor.primaryKey];
-                            return '' + this.urlRoot + (id ? id + '/' : '');
+                            return (
+                                '' +
+                                lodash.result(this, 'urlRoot') +
+                                (id ? id + '/' : '')
+                            );
                         },
                     },
                     {
@@ -1243,7 +1269,7 @@
                             ) {
                                 data[
                                     this.constructor.primaryKey
-                                ] = this.generateNegativeId();
+                                ] = this.getNegativeId();
                             }
 
                             this.__activeCurrentRelations.forEach(function(
@@ -1267,7 +1293,7 @@
                                 );
                                 if (includeRelationData.length > 0) {
                                     if (data[relBackendName] === null) {
-                                        myNewId = rel.generateNegativeId();
+                                        myNewId = rel.getNegativeId();
                                         data[relBackendName] = myNewId;
                                     } else if (
                                         lodash.isArray(data[relBackendName])
@@ -1276,9 +1302,7 @@
                                             relBackendName
                                         ].map(function(id, idx) {
                                             return id === null
-                                                ? rel
-                                                      .at(idx)
-                                                      .generateNegativeId()
+                                                ? rel.at(idx).getNegativeId()
                                                 : id;
                                         });
                                         data[relBackendName] = lodash.uniq(
@@ -1515,7 +1539,7 @@
                                 'You are trying to perform a API request without an `api` property defined on the model.'
                             );
                             invariant(
-                                this.urlRoot,
+                                lodash.result(this, 'urlRoot'),
                                 'You are trying to perform a API request without an `urlRoot` property defined on the model.'
                             );
                             return this.api;
@@ -1622,7 +1646,8 @@
                             this.__pendingRequestCount += 1;
                             return this.__getApi()
                                 .saveAllModels({
-                                    url: this.urlRoot,
+                                    url: lodash.result(this, 'urlRoot'),
+                                    model: this,
                                     data: this.toBackendAll(null, {
                                         relations: options.relations,
                                     }),
@@ -2064,19 +2089,29 @@
                 key: 'saveAllModels',
                 value: function saveAllModels(_ref3) {
                     var url = _ref3.url,
-                        data = _ref3.data;
+                        data = _ref3.data,
+                        model = _ref3.model;
 
                     return this.put(url, {
                         data: data.data,
                         with: data.relations,
                     }).then(function(res) {
-                        return {
-                            data: res.data && res.data.length > 0
-                                ? res.data[0]
-                                : null,
-                            repos: res.with,
-                            relMapping: res.with_mapping,
-                        };
+                        // TODO: I really dislike this, but at the moment Binder doesn't return all models after saving the data.
+                        // Instead, it only returns an ID map to map the negative fake IDs to real ones.
+                        var backendName = model.constructor.backendResourceName;
+                        if (res.idmap && backendName) {
+                            var idMap = res.idmap[backendName].find(function(
+                                ids
+                            ) {
+                                return (
+                                    ids[0] ===
+                                        model[model.constructor.primaryKey] ||
+                                    model.getNegativeId()
+                                );
+                            });
+                            model[model.constructor.primaryKey] = idMap[1];
+                        }
+                        return res;
                     });
                 },
             },
