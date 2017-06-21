@@ -1,0 +1,15 @@
+{
+  "data": {
+    "id": 1,
+    "name": "Henk",
+    "best_cook": null
+  },
+  "with": {
+    "cook": [],
+    "restaurant": []
+  },
+  "with_mapping": {
+    "best_cook": "cook",
+    "best_cook.current_work": "restaurant"
+  }
+}

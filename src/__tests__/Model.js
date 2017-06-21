@@ -20,12 +20,13 @@ import {
     PersonStore,
     Location,
 } from './fixtures/Animal';
-import { Customer } from './fixtures/Customer';
+import { Customer, Location as CLocation } from './fixtures/Customer';
 import animalKindBreedData from './fixtures/animal-with-kind-breed.json';
 import animalsWithPastOwnersAndTownData from './fixtures/animals-with-past-owners-and-town.json';
 import animalKindBreedDataNested from './fixtures/animal-with-kind-breed-nested.json';
 import animalMultiPutResponse from './fixtures/animals-multi-put-response.json';
 import customersWithTownCookRestaurant from './fixtures/customers-with-town-cook-restaurant.json';
+import customersLocationBestCookWorkPlaces from './fixtures/customers-location-best-cook-work-places.json';
 import saveFailData from './fixtures/save-fail.json';
 
 beforeEach(() => {
@@ -254,6 +255,18 @@ test('Parsing two times', () => {
 
     expect(animal.id).toBe(2);
     expect(animal.name).toBe('Woofer');
+});
+
+test('Parsing empty relation', () => {
+    const customer = new CLocation({}, { relations: ['bestCook.currentWork'] });
+
+    customer.fromBackend({
+        data: customersLocationBestCookWorkPlaces.data,
+        repos: customersLocationBestCookWorkPlaces.with,
+        relMapping: customersLocationBestCookWorkPlaces.with_mapping,
+    });
+
+    expect(customer.bestCook.id).toBe(null);
 });
 
 test('Parsing two-level relation (nested)', () => {

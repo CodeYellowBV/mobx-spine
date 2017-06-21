@@ -9,6 +9,7 @@ export class Cook extends Model {
     relations() {
         return {
             workPlaces: RestaurantStore, // eslint-disable-line no-use-before-define
+            currentWork: Restaurant,
         };
     }
 }
