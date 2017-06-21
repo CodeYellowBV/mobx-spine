@@ -193,12 +193,12 @@ export default class Model {
     }
 
     // Many backends use snake_case for attribute names, so we convert to snake_case by default.
-    toBackendAttrKey(attrKey) {
+    static toBackendAttrKey(attrKey) {
         return camelToSnake(attrKey);
     }
 
     // In the frontend we don't want to deal with those snake_case attr names.
-    fromBackendAttrKey(attrKey) {
+    static fromBackendAttrKey(attrKey) {
         return snakeToCamel(attrKey);
     }
 
@@ -206,16 +206,17 @@ export default class Model {
         const output = {};
         this.__attributes.forEach(attr => {
             if (!attr.startsWith('_')) {
-                output[this.toBackendAttrKey(attr)] = this.__toJSAttr(
-                    attr,
-                    this[attr]
-                );
+                output[
+                    this.constructor.toBackendAttrKey(attr)
+                ] = this.__toJSAttr(attr, this[attr]);
             }
         });
         // Add active relations as id.
         this.__activeCurrentRelations.forEach(currentRel => {
             const rel = this[currentRel];
-            const relBackendName = this.toBackendAttrKey(currentRel);
+            const relBackendName = this.constructor.toBackendAttrKey(
+                currentRel
+            );
             if (rel instanceof Model) {
                 output[relBackendName] = rel[rel.constructor.primaryKey];
             }
@@ -241,7 +242,9 @@ export default class Model {
         this.__activeCurrentRelations.forEach(currentRel => {
             const rel = this[currentRel];
             let myNewId = null;
-            const relBackendName = this.toBackendAttrKey(currentRel);
+            const relBackendName = this.constructor.toBackendAttrKey(
+                currentRel
+            );
 
             // `includeRelations` can look like `['kind.breed', 'owner']`
             // Check to see if `currentRel` matches the first part of the relation (`kind` or `owner`)
@@ -350,11 +353,11 @@ export default class Model {
 
         forIn(mapping, (repoName, relName) => {
             const repository = repos[repoName];
-            relName = this.fromBackendAttrKey(relName);
+            relName = this.constructor.fromBackendAttrKey(relName);
 
             if (targetRelName === relName) {
                 relevant = true;
-                const relKey = data[this.toBackendAttrKey(relName)];
+                const relKey = data[this.constructor.toBackendAttrKey(relName)];
                 scopedData = this.__parseRepositoryToData(relKey, repository);
                 return;
             }
@@ -437,7 +440,7 @@ export default class Model {
             )}`
         );
         forIn(data, (value, key) => {
-            const attr = this.fromBackendAttrKey(key);
+            const attr = this.constructor.fromBackendAttrKey(key);
             if (this.__attributes.includes(attr)) {
                 this[attr] = this.__parseAttr(attr, value);
             } else if (this.__activeCurrentRelations.includes(attr)) {

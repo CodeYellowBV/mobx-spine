@@ -519,6 +519,18 @@ describe('requests', () => {
         return animalStore.fetch();
     });
 
+    test('fetch with camelCased relations', () => {
+        const animalStore = new AnimalStore({
+            relations: ['pastOwners'],
+        });
+        mock.onAny().replyOnce(config => {
+            expect(config.params.with).toBe('past_owners');
+            return [200, animalsData];
+        });
+
+        return animalStore.fetch();
+    });
+
     test('fetch with relations', () => {
         const animalStore = new AnimalStore({
             relations: ['kind.breed'],

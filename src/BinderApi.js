@@ -101,8 +101,9 @@ export default class BinderApi {
             // TODO: I really dislike that this is comma separated and not an array.
             // We should fix this in the Binder API.
             with:
-                model.__activeRelations.map(model.toBackendAttrKey).join(',') ||
-                    null,
+                model.__activeRelations
+                    .map(model.constructor.toBackendAttrKey)
+                    .join(',') || null,
         };
     }
 
@@ -158,7 +159,10 @@ export default class BinderApi {
     buildFetchStoreParams(store) {
         const offset = store.getPageOffset();
         return {
-            with: store.__activeRelations.join(',') || null,
+            with:
+                store.__activeRelations
+                    .map(store.Model.toBackendAttrKey)
+                    .join(',') || null,
             limit: store.__state.limit,
             // Hide offset if zero so the request looks cleaner in DevTools.
             offset: offset || null,
