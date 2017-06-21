@@ -1095,269 +1095,272 @@ var Model = (
                 this.initialize();
             }
 
-            createClass(Model, [
-                {
-                    key: '__parseRelations',
-                    value: function __parseRelations(activeRelations) {
-                        var _this2 = this;
+            createClass(
+                Model,
+                [
+                    {
+                        key: '__parseRelations',
+                        value: function __parseRelations(activeRelations) {
+                            var _this2 = this;
 
-                        this.__activeRelations = activeRelations;
-                        // TODO: No idea why getting the relations only works when it's a Function.
-                        var relations = this.relations && this.relations();
-                        var relModels = {};
-                        activeRelations.forEach(function(aRel) {
-                            var relNames = aRel.match(RE_SPLIT_FIRST_RELATION);
-
-                            var currentRel = relNames ? relNames[1] : aRel;
-                            var otherRelNames = relNames && relNames[2];
-                            var currentProp = relModels[currentRel];
-                            var otherRels = otherRelNames && [otherRelNames];
-                            // When two nested relations are defined next to each other (e.g. `['kind.breed', 'kind.location']`),
-                            // the relation `kind` only needs to be initialized once.
-                            relModels[currentRel] = currentProp
-                                ? currentProp.concat(otherRels)
-                                : otherRels;
-                            invariant(
-                                !_this2.__attributes.includes(currentRel),
-                                'Cannot define `' +
-                                    currentRel +
-                                    '` as both an attribute and a relation. You probably need to remove the attribute.'
-                            );
-                            if (
-                                !_this2.__activeCurrentRelations.includes(
-                                    currentRel
-                                )
-                            ) {
-                                _this2.__activeCurrentRelations.push(
-                                    currentRel
+                            this.__activeRelations = activeRelations;
+                            // TODO: No idea why getting the relations only works when it's a Function.
+                            var relations = this.relations && this.relations();
+                            var relModels = {};
+                            activeRelations.forEach(function(aRel) {
+                                var relNames = aRel.match(
+                                    RE_SPLIT_FIRST_RELATION
                                 );
-                            }
-                        });
-                        extendObservable(
-                            this,
-                            mapValues(relModels, function(
-                                otherRelNames,
-                                relName
-                            ) {
-                                var RelModel = relations[relName];
+
+                                var currentRel = relNames ? relNames[1] : aRel;
+                                var otherRelNames = relNames && relNames[2];
+                                var currentProp = relModels[currentRel];
+                                var otherRels = otherRelNames && [
+                                    otherRelNames,
+                                ];
+                                // When two nested relations are defined next to each other (e.g. `['kind.breed', 'kind.location']`),
+                                // the relation `kind` only needs to be initialized once.
+                                relModels[currentRel] = currentProp
+                                    ? currentProp.concat(otherRels)
+                                    : otherRels;
                                 invariant(
-                                    RelModel,
-                                    'Specified relation "' +
-                                        relName +
-                                        '" does not exist on model.'
+                                    !_this2.__attributes.includes(currentRel),
+                                    'Cannot define `' +
+                                        currentRel +
+                                        '` as both an attribute and a relation. You probably need to remove the attribute.'
                                 );
-                                var options = { relations: otherRelNames };
-                                if (RelModel.prototype instanceof Store) {
-                                    return new RelModel(options);
-                                }
-                                return new RelModel(null, options);
-                            })
-                        );
-                    },
-
-                    // Many backends use snake_case for attribute names, so we convert to snake_case by default.
-                },
-                {
-                    key: 'toBackendAttrKey',
-                    value: function toBackendAttrKey(attrKey) {
-                        return camelToSnake(attrKey);
-                    },
-
-                    // In the frontend we don't want to deal with those snake_case attr names.
-                },
-                {
-                    key: 'fromBackendAttrKey',
-                    value: function fromBackendAttrKey(attrKey) {
-                        return snakeToCamel(attrKey);
-                    },
-                },
-                {
-                    key: 'toBackend',
-                    value: function toBackend() {
-                        var _this3 = this;
-
-                        var output = {};
-                        this.__attributes.forEach(function(attr) {
-                            if (!attr.startsWith('_')) {
-                                output[
-                                    _this3.toBackendAttrKey(attr)
-                                ] = _this3.__toJSAttr(attr, _this3[attr]);
-                            }
-                        });
-                        // Add active relations as id.
-                        this.__activeCurrentRelations.forEach(function(
-                            currentRel
-                        ) {
-                            var rel = _this3[currentRel];
-                            var relBackendName = _this3.toBackendAttrKey(
-                                currentRel
-                            );
-                            if (rel instanceof Model) {
-                                output[relBackendName] =
-                                    rel[rel.constructor.primaryKey];
-                            }
-                            if (rel instanceof Store) {
-                                output[relBackendName] = rel.mapByPrimaryKey();
-                            }
-                        });
-                        return output;
-                    },
-                },
-                {
-                    key: 'toBackendAll',
-                    value: function toBackendAll(newId) {
-                        var _this4 = this;
-
-                        var options = arguments.length > 1 &&
-                            arguments[1] !== undefined
-                            ? arguments[1]
-                            : {};
-
-                        // TODO: This implementation is more a proof of concept; it's very shitty coded.
-                        var includeRelations = options.relations || [];
-                        var data = this.toBackend();
-                        var relations = {};
-
-                        if (newId) {
-                            data[this.constructor.primaryKey] = newId;
-                        } else if (data[this.constructor.primaryKey] === null) {
-                            data[
-                                this.constructor.primaryKey
-                            ] = this.getNegativeId();
-                        }
-
-                        this.__activeCurrentRelations.forEach(function(
-                            currentRel
-                        ) {
-                            var rel = _this4[currentRel];
-                            var myNewId = null;
-                            var relBackendName = _this4.toBackendAttrKey(
-                                currentRel
-                            );
-
-                            // `includeRelations` can look like `['kind.breed', 'owner']`
-                            // Check to see if `currentRel` matches the first part of the relation (`kind` or `owner`)
-                            var includeRelationData = includeRelations.filter(
-                                function(rel) {
-                                    var nestedRels = rel.split('.');
-                                    return nestedRels.length > 0
-                                        ? nestedRels[0] === currentRel
-                                        : false;
-                                }
-                            );
-                            if (includeRelationData.length > 0) {
-                                if (data[relBackendName] === null) {
-                                    myNewId = rel.getNegativeId();
-                                    data[relBackendName] = myNewId;
-                                } else if (isArray(data[relBackendName])) {
-                                    myNewId = data[relBackendName].map(function(
-                                        id,
-                                        idx
-                                    ) {
-                                        return id === null
-                                            ? rel.at(idx).getNegativeId()
-                                            : id;
-                                    });
-                                    data[relBackendName] = uniq(myNewId);
-                                }
-
-                                // We want to pass through nested relations to the next relation, but pop of the first level.
-                                var relativeRelations = includeRelationData
-                                    .map(function(rel) {
-                                        var nestedRels = rel.split('.');
-                                        nestedRels.shift();
-                                        return nestedRels.join('.');
-                                    })
-                                    .filter(function(rel) {
-                                        return !!rel;
-                                    });
-                                var relBackendData = rel.toBackendAll(myNewId, {
-                                    relations: relativeRelations,
-                                });
-                                // Sometimes the backend knows the relation by a different name, e.g. the relation is called
-                                // `activities`, but the name in the backend is `activity`.
-                                // In that case, you can add `static backendResourceName = 'activity';` to that model.
-                                var realBackendName =
-                                    rel.constructor.backendResourceName ||
-                                    relBackendName;
-                                concatInDict(
-                                    relations,
-                                    realBackendName,
-                                    relBackendData.data
-                                );
-
-                                // De-duplicate relations based on `primaryKey`.
-                                relations[realBackendName] = uniqBy(
-                                    relations[realBackendName],
-                                    rel.constructor.primaryKey ||
-                                        rel.Model.primaryKey
-                                );
-
-                                forIn(relBackendData.relations, function(
-                                    relB,
-                                    key
+                                if (
+                                    !_this2.__activeCurrentRelations.includes(
+                                        currentRel
+                                    )
                                 ) {
-                                    concatInDict(relations, key, relB);
+                                    _this2.__activeCurrentRelations.push(
+                                        currentRel
+                                    );
+                                }
+                            });
+                            extendObservable(
+                                this,
+                                mapValues(relModels, function(
+                                    otherRelNames,
+                                    relName
+                                ) {
+                                    var RelModel = relations[relName];
+                                    invariant(
+                                        RelModel,
+                                        'Specified relation "' +
+                                            relName +
+                                            '" does not exist on model.'
+                                    );
+                                    var options = { relations: otherRelNames };
+                                    if (RelModel.prototype instanceof Store) {
+                                        return new RelModel(options);
+                                    }
+                                    return new RelModel(null, options);
+                                })
+                            );
+                        },
+
+                        // Many backends use snake_case for attribute names, so we convert to snake_case by default.
+                    },
+                    {
+                        key: 'toBackend',
+                        value: function toBackend() {
+                            var _this3 = this;
+
+                            var output = {};
+                            this.__attributes.forEach(function(attr) {
+                                if (!attr.startsWith('_')) {
+                                    output[
+                                        _this3.constructor.toBackendAttrKey(
+                                            attr
+                                        )
+                                    ] = _this3.__toJSAttr(attr, _this3[attr]);
+                                }
+                            });
+                            // Add active relations as id.
+                            this.__activeCurrentRelations.forEach(function(
+                                currentRel
+                            ) {
+                                var rel = _this3[currentRel];
+                                var relBackendName = _this3.constructor.toBackendAttrKey(
+                                    currentRel
+                                );
+                                if (rel instanceof Model) {
+                                    output[relBackendName] =
+                                        rel[rel.constructor.primaryKey];
+                                }
+                                if (rel instanceof Store) {
+                                    output[
+                                        relBackendName
+                                    ] = rel.mapByPrimaryKey();
+                                }
+                            });
+                            return output;
+                        },
+                    },
+                    {
+                        key: 'toBackendAll',
+                        value: function toBackendAll(newId) {
+                            var _this4 = this;
+
+                            var options = arguments.length > 1 &&
+                                arguments[1] !== undefined
+                                ? arguments[1]
+                                : {};
+
+                            // TODO: This implementation is more a proof of concept; it's very shitty coded.
+                            var includeRelations = options.relations || [];
+                            var data = this.toBackend();
+                            var relations = {};
+
+                            if (newId) {
+                                data[this.constructor.primaryKey] = newId;
+                            } else if (
+                                data[this.constructor.primaryKey] === null
+                            ) {
+                                data[
+                                    this.constructor.primaryKey
+                                ] = this.getNegativeId();
+                            }
+
+                            this.__activeCurrentRelations.forEach(function(
+                                currentRel
+                            ) {
+                                var rel = _this4[currentRel];
+                                var myNewId = null;
+                                var relBackendName = _this4.constructor.toBackendAttrKey(
+                                    currentRel
+                                );
+
+                                // `includeRelations` can look like `['kind.breed', 'owner']`
+                                // Check to see if `currentRel` matches the first part of the relation (`kind` or `owner`)
+                                var includeRelationData = includeRelations.filter(
+                                    function(rel) {
+                                        var nestedRels = rel.split('.');
+                                        return nestedRels.length > 0
+                                            ? nestedRels[0] === currentRel
+                                            : false;
+                                    }
+                                );
+                                if (includeRelationData.length > 0) {
+                                    if (data[relBackendName] === null) {
+                                        myNewId = rel.getNegativeId();
+                                        data[relBackendName] = myNewId;
+                                    } else if (isArray(data[relBackendName])) {
+                                        myNewId = data[
+                                            relBackendName
+                                        ].map(function(id, idx) {
+                                            return id === null
+                                                ? rel.at(idx).getNegativeId()
+                                                : id;
+                                        });
+                                        data[relBackendName] = uniq(myNewId);
+                                    }
+
+                                    // We want to pass through nested relations to the next relation, but pop of the first level.
+                                    var relativeRelations = includeRelationData
+                                        .map(function(rel) {
+                                            var nestedRels = rel.split('.');
+                                            nestedRels.shift();
+                                            return nestedRels.join('.');
+                                        })
+                                        .filter(function(rel) {
+                                            return !!rel;
+                                        });
+                                    var relBackendData = rel.toBackendAll(
+                                        myNewId,
+                                        {
+                                            relations: relativeRelations,
+                                        }
+                                    );
+                                    // Sometimes the backend knows the relation by a different name, e.g. the relation is called
+                                    // `activities`, but the name in the backend is `activity`.
+                                    // In that case, you can add `static backendResourceName = 'activity';` to that model.
+                                    var realBackendName =
+                                        rel.constructor.backendResourceName ||
+                                        relBackendName;
+                                    concatInDict(
+                                        relations,
+                                        realBackendName,
+                                        relBackendData.data
+                                    );
+
+                                    // De-duplicate relations based on `primaryKey`.
+                                    relations[realBackendName] = uniqBy(
+                                        relations[realBackendName],
+                                        rel.constructor.primaryKey ||
+                                            rel.Model.primaryKey
+                                    );
+
+                                    forIn(relBackendData.relations, function(
+                                        relB,
+                                        key
+                                    ) {
+                                        concatInDict(relations, key, relB);
+                                    });
+                                }
+                            });
+
+                            return { data: [data], relations: relations };
+                        },
+                    },
+                    {
+                        key: 'toJS',
+                        value: function toJS$$1() {
+                            var _this5 = this;
+
+                            var output = {};
+                            this.__attributes.forEach(function(attr) {
+                                output[attr] = _this5.__toJSAttr(
+                                    attr,
+                                    _this5[attr]
+                                );
+                            });
+
+                            this.__activeCurrentRelations.forEach(function(
+                                currentRel
+                            ) {
+                                var model = _this5[currentRel];
+                                if (model) {
+                                    output[currentRel] = model.toJS();
+                                }
+                            });
+                            return output;
+                        },
+                    },
+                    {
+                        key: '__toJSAttr',
+                        value: function __toJSAttr(attr, value) {
+                            var casts = this.casts();
+                            var cast = casts[attr];
+                            if (cast !== undefined) {
+                                return toJS(cast.toJS(attr, value));
+                            }
+                            return toJS(value);
+                        },
+                    },
+                    {
+                        key: 'setFetchParams',
+                        value: function setFetchParams(params) {
+                            this.__fetchParams = Object.assign({}, params);
+                        },
+                    },
+                    {
+                        key: '__parseRepositoryToData',
+                        value: function __parseRepositoryToData(
+                            key,
+                            repository
+                        ) {
+                            if (isArray(key)) {
+                                return filter(repository, function(m) {
+                                    return key.includes(m.id);
                                 });
                             }
-                        });
+                            return find(repository, { id: key });
+                        },
 
-                        return { data: [data], relations: relations };
-                    },
-                },
-                {
-                    key: 'toJS',
-                    value: function toJS$$1() {
-                        var _this5 = this;
-
-                        var output = {};
-                        this.__attributes.forEach(function(attr) {
-                            output[attr] = _this5.__toJSAttr(
-                                attr,
-                                _this5[attr]
-                            );
-                        });
-
-                        this.__activeCurrentRelations.forEach(function(
-                            currentRel
-                        ) {
-                            var model = _this5[currentRel];
-                            if (model) {
-                                output[currentRel] = model.toJS();
-                            }
-                        });
-                        return output;
-                    },
-                },
-                {
-                    key: '__toJSAttr',
-                    value: function __toJSAttr(attr, value) {
-                        var casts = this.casts();
-                        var cast = casts[attr];
-                        if (cast !== undefined) {
-                            return toJS(cast.toJS(attr, value));
-                        }
-                        return toJS(value);
-                    },
-                },
-                {
-                    key: 'setFetchParams',
-                    value: function setFetchParams(params) {
-                        this.__fetchParams = Object.assign({}, params);
-                    },
-                },
-                {
-                    key: '__parseRepositoryToData',
-                    value: function __parseRepositoryToData(key, repository) {
-                        if (isArray(key)) {
-                            return filter(repository, function(m) {
-                                return key.includes(m.id);
-                            });
-                        }
-                        return find(repository, { id: key });
-                    },
-
-                    /**
+                        /**
          * We handle the fromBackend recursively.
          * But when recursing, we don't send the full repository, we need to only send the repo
          * relevant to the relation.
@@ -1368,342 +1371,378 @@ var Model = (
          * Here we create a scoped repository.
          * The root gets a `town.restaurants` repo, but the `town` relation only gets the `restaurants` repo
          */
-                },
-                {
-                    key: '__scopeBackendResponse',
-                    value: function __scopeBackendResponse(_ref) {
-                        var _this6 = this;
+                    },
+                    {
+                        key: '__scopeBackendResponse',
+                        value: function __scopeBackendResponse(_ref) {
+                            var _this6 = this;
 
-                        var data = _ref.data,
-                            targetRelName = _ref.targetRelName,
-                            repos = _ref.repos,
-                            mapping = _ref.mapping;
+                            var data = _ref.data,
+                                targetRelName = _ref.targetRelName,
+                                repos = _ref.repos,
+                                mapping = _ref.mapping;
 
-                        var scopedData = null;
-                        var relevant = false;
-                        var scopedRepos = {};
-                        var scopedRelMapping = {};
+                            var scopedData = null;
+                            var relevant = false;
+                            var scopedRepos = {};
+                            var scopedRelMapping = {};
 
-                        forIn(mapping, function(repoName, relName) {
-                            var repository = repos[repoName];
-                            relName = _this6.fromBackendAttrKey(relName);
-
-                            if (targetRelName === relName) {
-                                relevant = true;
-                                var relKey =
-                                    data[_this6.toBackendAttrKey(relName)];
-                                scopedData = _this6.__parseRepositoryToData(
-                                    relKey,
-                                    repository
+                            forIn(mapping, function(repoName, relName) {
+                                var repository = repos[repoName];
+                                relName = _this6.constructor.fromBackendAttrKey(
+                                    relName
                                 );
-                                return;
-                            }
 
-                            if (relName.startsWith(targetRelName + '.')) {
-                                // If we have town.restaurants and the targetRel = town
-                                // we need "restaurants" in the repository
-                                relevant = true;
-                                var relNames = relName.match(
-                                    RE_SPLIT_FIRST_RELATION
-                                );
-                                var scopedRelName = relNames[2];
-                                scopedRepos[repoName] = repository;
-                                scopedRelMapping[scopedRelName] = repoName;
-                            }
-                        });
-
-                        if (!relevant) {
-                            return null;
-                        }
-
-                        return {
-                            scopedData: scopedData,
-                            scopedRepos: scopedRepos,
-                            scopedRelMapping: scopedRelMapping,
-                        };
-                    },
-
-                    // `data` contains properties for the current model.
-                    // `repos` is an object of "repositories". A repository is
-                    // e.g. "animal_kind", while the relation name would be "kind".
-                    // `relMapping` maps relation names to repositories.
-                },
-                {
-                    key: 'fromBackend',
-                    value: function fromBackend(_ref2) {
-                        var _this7 = this;
-
-                        var data = _ref2.data,
-                            repos = _ref2.repos,
-                            relMapping = _ref2.relMapping;
-
-                        // We handle the fromBackend recursively. On each relation of the source model
-                        // fromBackend gets called as well, but with data scoped for itself
-                        //
-                        // So when we have a model with a `town.restaurants.chef` relation,
-                        // we call fromBackend on the `town` relation.
-                        each(this.__activeCurrentRelations, function(relName) {
-                            var rel = _this7[relName];
-                            var resScoped = _this7.__scopeBackendResponse({
-                                data: data,
-                                targetRelName: relName,
-                                repos: repos,
-                                mapping: relMapping,
-                            });
-
-                            // Make sure we don't parse every relation for nothing
-                            if (!resScoped) {
-                                return;
-                            }
-                            var scopedData = resScoped.scopedData,
-                                scopedRepos = resScoped.scopedRepos,
-                                scopedRelMapping = resScoped.scopedRelMapping;
-
-                            rel.fromBackend({
-                                data: scopedData,
-                                repos: scopedRepos,
-                                relMapping: scopedRelMapping,
-                            });
-                        });
-
-                        // Now all repositories are set on the relations, start parsing the actual data.
-                        // `parse()` will recursively fill in all relations.
-                        if (data) {
-                            this.parse(data);
-                        }
-                    },
-                },
-                {
-                    key: '__getApi',
-                    value: function __getApi() {
-                        invariant(
-                            this.api,
-                            'You are trying to perform a API request without an `api` property defined on the model.'
-                        );
-                        invariant(
-                            result(this, 'urlRoot'),
-                            'You are trying to perform a API request without an `urlRoot` property defined on the model.'
-                        );
-                        return this.api;
-                    },
-                },
-                {
-                    key: 'parse',
-                    value: function parse(data) {
-                        var _this8 = this;
-
-                        invariant(
-                            isPlainObject(data),
-                            'Parameter supplied to `parse()` is not an object, got: ' +
-                                JSON.stringify(data)
-                        );
-                        forIn(data, function(value, key) {
-                            var attr = _this8.fromBackendAttrKey(key);
-                            if (_this8.__attributes.includes(attr)) {
-                                _this8[attr] = _this8.__parseAttr(attr, value);
-                            } else if (
-                                _this8.__activeCurrentRelations.includes(attr)
-                            ) {
-                                // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
-                                // However, it can also be an object if there are nested relations (non flattened).
-                                if (
-                                    isPlainObject(value) ||
-                                    isPlainObject(get(value, '[0]'))
-                                ) {
-                                    _this8[attr].parse(value);
+                                if (targetRelName === relName) {
+                                    relevant = true;
+                                    var relKey =
+                                        data[
+                                            _this6.constructor.toBackendAttrKey(
+                                                relName
+                                            )
+                                        ];
+                                    scopedData = _this6.__parseRepositoryToData(
+                                        relKey,
+                                        repository
+                                    );
+                                    return;
                                 }
+
+                                if (relName.startsWith(targetRelName + '.')) {
+                                    // If we have town.restaurants and the targetRel = town
+                                    // we need "restaurants" in the repository
+                                    relevant = true;
+                                    var relNames = relName.match(
+                                        RE_SPLIT_FIRST_RELATION
+                                    );
+                                    var scopedRelName = relNames[2];
+                                    scopedRepos[repoName] = repository;
+                                    scopedRelMapping[scopedRelName] = repoName;
+                                }
+                            });
+
+                            if (!relevant) {
+                                return null;
                             }
-                        });
 
-                        return this;
+                            return {
+                                scopedData: scopedData,
+                                scopedRepos: scopedRepos,
+                                scopedRelMapping: scopedRelMapping,
+                            };
+                        },
+
+                        // `data` contains properties for the current model.
+                        // `repos` is an object of "repositories". A repository is
+                        // e.g. "animal_kind", while the relation name would be "kind".
+                        // `relMapping` maps relation names to repositories.
                     },
-                },
-                {
-                    key: '__parseAttr',
-                    value: function __parseAttr(attr, value) {
-                        var casts = this.casts();
-                        var cast = casts[attr];
-                        if (cast !== undefined) {
-                            return cast.parse(attr, value);
-                        }
-                        return value;
+                    {
+                        key: 'fromBackend',
+                        value: function fromBackend(_ref2) {
+                            var _this7 = this;
+
+                            var data = _ref2.data,
+                                repos = _ref2.repos,
+                                relMapping = _ref2.relMapping;
+
+                            // We handle the fromBackend recursively. On each relation of the source model
+                            // fromBackend gets called as well, but with data scoped for itself
+                            //
+                            // So when we have a model with a `town.restaurants.chef` relation,
+                            // we call fromBackend on the `town` relation.
+                            each(this.__activeCurrentRelations, function(
+                                relName
+                            ) {
+                                var rel = _this7[relName];
+                                var resScoped = _this7.__scopeBackendResponse({
+                                    data: data,
+                                    targetRelName: relName,
+                                    repos: repos,
+                                    mapping: relMapping,
+                                });
+
+                                // Make sure we don't parse every relation for nothing
+                                if (!resScoped) {
+                                    return;
+                                }
+                                var scopedData = resScoped.scopedData,
+                                    scopedRepos = resScoped.scopedRepos,
+                                    scopedRelMapping =
+                                        resScoped.scopedRelMapping;
+
+                                rel.fromBackend({
+                                    data: scopedData,
+                                    repos: scopedRepos,
+                                    relMapping: scopedRelMapping,
+                                });
+                            });
+
+                            // Now all repositories are set on the relations, start parsing the actual data.
+                            // `parse()` will recursively fill in all relations.
+                            if (data) {
+                                this.parse(data);
+                            }
+                        },
                     },
-                },
-                {
-                    key: 'save',
-                    value: function save() {
-                        var _this9 = this;
+                    {
+                        key: '__getApi',
+                        value: function __getApi() {
+                            invariant(
+                                this.api,
+                                'You are trying to perform a API request without an `api` property defined on the model.'
+                            );
+                            invariant(
+                                result(this, 'urlRoot'),
+                                'You are trying to perform a API request without an `urlRoot` property defined on the model.'
+                            );
+                            return this.api;
+                        },
+                    },
+                    {
+                        key: 'parse',
+                        value: function parse(data) {
+                            var _this8 = this;
 
-                        var options = arguments.length > 0 &&
-                            arguments[0] !== undefined
-                            ? arguments[0]
-                            : {};
-
-                        this.__backendValidationErrors = {};
-                        this.__pendingRequestCount += 1;
-                        // TODO: Allow data from an argument to be saved?
-                        return this.__getApi()
-                            .saveModel({
-                                url: this.url,
-                                data: this.toBackend(),
-                                params: options.params,
-                                isNew: this.isNew,
-                            })
-                            .then(
-                                action(function(res) {
-                                    _this9.__pendingRequestCount -= 1;
-                                    _this9.saveFromBackend(res);
-                                })
-                            )
-                            .catch(
-                                action(function(err) {
-                                    _this9.__pendingRequestCount -= 1;
-                                    if (err.valErrors) {
-                                        _this9.__backendValidationErrors =
-                                            err.valErrors;
+                            invariant(
+                                isPlainObject(data),
+                                'Parameter supplied to `parse()` is not an object, got: ' +
+                                    JSON.stringify(data)
+                            );
+                            forIn(data, function(value, key) {
+                                var attr = _this8.constructor.fromBackendAttrKey(
+                                    key
+                                );
+                                if (_this8.__attributes.includes(attr)) {
+                                    _this8[attr] = _this8.__parseAttr(
+                                        attr,
+                                        value
+                                    );
+                                } else if (
+                                    _this8.__activeCurrentRelations.includes(
+                                        attr
+                                    )
+                                ) {
+                                    // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
+                                    // However, it can also be an object if there are nested relations (non flattened).
+                                    if (
+                                        isPlainObject(value) ||
+                                        isPlainObject(get(value, '[0]'))
+                                    ) {
+                                        _this8[attr].parse(value);
                                     }
-                                    throw err;
+                                }
+                            });
+
+                            return this;
+                        },
+                    },
+                    {
+                        key: '__parseAttr',
+                        value: function __parseAttr(attr, value) {
+                            var casts = this.casts();
+                            var cast = casts[attr];
+                            if (cast !== undefined) {
+                                return cast.parse(attr, value);
+                            }
+                            return value;
+                        },
+                    },
+                    {
+                        key: 'save',
+                        value: function save() {
+                            var _this9 = this;
+
+                            var options = arguments.length > 0 &&
+                                arguments[0] !== undefined
+                                ? arguments[0]
+                                : {};
+
+                            this.__backendValidationErrors = {};
+                            this.__pendingRequestCount += 1;
+                            // TODO: Allow data from an argument to be saved?
+                            return this.__getApi()
+                                .saveModel({
+                                    url: this.url,
+                                    data: this.toBackend(),
+                                    params: options.params,
+                                    isNew: this.isNew,
                                 })
+                                .then(
+                                    action(function(res) {
+                                        _this9.__pendingRequestCount -= 1;
+                                        _this9.saveFromBackend(res);
+                                    })
+                                )
+                                .catch(
+                                    action(function(err) {
+                                        _this9.__pendingRequestCount -= 1;
+                                        if (err.valErrors) {
+                                            _this9.__backendValidationErrors =
+                                                err.valErrors;
+                                        }
+                                        throw err;
+                                    })
+                                );
+                        },
+                    },
+                    {
+                        key: 'saveAll',
+                        value: function saveAll() {
+                            var _this10 = this;
+
+                            var options = arguments.length > 0 &&
+                                arguments[0] !== undefined
+                                ? arguments[0]
+                                : {};
+
+                            this.__backendValidationErrors = {};
+                            this.__pendingRequestCount += 1;
+                            return this.__getApi()
+                                .saveAllModels({
+                                    url: result(this, 'urlRoot'),
+                                    model: this,
+                                    data: this.toBackendAll(null, {
+                                        relations: options.relations,
+                                    }),
+                                })
+                                .then(
+                                    action(function(res) {
+                                        _this10.__pendingRequestCount -= 1;
+                                        _this10.saveFromBackend(res);
+                                    })
+                                )
+                                .catch(
+                                    action(function(err) {
+                                        _this10.__pendingRequestCount -= 1;
+                                        // TODO: saveAll does not support handling backend validation errors yet.
+                                        throw err;
+                                    })
+                                );
+                        },
+
+                        // This is just a pass-through to make it easier to override parsing backend responses from the backend.
+                        // Sometimes the backend won't return the model after a save because e.g. it is created async.
+                    },
+                    {
+                        key: 'saveFromBackend',
+                        value: function saveFromBackend(res) {
+                            return this.fromBackend(res);
+                        },
+
+                        // TODO: This is a bit hacky...
+                    },
+                    {
+                        key: 'delete',
+                        value: function _delete() {
+                            var _this11 = this;
+
+                            var options = arguments.length > 0 &&
+                                arguments[0] !== undefined
+                                ? arguments[0]
+                                : {};
+
+                            var removeFromStore = function removeFromStore() {
+                                return _this11.__store
+                                    ? _this11.__store.remove(_this11)
+                                    : null;
+                            };
+                            if (options.immediate || this.isNew) {
+                                removeFromStore();
+                            }
+                            if (this.isNew) {
+                                return Promise.resolve();
+                            }
+
+                            this.__pendingRequestCount += 1;
+                            return this.__getApi()
+                                .deleteModel({
+                                    url: this.url,
+                                    params: options.params,
+                                })
+                                .then(
+                                    action(function() {
+                                        _this11.__pendingRequestCount -= 1;
+                                        if (!options.immediate) {
+                                            removeFromStore();
+                                        }
+                                    })
+                                );
+                        },
+                    },
+                    {
+                        key: 'fetch',
+                        value: function fetch() {
+                            var _this12 = this;
+
+                            var options = arguments.length > 0 &&
+                                arguments[0] !== undefined
+                                ? arguments[0]
+                                : {};
+
+                            invariant(
+                                !this.isNew,
+                                'Trying to fetch model without id!'
                             );
-                    },
-                },
-                {
-                    key: 'saveAll',
-                    value: function saveAll() {
-                        var _this10 = this;
-
-                        var options = arguments.length > 0 &&
-                            arguments[0] !== undefined
-                            ? arguments[0]
-                            : {};
-
-                        this.__backendValidationErrors = {};
-                        this.__pendingRequestCount += 1;
-                        return this.__getApi()
-                            .saveAllModels({
-                                url: result(this, 'urlRoot'),
-                                model: this,
-                                data: this.toBackendAll(null, {
-                                    relations: options.relations,
-                                }),
-                            })
-                            .then(
-                                action(function(res) {
-                                    _this10.__pendingRequestCount -= 1;
-                                    _this10.saveFromBackend(res);
-                                })
-                            )
-                            .catch(
-                                action(function(err) {
-                                    _this10.__pendingRequestCount -= 1;
-                                    // TODO: saveAll does not support handling backend validation errors yet.
-                                    throw err;
-                                })
+                            this.__pendingRequestCount += 1;
+                            var data = Object.assign(
+                                this.__getApi().buildFetchModelParams(this),
+                                this.__fetchParams,
+                                options.data
                             );
+                            return this.__getApi()
+                                .fetchModel({ url: this.url, data: data })
+                                .then(
+                                    action(function(res) {
+                                        _this12.fromBackend(res);
+                                        _this12.__pendingRequestCount -= 1;
+                                    })
+                                );
+                        },
                     },
+                    {
+                        key: 'clear',
+                        value: function clear() {
+                            var _this13 = this;
 
-                    // This is just a pass-through to make it easier to override parsing backend responses from the backend.
-                    // Sometimes the backend won't return the model after a save because e.g. it is created async.
-                },
-                {
-                    key: 'saveFromBackend',
-                    value: function saveFromBackend(res) {
-                        return this.fromBackend(res);
+                            forIn(this.__originalAttributes, function(
+                                value,
+                                key
+                            ) {
+                                _this13[key] = value;
+                            });
+
+                            this.__activeCurrentRelations.forEach(function(
+                                currentRel
+                            ) {
+                                _this13[currentRel].clear();
+                            });
+                        },
                     },
-
-                    // TODO: This is a bit hacky...
-                },
-                {
-                    key: 'delete',
-                    value: function _delete() {
-                        var _this11 = this;
-
-                        var options = arguments.length > 0 &&
-                            arguments[0] !== undefined
-                            ? arguments[0]
-                            : {};
-
-                        var removeFromStore = function removeFromStore() {
-                            return _this11.__store
-                                ? _this11.__store.remove(_this11)
-                                : null;
-                        };
-                        if (options.immediate || this.isNew) {
-                            removeFromStore();
-                        }
-                        if (this.isNew) {
-                            return Promise.resolve();
-                        }
-
-                        this.__pendingRequestCount += 1;
-                        return this.__getApi()
-                            .deleteModel({
-                                url: this.url,
-                                params: options.params,
-                            })
-                            .then(
-                                action(function() {
-                                    _this11.__pendingRequestCount -= 1;
-                                    if (!options.immediate) {
-                                        removeFromStore();
-                                    }
-                                })
-                            );
+                    {
+                        key: 'backendValidationErrors',
+                        get: function get$$1() {
+                            return this.__backendValidationErrors;
+                        },
                     },
-                },
-                {
-                    key: 'fetch',
-                    value: function fetch() {
-                        var _this12 = this;
+                ],
+                [
+                    {
+                        key: 'toBackendAttrKey',
+                        value: function toBackendAttrKey(attrKey) {
+                            return camelToSnake(attrKey);
+                        },
 
-                        var options = arguments.length > 0 &&
-                            arguments[0] !== undefined
-                            ? arguments[0]
-                            : {};
-
-                        invariant(
-                            !this.isNew,
-                            'Trying to fetch model without id!'
-                        );
-                        this.__pendingRequestCount += 1;
-                        var data = Object.assign(
-                            this.__getApi().buildFetchModelParams(this),
-                            this.__fetchParams,
-                            options.data
-                        );
-                        return this.__getApi()
-                            .fetchModel({ url: this.url, data: data })
-                            .then(
-                                action(function(res) {
-                                    _this12.fromBackend(res);
-                                    _this12.__pendingRequestCount -= 1;
-                                })
-                            );
+                        // In the frontend we don't want to deal with those snake_case attr names.
                     },
-                },
-                {
-                    key: 'clear',
-                    value: function clear() {
-                        var _this13 = this;
-
-                        forIn(this.__originalAttributes, function(value, key) {
-                            _this13[key] = value;
-                        });
-
-                        this.__activeCurrentRelations.forEach(function(
-                            currentRel
-                        ) {
-                            _this13[currentRel].clear();
-                        });
+                    {
+                        key: 'fromBackendAttrKey',
+                        value: function fromBackendAttrKey(attrKey) {
+                            return snakeToCamel(attrKey);
+                        },
                     },
-                },
-                {
-                    key: 'backendValidationErrors',
-                    get: function get$$1() {
-                        return this.__backendValidationErrors;
-                    },
-                },
-            ]);
+                ]
+            );
             return Model;
         })()),
         (_class2.primaryKey = 'id'),
@@ -1963,7 +2002,7 @@ var BinderApi = (function() {
                     // We should fix this in the Binder API.
                     with:
                         model.__activeRelations
-                            .map(model.toBackendAttrKey)
+                            .map(model.constructor.toBackendAttrKey)
                             .join(',') || null,
                 };
             },
@@ -2049,7 +2088,10 @@ var BinderApi = (function() {
             value: function buildFetchStoreParams(store) {
                 var offset = store.getPageOffset();
                 return {
-                    with: store.__activeRelations.join(',') || null,
+                    with:
+                        store.__activeRelations
+                            .map(store.Model.toBackendAttrKey)
+                            .join(',') || null,
                     limit: store.__state.limit,
                     // Hide offset if zero so the request looks cleaner in DevTools.
                     offset: offset || null,
