@@ -1393,7 +1393,7 @@ var Model = (
                                     relName
                                 );
 
-                                if (targetRelName === relName) {
+                                if (targetRelName === relName && data) {
                                     relevant = true;
                                     var relKey =
                                         data[
