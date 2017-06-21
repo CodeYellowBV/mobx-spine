@@ -139,7 +139,7 @@ export default class BinderApi {
             // TODO: I really dislike this, but at the moment Binder doesn't return all models after saving the data.
             // Instead, it only returns an ID map to map the negative fake IDs to real ones.
             const backendName = model.constructor.backendResourceName;
-            if (res.idmap && backendName) {
+            if (res.idmap && backendName && res.idmap[backendName]) {
                 const idMap = res.idmap[backendName].find(
                     ids =>
                         ids[0] === model[model.constructor.primaryKey] ||
