@@ -2147,7 +2147,11 @@
                         // TODO: I really dislike this, but at the moment Binder doesn't return all models after saving the data.
                         // Instead, it only returns an ID map to map the negative fake IDs to real ones.
                         var backendName = model.constructor.backendResourceName;
-                        if (res.idmap && backendName) {
+                        if (
+                            res.idmap &&
+                            backendName &&
+                            res.idmap[backendName]
+                        ) {
                             var idMap = res.idmap[backendName].find(function(
                                 ids
                             ) {
