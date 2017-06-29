@@ -358,6 +358,13 @@ export default class Store {
         );
     }
 
+    getByIds(ids) {
+        return this.models.filter(model => {
+            const id = model[model.constructor.primaryKey];
+            return ids.includes(id) || ids.includes('' + id);
+        });
+    }
+
     map(predicate) {
         return map(this.models, predicate);
     }
