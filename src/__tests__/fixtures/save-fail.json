@@ -1,22 +1,14 @@
 {
-  "object": "Animal: ",
-  "debug": {
-    "location": "_store:655 in /vagrant/spacebv/backend/venv/lib/python3.4/site-packages/binder/views.py",
-    "request_id": "a3793872-77b9-4133-b97e-2307c04a27b2"
-  },
-  "code": "ValidationError",
-  "error": {
-    "validation_errors": {
-      "name": [
-        {
-          "code": "This field cannot be blank."
+    "errors": {
+        "animal": {
+            "-1": {
+                "name": [{
+                    "code": "required"
+                }],
+                "kind": [{
+                    "code": "blank"
+                }]
+            }
         }
-      ],
-      "kind": [
-        {
-          "code": "This field cannot be null."
-        }
-      ]
     }
-  }
 }

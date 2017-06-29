@@ -32,17 +32,17 @@ Object {
     },
   ],
   "relations": Object {
+    "location": Array [
+      Object {
+        "id": -3,
+        "name": "",
+      },
+    ],
     "past_owners": Array [
       Object {
         "id": -2,
         "name": "Bar",
         "town": -3,
-      },
-    ],
-    "town": Array [
-      Object {
-        "id": -3,
-        "name": "",
       },
     ],
   },
@@ -144,7 +144,7 @@ Object {
         "name": "",
       },
     ],
-    "owner": Array [
+    "person": Array [
       Object {
         "id": -4,
         "name": "",
@@ -167,6 +167,16 @@ Object {
     },
   ],
   "relations": Object {
+    "location": Array [
+      Object {
+        "id": -3,
+        "name": "Eindhoven",
+      },
+      Object {
+        "id": -5,
+        "name": "Breda",
+      },
+    ],
     "past_owners": Array [
       Object {
         "id": -2,
@@ -177,16 +187,6 @@ Object {
         "id": -4,
         "name": "Krol",
         "town": -5,
-      },
-    ],
-    "town": Array [
-      Object {
-        "id": -3,
-        "name": "Eindhoven",
-      },
-      Object {
-        "id": -5,
-        "name": "Breda",
       },
     ],
   },
@@ -204,7 +204,7 @@ Object {
     },
   ],
   "relations": Object {
-    "owner": Array [
+    "person": Array [
       Object {
         "id": -3,
         "name": "Henk",

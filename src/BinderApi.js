@@ -10,14 +10,9 @@ function csrfSafeMethod(method) {
 }
 
 function parseBackendValidationErrors(response) {
-    const valErrors = get(response, 'data.error.validation_errors');
+    const valErrors = get(response, 'data.errors');
     if (response.status === 400 && valErrors) {
-        const camelCasedErrors = mapKeys(valErrors, (value, key) =>
-            snakeToCamel(key)
-        );
-        return mapValues(camelCasedErrors, valError => {
-            return valError.map(obj => obj.code);
-        });
+        return valErrors;
     }
     return null;
 }
@@ -135,20 +130,27 @@ export default class BinderApi {
         return this.put(url, {
             data: data.data,
             with: data.relations,
-        }).then(res => {
-            // TODO: I really dislike this, but at the moment Binder doesn't return all models after saving the data.
-            // Instead, it only returns an ID map to map the negative fake IDs to real ones.
-            const backendName = model.constructor.backendResourceName;
-            if (res.idmap && backendName && res.idmap[backendName]) {
-                const idMap = res.idmap[backendName].find(
-                    ids =>
-                        ids[0] === model[model.constructor.primaryKey] ||
-                        model.getNegativeId()
-                );
-                model[model.constructor.primaryKey] = idMap[1];
-            }
-            return res;
-        });
+        })
+            .then(res => {
+                // TODO: I really dislike this, but at the moment Binder doesn't return all models after saving the data.
+                // Instead, it only returns an ID map to map the negative fake IDs to real ones.
+                const backendName = model.constructor.backendResourceName;
+                if (res.idmap && backendName && res.idmap[backendName]) {
+                    const idMap = res.idmap[backendName].find(
+                        ids =>
+                            ids[0] === model[model.constructor.primaryKey] ||
+                            model.getNegativeId()
+                    );
+                    model[model.constructor.primaryKey] = idMap[1];
+                }
+                return res;
+            })
+            .catch(err => {
+                if (err.response) {
+                    err.valErrors = parseBackendValidationErrors(err.response);
+                }
+                throw err;
+            });
     }
 
     deleteModel({ url, params }) {

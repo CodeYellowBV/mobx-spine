@@ -1,0 +1,33 @@
+{
+    "errors": {
+        "animal": {
+            "-1": {
+                "name": [{
+                    "code": "blank"
+                }]
+            }
+        },
+        "kind": {
+            "-2": {
+                "name": [{
+                    "code": "required"
+                }]
+            }
+        },
+        "person": {
+            "-3": {
+                "name": [{
+                    "code": "required"
+                }]
+            }
+        },
+        "location": {
+            "5": {
+                "name": [{
+                    "code": "maxlength",
+                    "max": 7
+                }]
+            }
+        }
+    }
+}

@@ -161,6 +161,12 @@ export default class Store {
         return this;
     }
 
+    parseValidationErrors(valErrors) {
+        this.each(model => {
+            model.parseValidationErrors(valErrors);
+        });
+    }
+
     @action
     add(models) {
         const singular = !isArray(models);

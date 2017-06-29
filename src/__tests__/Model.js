@@ -25,6 +25,7 @@ import animalKindBreedData from './fixtures/animal-with-kind-breed.json';
 import animalsWithPastOwnersAndTownData from './fixtures/animals-with-past-owners-and-town.json';
 import animalKindBreedDataNested from './fixtures/animal-with-kind-breed-nested.json';
 import animalMultiPutResponse from './fixtures/animals-multi-put-response.json';
+import animalMultiPutError from './fixtures/animals-multi-put-error.json';
 import customersWithTownCookRestaurant from './fixtures/customers-with-town-cook-restaurant.json';
 import customersLocationBestCookWorkPlaces from './fixtures/customers-location-best-cook-work-places.json';
 import saveFailData from './fixtures/save-fail.json';
@@ -858,8 +859,8 @@ describe('requests', () => {
         return animal.save().catch(() => {
             const valErrors = toJS(animal.backendValidationErrors);
             expect(valErrors).toEqual({
-                name: ['This field cannot be blank.'],
-                kind: ['This field cannot be null.'],
+                name: ['required'],
+                kind: ['blank'],
             });
         });
     });
@@ -905,6 +906,42 @@ describe('requests', () => {
             spy.mockReset();
             spy.mockRestore();
         });
+    });
+
+    test('save all with validation errors', () => {
+        const animal = new Animal(
+            {
+                name: 'Doggo',
+                kind: { name: 'Dog' },
+                pastOwners: [{ name: 'Jo', town: { id: 5, name: '' } }],
+            },
+            { relations: ['kind', 'pastOwners.town'] }
+        );
+        mock.onAny().replyOnce(config => {
+            return [400, animalMultiPutError];
+        });
+
+        return animal.saveAll({ relations: ['kind'] }).then(
+            () => {},
+            err => {
+                if (!err.response) {
+                    throw err;
+                }
+                expect(toJS(animal.backendValidationErrors).name).toEqual([
+                    'blank',
+                ]);
+                expect(toJS(animal.kind.backendValidationErrors).name).toEqual([
+                    'required',
+                ]);
+                expect(
+                    toJS(animal.pastOwners.at(0).backendValidationErrors).name
+                ).toEqual(['required']);
+                expect(
+                    toJS(animal.pastOwners.at(0).town.backendValidationErrors)
+                        .name
+                ).toEqual(['maxlength']);
+            }
+        );
     });
 
     test('save all with existing model', () => {

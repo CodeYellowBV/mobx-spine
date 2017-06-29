@@ -20,6 +20,7 @@ import {
     uniqueId,
     uniq,
     uniqBy,
+    mapKeys,
     result,
 } from 'lodash';
 import Store from './Store';
@@ -486,7 +487,7 @@ export default class Model {
                 action(err => {
                     this.__pendingRequestCount -= 1;
                     if (err.valErrors) {
-                        this.__backendValidationErrors = err.valErrors;
+                        this.parseValidationErrors(err.valErrors);
                     }
                     throw err;
                 })
@@ -512,10 +513,39 @@ export default class Model {
             .catch(
                 action(err => {
                     this.__pendingRequestCount -= 1;
-                    // TODO: saveAll does not support handling backend validation errors yet.
+                    if (err.valErrors) {
+                        this.parseValidationErrors(err.valErrors);
+                    }
                     throw err;
                 })
             );
+    }
+
+    parseValidationErrors(valErrors) {
+        const bname = this.constructor.backendResourceName;
+
+        if (valErrors[bname]) {
+            const id = this.isNew
+                ? this.getNegativeId()
+                : this[this.constructor.primaryKey];
+            const errorsForModel = valErrors[bname][id];
+            if (errorsForModel) {
+                const camelCasedErrors = mapKeys(errorsForModel, (value, key) =>
+                    snakeToCamel(key)
+                );
+                const formattedErrors = mapValues(
+                    camelCasedErrors,
+                    valError => {
+                        return valError.map(obj => obj.code);
+                    }
+                );
+                this.__backendValidationErrors = formattedErrors;
+            }
+        }
+
+        this.__activeCurrentRelations.forEach(currentRel => {
+            this[currentRel].parseValidationErrors(valErrors);
+        });
     }
 
     // This is just a pass-through to make it easier to override parsing backend responses from the backend.

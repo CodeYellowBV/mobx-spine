@@ -2,6 +2,7 @@ import { observable } from 'mobx';
 import { Model, Store, BinderApi } from '../..';
 
 export class Location extends Model {
+    static backendResourceName = 'location';
     @observable id = null;
     @observable name = '';
 }
@@ -18,6 +19,7 @@ export class Breed extends Model {
 }
 
 export class Person extends Model {
+    static backendResourceName = 'person';
     @observable id = null;
     @observable name = '';
 
@@ -33,6 +35,7 @@ export class PersonStore extends Store {
 }
 
 export class Kind extends Model {
+    static backendResourceName = 'kind';
     @observable id = null;
     @observable name = '';
 
