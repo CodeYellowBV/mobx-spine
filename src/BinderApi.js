@@ -1,6 +1,5 @@
-import { mapKeys, mapValues, get } from 'lodash';
+import { get } from 'lodash';
 import axios from 'axios';
-import { snakeToCamel } from './utils';
 
 // Function ripped from Django docs.
 // See: https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
