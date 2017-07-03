@@ -1,0 +1,14 @@
+{
+  "errors": {
+    "animal": {
+      "null": {
+        "name": [
+          {
+            "code": "invalid",
+            "message": "An animal with that name already exists."
+          }
+        ]
+      }
+    }
+  }
+}

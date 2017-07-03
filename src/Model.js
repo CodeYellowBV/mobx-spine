@@ -528,7 +528,9 @@ export default class Model {
             const id = this.isNew
                 ? this.getNegativeId()
                 : this[this.constructor.primaryKey];
-            const errorsForModel = valErrors[bname][id];
+            // When there is no id or negative id, the backend may use the string 'null'. Bit weird, but eh.
+            const errorsForModel =
+                valErrors[bname][id] || valErrors[bname]['null'];
             if (errorsForModel) {
                 const camelCasedErrors = mapKeys(errorsForModel, (value, key) =>
                     snakeToCamel(key)

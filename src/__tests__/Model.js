@@ -29,6 +29,7 @@ import animalMultiPutError from './fixtures/animals-multi-put-error.json';
 import customersWithTownCookRestaurant from './fixtures/customers-with-town-cook-restaurant.json';
 import customersLocationBestCookWorkPlaces from './fixtures/customers-location-best-cook-work-places.json';
 import saveFailData from './fixtures/save-fail.json';
+import saveNewFailData from './fixtures/save-new-fail.json';
 
 beforeEach(() => {
     // Refresh lodash's `_.uniqueId` internal state for every test
@@ -861,6 +862,18 @@ describe('requests', () => {
             expect(valErrors).toEqual({
                 name: ['required'],
                 kind: ['blank'],
+            });
+        });
+    });
+
+    test('save new model fail with basic properties', () => {
+        const animal = new Animal({ name: 'Nope' });
+        mock.onAny().replyOnce(400, saveNewFailData);
+
+        return animal.save().catch(() => {
+            const valErrors = toJS(animal.backendValidationErrors);
+            expect(valErrors).toEqual({
+                name: ['invalid'],
             });
         });
     });
