@@ -333,6 +333,14 @@
                         },
                     },
                     {
+                        key: 'parseValidationErrors',
+                        value: function parseValidationErrors(valErrors) {
+                            this.each(function(model) {
+                                model.parseValidationErrors(valErrors);
+                            });
+                        },
+                    },
+                    {
                         key: 'add',
                         value: function add(models) {
                             var _this2 = this;
@@ -1655,8 +1663,9 @@
                                         mobx.action(function(err) {
                                             _this9.__pendingRequestCount -= 1;
                                             if (err.valErrors) {
-                                                _this9.__backendValidationErrors =
-                                                    err.valErrors;
+                                                _this9.parseValidationErrors(
+                                                    err.valErrors
+                                                );
                                             }
                                             throw err;
                                         })
@@ -1692,10 +1701,60 @@
                                     .catch(
                                         mobx.action(function(err) {
                                             _this10.__pendingRequestCount -= 1;
-                                            // TODO: saveAll does not support handling backend validation errors yet.
+                                            if (err.valErrors) {
+                                                _this10.parseValidationErrors(
+                                                    err.valErrors
+                                                );
+                                            }
                                             throw err;
                                         })
                                     );
+                            },
+                        },
+                        {
+                            key: 'parseValidationErrors',
+                            value: function parseValidationErrors(valErrors) {
+                                var _this11 = this;
+
+                                var bname = this.constructor
+                                    .backendResourceName;
+
+                                if (valErrors[bname]) {
+                                    var id = this.isNew
+                                        ? this.getNegativeId()
+                                        : this[this.constructor.primaryKey];
+                                    // When there is no id or negative id, the backend may use the string 'null'. Bit weird, but eh.
+                                    var errorsForModel =
+                                        valErrors[bname][id] ||
+                                        valErrors[bname]['null'];
+                                    if (errorsForModel) {
+                                        var camelCasedErrors = lodash.mapKeys(
+                                            errorsForModel,
+                                            function(value, key) {
+                                                return snakeToCamel(key);
+                                            }
+                                        );
+                                        var formattedErrors = lodash.mapValues(
+                                            camelCasedErrors,
+                                            function(valError) {
+                                                return valError.map(function(
+                                                    obj
+                                                ) {
+                                                    return obj.code;
+                                                });
+                                            }
+                                        );
+                                        this.__backendValidationErrors = formattedErrors;
+                                    }
+                                }
+
+                                this.__activeCurrentRelations.forEach(function(
+                                    currentRel
+                                ) {
+                                    _this11[currentRel].parseValidationErrors(
+                                        valErrors
+                                    );
+                                });
                             },
 
                             // This is just a pass-through to make it easier to override parsing backend responses from the backend.
@@ -1712,7 +1771,7 @@
                         {
                             key: 'delete',
                             value: function _delete() {
-                                var _this11 = this;
+                                var _this12 = this;
 
                                 var options = arguments.length > 0 &&
                                     arguments[0] !== undefined
@@ -1720,8 +1779,8 @@
                                     : {};
 
                                 var removeFromStore = function removeFromStore() {
-                                    return _this11.__store
-                                        ? _this11.__store.remove(_this11)
+                                    return _this12.__store
+                                        ? _this12.__store.remove(_this12)
                                         : null;
                                 };
                                 if (options.immediate || this.isNew) {
@@ -1739,7 +1798,7 @@
                                     })
                                     .then(
                                         mobx.action(function() {
-                                            _this11.__pendingRequestCount -= 1;
+                                            _this12.__pendingRequestCount -= 1;
                                             if (!options.immediate) {
                                                 removeFromStore();
                                             }
@@ -1750,7 +1809,7 @@
                         {
                             key: 'fetch',
                             value: function fetch() {
-                                var _this12 = this;
+                                var _this13 = this;
 
                                 var options = arguments.length > 0 &&
                                     arguments[0] !== undefined
@@ -1771,8 +1830,8 @@
                                     .fetchModel({ url: this.url, data: data })
                                     .then(
                                         mobx.action(function(res) {
-                                            _this12.fromBackend(res);
-                                            _this12.__pendingRequestCount -= 1;
+                                            _this13.fromBackend(res);
+                                            _this13.__pendingRequestCount -= 1;
                                         })
                                     );
                             },
@@ -1780,19 +1839,19 @@
                         {
                             key: 'clear',
                             value: function clear() {
-                                var _this13 = this;
+                                var _this14 = this;
 
                                 lodash.forIn(
                                     this.__originalAttributes,
                                     function(value, key) {
-                                        _this13[key] = value;
+                                        _this14[key] = value;
                                     }
                                 );
 
                                 this.__activeCurrentRelations.forEach(function(
                                     currentRel
                                 ) {
-                                    _this13[currentRel].clear();
+                                    _this14[currentRel].clear();
                                 });
                             },
                         },
@@ -1965,19 +2024,9 @@
     }
 
     function parseBackendValidationErrors(response) {
-        var valErrors = lodash.get(response, 'data.error.validation_errors');
+        var valErrors = lodash.get(response, 'data.errors');
         if (response.status === 400 && valErrors) {
-            var camelCasedErrors = lodash.mapKeys(valErrors, function(
-                value,
-                key
-            ) {
-                return snakeToCamel(key);
-            });
-            return lodash.mapValues(camelCasedErrors, function(valError) {
-                return valError.map(function(obj) {
-                    return obj.code;
-                });
-            });
+            return valErrors;
         }
         return null;
     }
@@ -2143,28 +2192,39 @@
                     return this.put(url, {
                         data: data.data,
                         with: data.relations,
-                    }).then(function(res) {
-                        // TODO: I really dislike this, but at the moment Binder doesn't return all models after saving the data.
-                        // Instead, it only returns an ID map to map the negative fake IDs to real ones.
-                        var backendName = model.constructor.backendResourceName;
-                        if (
-                            res.idmap &&
-                            backendName &&
-                            res.idmap[backendName]
-                        ) {
-                            var idMap = res.idmap[backendName].find(function(
-                                ids
+                    })
+                        .then(function(res) {
+                            // TODO: I really dislike this, but at the moment Binder doesn't return all models after saving the data.
+                            // Instead, it only returns an ID map to map the negative fake IDs to real ones.
+                            var backendName =
+                                model.constructor.backendResourceName;
+                            if (
+                                res.idmap &&
+                                backendName &&
+                                res.idmap[backendName]
                             ) {
-                                return (
-                                    ids[0] ===
-                                        model[model.constructor.primaryKey] ||
-                                    model.getNegativeId()
+                                var idMap = res.idmap[
+                                    backendName
+                                ].find(function(ids) {
+                                    return (
+                                        ids[0] ===
+                                            model[
+                                                model.constructor.primaryKey
+                                            ] || model.getNegativeId()
+                                    );
+                                });
+                                model[model.constructor.primaryKey] = idMap[1];
+                            }
+                            return res;
+                        })
+                        .catch(function(err) {
+                            if (err.response) {
+                                err.valErrors = parseBackendValidationErrors(
+                                    err.response
                                 );
-                            });
-                            model[model.constructor.primaryKey] = idMap[1];
-                        }
-                        return res;
-                    });
+                            }
+                            throw err;
+                        });
                 },
             },
             {
