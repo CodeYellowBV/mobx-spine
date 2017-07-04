@@ -81,19 +81,16 @@ export default class Model {
         return -parseInt(this.cid.replace('m', ''));
     }
 
-    @computed
-    get url() {
+    @computed get url() {
         const id = this[this.constructor.primaryKey];
         return `${result(this, 'urlRoot')}${id ? `${id}/` : ''}`;
     }
 
-    @computed
-    get isNew() {
+    @computed get isNew() {
         return !this[this.constructor.primaryKey];
     }
 
-    @computed
-    get isLoading() {
+    @computed get isLoading() {
         return this.__pendingRequestCount > 0;
     }
 
@@ -149,8 +146,7 @@ export default class Model {
         this.initialize();
     }
 
-    @action
-    __parseRelations(activeRelations) {
+    @action __parseRelations(activeRelations) {
         this.__activeRelations = activeRelations;
         // TODO: No idea why getting the relations only works when it's a Function.
         const relations = this.relations && this.relations();
@@ -355,7 +351,11 @@ export default class Model {
             const repository = repos[repoName];
             relName = this.constructor.fromBackendAttrKey(relName);
 
-            if (targetRelName === relName && data) {
+            if (!data) {
+                return null;
+            }
+
+            if (targetRelName === relName) {
                 relevant = true;
                 const relKey = data[this.constructor.toBackendAttrKey(relName)];
                 scopedData = this.__parseRepositoryToData(relKey, repository);
@@ -384,8 +384,7 @@ export default class Model {
     // `repos` is an object of "repositories". A repository is
     // e.g. "animal_kind", while the relation name would be "kind".
     // `relMapping` maps relation names to repositories.
-    @action
-    fromBackend({ data, repos, relMapping }) {
+    @action fromBackend({ data, repos, relMapping }) {
         // We handle the fromBackend recursively. On each relation of the source model
         // fromBackend gets called as well, but with data scoped for itself
         //
@@ -431,13 +430,10 @@ export default class Model {
         return this.api;
     }
 
-    @action
-    parse(data) {
+    @action parse(data) {
         invariant(
             isPlainObject(data),
-            `Parameter supplied to \`parse()\` is not an object, got: ${JSON.stringify(
-                data
-            )}`
+            `Parameter supplied to \`parse()\` is not an object, got: ${JSON.stringify(data)}`
         );
         forIn(data, (value, key) => {
             const attr = this.constructor.fromBackendAttrKey(key);
@@ -464,8 +460,7 @@ export default class Model {
         return value;
     }
 
-    @action
-    save(options = {}) {
+    @action save(options = {}) {
         this.__backendValidationErrors = {};
         this.__pendingRequestCount += 1;
         // TODO: Allow data from an argument to be saved?
@@ -493,8 +488,7 @@ export default class Model {
             );
     }
 
-    @action
-    saveAll(options = {}) {
+    @action saveAll(options = {}) {
         this.__backendValidationErrors = {};
         this.__pendingRequestCount += 1;
         return this.__getApi()
@@ -525,13 +519,11 @@ export default class Model {
     }
 
     // TODO: This is a bit hacky...
-    @computed
-    get backendValidationErrors() {
+    @computed get backendValidationErrors() {
         return this.__backendValidationErrors;
     }
 
-    @action
-    delete(options = {}) {
+    @action delete(options = {}) {
         const removeFromStore = () =>
             this.__store ? this.__store.remove(this) : null;
         if (options.immediate || this.isNew) {
@@ -554,8 +546,7 @@ export default class Model {
             );
     }
 
-    @action
-    fetch(options = {}) {
+    @action fetch(options = {}) {
         invariant(!this.isNew, 'Trying to fetch model without id!');
         this.__pendingRequestCount += 1;
         const data = Object.assign(
@@ -571,8 +562,7 @@ export default class Model {
         );
     }
 
-    @action
-    clear() {
+    @action clear() {
         forIn(this.__originalAttributes, (value, key) => {
             this[key] = value;
         });
