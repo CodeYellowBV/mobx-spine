@@ -1,0 +1,19 @@
+{
+  "data": {
+    "id": 1,
+    "name": "Henk",
+    "town": null
+  },
+  "with": {
+    "town": [],
+    "restaurant": []
+  },
+  "meta": {
+    "total_records": 1
+  },
+  "with_mapping": {
+    "town": "town",
+    "town.restaurants": "restaurant",
+    "town.restaurants.chef": "cook"
+  }
+}

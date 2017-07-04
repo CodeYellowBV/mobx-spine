@@ -22,11 +22,17 @@ import {
 } from './fixtures/Animal';
 import { Customer, Location as CLocation } from './fixtures/Customer';
 import animalKindBreedData from './fixtures/animal-with-kind-breed.json';
-import animalsWithPastOwnersAndTownData from './fixtures/animals-with-past-owners-and-town.json';
-import animalKindBreedDataNested from './fixtures/animal-with-kind-breed-nested.json';
+import animalsWithPastOwnersAndTownData
+    from './fixtures/animals-with-past-owners-and-town.json';
+import animalKindBreedDataNested
+    from './fixtures/animal-with-kind-breed-nested.json';
 import animalMultiPutResponse from './fixtures/animals-multi-put-response.json';
-import customersWithTownCookRestaurant from './fixtures/customers-with-town-cook-restaurant.json';
-import customersLocationBestCookWorkPlaces from './fixtures/customers-location-best-cook-work-places.json';
+import customersWithTownCookRestaurant
+    from './fixtures/customers-with-town-cook-restaurant.json';
+import customerWithoutTownRestaurants
+    from './fixtures/customer-without-town-restaurants.json';
+import customersLocationBestCookWorkPlaces
+    from './fixtures/customers-location-best-cook-work-places.json';
 import saveFailData from './fixtures/save-fail.json';
 
 beforeEach(() => {
@@ -354,6 +360,20 @@ test('Parsing Store -> Model -> Store relation', () => {
         5,
         6,
     ]);
+});
+
+test('Parsing Model -> Model -> Store with a nullable fk', () => {
+    const customer = new Customer(null, {
+        relations: ['town.restaurants'],
+    });
+
+    customer.fromBackend({
+        data: customerWithoutTownRestaurants.data,
+        repos: customerWithoutTownRestaurants.with,
+        relMapping: customerWithoutTownRestaurants.with_mapping,
+    });
+
+    expect(customer.town.restaurants.length).toBe(0);
 });
 
 test('toBackend with basic properties', () => {
