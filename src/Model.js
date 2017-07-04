@@ -356,7 +356,11 @@ export default class Model {
             const repository = repos[repoName];
             relName = this.constructor.fromBackendAttrKey(relName);
 
-            if (targetRelName === relName && data) {
+            if (!data) {
+                return null;
+            }
+
+            if (targetRelName === relName) {
                 relevant = true;
                 const relKey = data[this.constructor.toBackendAttrKey(relName)];
                 scopedData = this.__parseRepositoryToData(relKey, repository);

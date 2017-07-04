@@ -154,6 +154,14 @@ test('get specific model (loose)', () => {
     expect(model.id).toBe(3);
 });
 
+test('get array of specific models', () => {
+    const animalStore = new AnimalStore();
+    animalStore.parse(simpleData);
+
+    const models = animalStore.getByIds([2, '3']);
+    expect(models.map(m => m.id)).toEqual([2, 3]);
+});
+
 test('map models', () => {
     const animalStore = new AnimalStore();
     animalStore.parse(simpleData);

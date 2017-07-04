@@ -27,6 +27,7 @@ import animalKindBreedDataNested from './fixtures/animal-with-kind-breed-nested.
 import animalMultiPutResponse from './fixtures/animals-multi-put-response.json';
 import animalMultiPutError from './fixtures/animals-multi-put-error.json';
 import customersWithTownCookRestaurant from './fixtures/customers-with-town-cook-restaurant.json';
+import customerWithoutTownRestaurants from './fixtures/customer-without-town-restaurants.json';
 import customersLocationBestCookWorkPlaces from './fixtures/customers-location-best-cook-work-places.json';
 import saveFailData from './fixtures/save-fail.json';
 import saveNewFailData from './fixtures/save-new-fail.json';
@@ -356,6 +357,20 @@ test('Parsing Store -> Model -> Store relation', () => {
         5,
         6,
     ]);
+});
+
+test('Parsing Model -> Model -> Store with a nullable fk', () => {
+    const customer = new Customer(null, {
+        relations: ['town.restaurants'],
+    });
+
+    customer.fromBackend({
+        data: customerWithoutTownRestaurants.data,
+        repos: customerWithoutTownRestaurants.with,
+        relMapping: customerWithoutTownRestaurants.with_mapping,
+    });
+
+    expect(customer.town.restaurants.length).toBe(0);
 });
 
 test('toBackend with basic properties', () => {
