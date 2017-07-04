@@ -601,6 +601,15 @@ var Store = (
                     },
                 },
                 {
+                    key: 'getByIds',
+                    value: function getByIds(ids) {
+                        return this.models.filter(function(model) {
+                            var id = model[model.constructor.primaryKey];
+                            return ids.includes(id) || ids.includes('' + id);
+                        });
+                    },
+                },
+                {
                     key: 'map',
                     value: function map$$1(predicate) {
                         return map(this.models, predicate);
@@ -1393,7 +1402,11 @@ var Model = (
                                     relName
                                 );
 
-                                if (targetRelName === relName && data) {
+                                if (!data) {
+                                    return null;
+                                }
+
+                                if (targetRelName === relName) {
                                     relevant = true;
                                     var relKey =
                                         data[
