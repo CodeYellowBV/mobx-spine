@@ -341,6 +341,14 @@
                         },
                     },
                     {
+                        key: 'clearValidationErrors',
+                        value: function clearValidationErrors() {
+                            this.each(function(model) {
+                                model.clearValidationErrors();
+                            });
+                        },
+                    },
+                    {
                         key: 'add',
                         value: function add(models) {
                             var _this2 = this;
@@ -1658,7 +1666,7 @@
                                     ? arguments[0]
                                     : {};
 
-                                this.__backendValidationErrors = {};
+                                this.clearValidationErrors();
                                 this.__pendingRequestCount += 1;
                                 // TODO: Allow data from an argument to be saved?
                                 return this.__getApi()
@@ -1697,7 +1705,7 @@
                                     ? arguments[0]
                                     : {};
 
-                                this.__backendValidationErrors = {};
+                                this.clearValidationErrors();
                                 this.__pendingRequestCount += 1;
                                 return this.__getApi()
                                     .saveAllModels({
@@ -1771,6 +1779,19 @@
                                     );
                                 });
                             },
+                        },
+                        {
+                            key: 'clearValidationErrors',
+                            value: function clearValidationErrors() {
+                                var _this12 = this;
+
+                                this.__backendValidationErrors = {};
+                                this.__activeCurrentRelations.forEach(function(
+                                    currentRel
+                                ) {
+                                    _this12[currentRel].clearValidationErrors();
+                                });
+                            },
 
                             // This is just a pass-through to make it easier to override parsing backend responses from the backend.
                             // Sometimes the backend won't return the model after a save because e.g. it is created async.
@@ -1786,7 +1807,7 @@
                         {
                             key: 'delete',
                             value: function _delete() {
-                                var _this12 = this;
+                                var _this13 = this;
 
                                 var options = arguments.length > 0 &&
                                     arguments[0] !== undefined
@@ -1794,8 +1815,8 @@
                                     : {};
 
                                 var removeFromStore = function removeFromStore() {
-                                    return _this12.__store
-                                        ? _this12.__store.remove(_this12)
+                                    return _this13.__store
+                                        ? _this13.__store.remove(_this13)
                                         : null;
                                 };
                                 if (options.immediate || this.isNew) {
@@ -1813,7 +1834,7 @@
                                     })
                                     .then(
                                         mobx.action(function() {
-                                            _this12.__pendingRequestCount -= 1;
+                                            _this13.__pendingRequestCount -= 1;
                                             if (!options.immediate) {
                                                 removeFromStore();
                                             }
@@ -1824,7 +1845,7 @@
                         {
                             key: 'fetch',
                             value: function fetch() {
-                                var _this13 = this;
+                                var _this14 = this;
 
                                 var options = arguments.length > 0 &&
                                     arguments[0] !== undefined
@@ -1845,8 +1866,8 @@
                                     .fetchModel({ url: this.url, data: data })
                                     .then(
                                         mobx.action(function(res) {
-                                            _this13.fromBackend(res);
-                                            _this13.__pendingRequestCount -= 1;
+                                            _this14.fromBackend(res);
+                                            _this14.__pendingRequestCount -= 1;
                                         })
                                     );
                             },
@@ -1854,19 +1875,19 @@
                         {
                             key: 'clear',
                             value: function clear() {
-                                var _this14 = this;
+                                var _this15 = this;
 
                                 lodash.forIn(
                                     this.__originalAttributes,
                                     function(value, key) {
-                                        _this14[key] = value;
+                                        _this15[key] = value;
                                     }
                                 );
 
                                 this.__activeCurrentRelations.forEach(function(
                                     currentRel
                                 ) {
-                                    _this14[currentRel].clear();
+                                    _this15[currentRel].clear();
                                 });
                             },
                         },
@@ -1994,6 +2015,26 @@
                 'saveAll',
                 [mobx.action],
                 Object.getOwnPropertyDescriptor(_class.prototype, 'saveAll'),
+                _class.prototype
+            ),
+            _applyDecoratedDescriptor(
+                _class.prototype,
+                'parseValidationErrors',
+                [mobx.action],
+                Object.getOwnPropertyDescriptor(
+                    _class.prototype,
+                    'parseValidationErrors'
+                ),
+                _class.prototype
+            ),
+            _applyDecoratedDescriptor(
+                _class.prototype,
+                'clearValidationErrors',
+                [mobx.action],
+                Object.getOwnPropertyDescriptor(
+                    _class.prototype,
+                    'clearValidationErrors'
+                ),
                 _class.prototype
             ),
             _applyDecoratedDescriptor(
