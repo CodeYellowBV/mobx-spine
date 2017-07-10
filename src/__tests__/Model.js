@@ -972,6 +972,43 @@ describe('requests', () => {
         );
     });
 
+    test('save all with validation errors and check if it clears them', () => {
+        const animal = new Animal(
+            {
+                name: 'Doggo',
+                pastOwners: [{ name: 'Jo', town: { id: 5, name: '' } }],
+            },
+            { relations: ['pastOwners.town'] }
+        );
+
+        // We first trigger a save with validation errors from the backend, then we trigger a second save which fixes those validation errors,
+        // then we check if the errors get cleared.
+        mock.onAny().replyOnce(config => {
+            return [400, animalMultiPutError];
+        });
+
+        const options = { relations: ['pastOwners.town'] };
+        return animal.saveAll(options).then(
+            () => {},
+            err => {
+                if (!err.response) {
+                    throw err;
+                }
+                mock.onAny().replyOnce(200, { idmap: [] });
+                return animal.saveAll(options).then(() => {
+                    const valErrors1 = toJS(
+                        animal.pastOwners.at(0).backendValidationErrors
+                    );
+                    expect(valErrors1).toEqual({});
+                    const valErrors2 = toJS(
+                        animal.pastOwners.at(0).town.backendValidationErrors
+                    );
+                    expect(valErrors2).toEqual({});
+                });
+            }
+        );
+    });
+
     test('save all with existing model', () => {
         const animal = new Animal(
             { id: 10, name: 'Doggo', kind: { name: 'Dog' } },

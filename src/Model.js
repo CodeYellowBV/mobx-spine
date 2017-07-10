@@ -471,7 +471,7 @@ export default class Model {
 
     @action
     save(options = {}) {
-        this.__backendValidationErrors = {};
+        this.clearValidationErrors();
         this.__pendingRequestCount += 1;
         // TODO: Allow data from an argument to be saved?
         return this.__getApi()
@@ -500,7 +500,7 @@ export default class Model {
 
     @action
     saveAll(options = {}) {
-        this.__backendValidationErrors = {};
+        this.clearValidationErrors();
         this.__pendingRequestCount += 1;
         return this.__getApi()
             .saveAllModels({
@@ -525,6 +525,7 @@ export default class Model {
             );
     }
 
+    @action
     parseValidationErrors(valErrors) {
         const bname = this.constructor.backendResourceName;
 
@@ -551,6 +552,14 @@ export default class Model {
 
         this.__activeCurrentRelations.forEach(currentRel => {
             this[currentRel].parseValidationErrors(valErrors);
+        });
+    }
+
+    @action
+    clearValidationErrors() {
+        this.__backendValidationErrors = {};
+        this.__activeCurrentRelations.forEach(currentRel => {
+            this[currentRel].clearValidationErrors();
         });
     }
 

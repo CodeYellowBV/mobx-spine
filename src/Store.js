@@ -167,6 +167,12 @@ export default class Store {
         });
     }
 
+    clearValidationErrors() {
+        this.each(model => {
+            model.clearValidationErrors();
+        });
+    }
+
     @action
     add(models) {
         const singular = !isArray(models);
