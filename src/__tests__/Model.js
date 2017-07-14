@@ -749,6 +749,22 @@ test('fetch without url', () => {
     );
 });
 
+test('setInput to clear backend validation errors', () => {
+    const animal = new Animal();
+    animal.__backendValidationErrors = { name: ['required'] };
+    expect(toJS(animal.backendValidationErrors.name)).toEqual(['required']);
+    animal.setInput('name', 'Jo');
+    expect(animal.name).toBe('Jo');
+    expect(animal.backendValidationErrors.name).toBe(undefined);
+});
+
+test('setInput on non-existing field', () => {
+    const animal = new Animal();
+    expect(() => {
+        return animal.setInput('asdf', 'Jo');
+    }).toThrow('Attribute `asdf` does not exist on the model.');
+});
+
 describe('requests', () => {
     let mock;
     beforeEach(() => {

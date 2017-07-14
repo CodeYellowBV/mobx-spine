@@ -499,6 +499,21 @@ export default class Model {
     }
 
     @action
+    setInput(name, value) {
+        invariant(
+            this.__attributes.includes(name),
+            `Attribute \`${name}\` does not exist on the model.`
+        );
+        this[name] = value;
+        if (this.backendValidationErrors[name]) {
+            this.__backendValidationErrors = Object.assign(
+                this.backendValidationErrors,
+                { [name]: undefined }
+            );
+        }
+    }
+
+    @action
     saveAll(options = {}) {
         this.clearValidationErrors();
         this.__pendingRequestCount += 1;
