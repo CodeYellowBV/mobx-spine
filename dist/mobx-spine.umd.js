@@ -72,6 +72,21 @@
         };
     })();
 
+    var defineProperty = function(obj, key, value) {
+        if (key in obj) {
+            Object.defineProperty(obj, key, {
+                value: value,
+                enumerable: true,
+                configurable: true,
+                writable: true,
+            });
+        } else {
+            obj[key] = value;
+        }
+
+        return obj;
+    };
+
     var _class$1;
     var _descriptor$1;
     var _descriptor2$1;
@@ -1696,6 +1711,24 @@
                             },
                         },
                         {
+                            key: 'setInput',
+                            value: function setInput(name, value) {
+                                invariant(
+                                    this.__attributes.includes(name),
+                                    'Attribute `' +
+                                        name +
+                                        '` does not exist on the model.'
+                                );
+                                this[name] = value;
+                                if (this.backendValidationErrors[name]) {
+                                    this.__backendValidationErrors = Object.assign(
+                                        this.backendValidationErrors,
+                                        defineProperty({}, name, undefined)
+                                    );
+                                }
+                            },
+                        },
+                        {
                             key: 'saveAll',
                             value: function saveAll() {
                                 var _this10 = this;
@@ -2008,6 +2041,13 @@
                 'save',
                 [mobx.action],
                 Object.getOwnPropertyDescriptor(_class.prototype, 'save'),
+                _class.prototype
+            ),
+            _applyDecoratedDescriptor(
+                _class.prototype,
+                'setInput',
+                [mobx.action],
+                Object.getOwnPropertyDescriptor(_class.prototype, 'setInput'),
                 _class.prototype
             ),
             _applyDecoratedDescriptor(
