@@ -6,6 +6,7 @@ import {
     find,
     sortBy,
     forIn,
+    omit,
     isPlainObject,
     result,
     uniqBy,
@@ -239,7 +240,11 @@ export default class Store {
             options.data
         );
         return this.__getApi()
-            .fetchStore({ url: result(this, 'url'), data })
+            .fetchStore({
+                url: result(this, 'url'),
+                data,
+                requestOptions: omit(options, 'data'),
+            })
             .then(
                 action(res => {
                     this.__pendingRequestCount -= 1;

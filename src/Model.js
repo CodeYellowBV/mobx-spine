@@ -17,6 +17,7 @@ import {
     get,
     isPlainObject,
     isArray,
+    omit,
     uniqueId,
     uniq,
     uniqBy,
@@ -623,12 +624,18 @@ export default class Model {
             this.__fetchParams,
             options.data
         );
-        return this.__getApi().fetchModel({ url: this.url, data }).then(
-            action(res => {
-                this.fromBackend(res);
-                this.__pendingRequestCount -= 1;
+        return this.__getApi()
+            .fetchModel({
+                url: this.url,
+                data,
+                requestOptions: omit(options, 'data'),
             })
-        );
+            .then(
+                action(res => {
+                    this.fromBackend(res);
+                    this.__pendingRequestCount -= 1;
+                })
+            );
     }
 
     @action

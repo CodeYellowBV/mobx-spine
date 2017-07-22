@@ -101,8 +101,8 @@ export default class BinderApi {
         };
     }
 
-    fetchModel({ url, data }) {
-        return this.get(url, data).then(res => {
+    fetchModel({ url, data, requestOptions }) {
+        return this.get(url, data, requestOptions).then(res => {
             return {
                 data: res.data,
                 repos: res.with,
@@ -170,8 +170,8 @@ export default class BinderApi {
         };
     }
 
-    fetchStore({ url, data }) {
-        return this.get(url, data).then(res => {
+    fetchStore({ url, data, requestOptions }) {
+        return this.get(url, data, requestOptions).then(res => {
             return {
                 data: res.data,
                 repos: res.with,

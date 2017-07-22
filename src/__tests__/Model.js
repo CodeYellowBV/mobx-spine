@@ -2,7 +2,7 @@ import axios from 'axios';
 import { toJS, observable } from 'mobx';
 import MockAdapter from 'axios-mock-adapter';
 import _ from 'lodash';
-import { Model } from '../';
+import { Model, BinderApi } from '../';
 import {
     Animal,
     AnimalStore,
@@ -841,6 +841,26 @@ describe('requests', () => {
         });
 
         return animal.fetch();
+    });
+
+    test('fetch should pass through request options', () => {
+        const myApi = new BinderApi();
+        mock.onAny().replyOnce(200, {});
+        const spy = jest.spyOn(myApi, 'get');
+        class Zebra extends Model {
+            static backendResourceName = 'zebra';
+            api = myApi;
+            @observable id = null;
+        }
+
+        const zebra = new Zebra({ id: 1 });
+
+        zebra.fetch({ skipRequestErrors: true });
+        expect(spy).toHaveBeenCalledWith(
+            '/zebra/1/',
+            { with: null },
+            { skipRequestErrors: true }
+        );
     });
 
     test('fetch with auto-generated URL', () => {
