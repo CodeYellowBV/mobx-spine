@@ -20,6 +20,7 @@ import {
     map,
     mapKeys,
     mapValues,
+    omit,
     result,
     sortBy,
     uniq,
@@ -461,6 +462,7 @@ var Store = (
                             .fetchStore({
                                 url: result(this, 'url'),
                                 data: data,
+                                requestOptions: omit(options, 'data'),
                             })
                             .then(
                                 action(function(res) {
@@ -1814,7 +1816,11 @@ var Model = (
                                 options.data
                             );
                             return this.__getApi()
-                                .fetchModel({ url: this.url, data: data })
+                                .fetchModel({
+                                    url: this.url,
+                                    data: data,
+                                    requestOptions: omit(options, 'data'),
+                                })
                                 .then(
                                     action(function(res) {
                                         _this14.fromBackend(res);
@@ -2154,9 +2160,10 @@ var BinderApi = (function() {
             key: 'fetchModel',
             value: function fetchModel(_ref) {
                 var url = _ref.url,
-                    data = _ref.data;
+                    data = _ref.data,
+                    requestOptions = _ref.requestOptions;
 
-                return this.get(url, data).then(function(res) {
+                return this.get(url, data, requestOptions).then(function(res) {
                     return {
                         data: res.data,
                         repos: res.with,
@@ -2260,9 +2267,10 @@ var BinderApi = (function() {
             key: 'fetchStore',
             value: function fetchStore(_ref5) {
                 var url = _ref5.url,
-                    data = _ref5.data;
+                    data = _ref5.data,
+                    requestOptions = _ref5.requestOptions;
 
-                return this.get(url, data).then(function(res) {
+                return this.get(url, data, requestOptions).then(function(res) {
                     return {
                         data: res.data,
                         repos: res.with,
