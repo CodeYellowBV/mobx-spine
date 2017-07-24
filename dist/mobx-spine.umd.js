@@ -2164,16 +2164,20 @@
                         params: method === 'get' && data
                             ? data
                             : options.params,
-                        headers: Object.assign(
-                            {
-                                'Content-Type': 'application/json',
-                                'X-Csrftoken': useCsrfToken,
-                            },
-                            this.defaultHeaders
-                        ),
                     };
 
                     Object.assign(axiosOptions, options);
+
+                    // Don't clear existing headers when adding `options.headers`
+                    var headers = Object.assign(
+                        {
+                            'Content-Type': 'application/json',
+                            'X-Csrftoken': useCsrfToken,
+                        },
+                        this.defaultHeaders,
+                        options.headers
+                    );
+                    axiosOptions.headers = headers;
 
                     var xhr = axios(axiosOptions);
 
