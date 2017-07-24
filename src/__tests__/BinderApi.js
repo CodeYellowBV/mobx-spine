@@ -37,7 +37,7 @@ test('GET request with params', () => {
     return new BinderApi().get('/api/asdf/', { foo: 'bar' });
 });
 
-test('GET request with headers', () => {
+test('GET request with default headers', () => {
     mock.onAny().replyOnce(config => {
         expect(config.headers['X-Foo']).toBe('bar');
         return [200, {}];
@@ -46,6 +46,24 @@ test('GET request with headers', () => {
     const api = new BinderApi();
     api.defaultHeaders['X-Foo'] = 'bar';
     return api.get('/api/asdf/');
+});
+
+test('GET request with custom Content-Type', () => {
+    mock.onAny().replyOnce(config => {
+        expect(config.headers).toEqual({
+            Accept: 'application/json, text/plain, */*',
+            'Content-Type': 'multipart/form-data',
+            'X-Foo': 'bar',
+        });
+        return [200, {}];
+    });
+
+    const api = new BinderApi();
+    // Also add a default header to verify that the header is not overridden
+    api.defaultHeaders['X-Foo'] = 'bar';
+    return api.get('/api/asdf/', null, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
 });
 
 test('GET request without trailing slash', () => {

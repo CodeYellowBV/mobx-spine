@@ -34,16 +34,20 @@ export default class BinderApi {
             url,
             data: method !== 'get' && data ? data : undefined,
             params: method === 'get' && data ? data : options.params,
-            headers: Object.assign(
-                {
-                    'Content-Type': 'application/json',
-                    'X-Csrftoken': useCsrfToken,
-                },
-                this.defaultHeaders
-            ),
         };
 
         Object.assign(axiosOptions, options);
+
+        // Don't clear existing headers when adding `options.headers`
+        const headers = Object.assign(
+            {
+                'Content-Type': 'application/json',
+                'X-Csrftoken': useCsrfToken,
+            },
+            this.defaultHeaders,
+            options.headers
+        );
+        axiosOptions.headers = headers;
 
         const xhr = axios(axiosOptions);
 
