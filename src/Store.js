@@ -313,14 +313,14 @@ export default class Store {
     @action
     setPage(page = 1, options = {}) {
         invariant(Number.isInteger(page), 'Page should be a number.');
-        invariant(
-            page <= this.totalPages && page >= 1,
-            `Page should be between 1 and ${this.totalPages}.`
-        );
         this.__state.currentPage = page;
         if (options.fetch === undefined || options.fetch) {
             return this.fetch();
         }
+        invariant(
+            page <= this.totalPages && page >= 1,
+            `Page should be between 1 and ${this.totalPages}.`
+        );
         return Promise.resolve();
     }
 
