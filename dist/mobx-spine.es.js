@@ -534,19 +534,19 @@ var Store = (
                             : {};
 
                         invariant(
-                            Number.isInteger(page),
-                            'Page should be a number.'
-                        );
-                        invariant(
-                            page <= this.totalPages && page >= 1,
-                            'Page should be between 1 and ' +
-                                this.totalPages +
-                                '.'
+                            Number.isInteger(page) && page >= 1,
+                            'Page should be a number above 1.'
                         );
                         this.__state.currentPage = page;
                         if (options.fetch === undefined || options.fetch) {
                             return this.fetch();
                         }
+                        invariant(
+                            page <= this.totalPages,
+                            'Page should be between 1 and ' +
+                                this.totalPages +
+                                '.'
+                        );
                         return Promise.resolve();
                     },
                 },
