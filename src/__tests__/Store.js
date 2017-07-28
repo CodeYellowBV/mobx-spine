@@ -810,7 +810,7 @@ describe('Pagination', () => {
         const animalStore = new AnimalStore();
 
         expect(() => animalStore.setPage('')).toThrow(
-            'Page should be a number.'
+            'Page should be a number above 1.'
         );
     });
 
@@ -818,7 +818,7 @@ describe('Pagination', () => {
         const animalStore = new AnimalStore();
 
         expect(() => animalStore.setPage(0)).toThrow(
-            'Page should be between 1 and 0.'
+            'Page should be a number above 1.'
         );
     });
 
@@ -832,7 +832,7 @@ describe('Pagination', () => {
         });
 
         return animalStore.fetch().then(() => {
-            expect(() => animalStore.setPage(5)).toThrow(
+            expect(() => animalStore.setPage(5, { fetch: false })).toThrow(
                 'Page should be between 1 and 4.'
             );
         });
