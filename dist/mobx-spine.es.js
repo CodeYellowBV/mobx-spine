@@ -1611,8 +1611,8 @@ var Model = (
                                 .saveModel({
                                     url: options.url || this.url,
                                     data: this.toBackend(),
-                                    params: options.params,
                                     isNew: this.isNew,
+                                    requestOptions: omit(options, 'url'),
                                 })
                                 .then(
                                     action(function(res) {
@@ -1670,6 +1670,7 @@ var Model = (
                                     data: this.toBackendAll(null, {
                                         relations: options.relations,
                                     }),
+                                    requestOptions: omit(options, 'relations'),
                                 })
                                 .then(
                                     action(function(res) {
@@ -1819,7 +1820,10 @@ var Model = (
                                 .fetchModel({
                                     url: options.url || this.url,
                                     data: data,
-                                    requestOptions: omit(options, 'data'),
+                                    requestOptions: omit(options, [
+                                        'data',
+                                        'url',
+                                    ]),
                                 })
                                 .then(
                                     action(function(res) {
@@ -2181,11 +2185,11 @@ var BinderApi = (function() {
             value: function saveModel(_ref2) {
                 var url = _ref2.url,
                     data = _ref2.data,
-                    params = _ref2.params,
-                    isNew = _ref2.isNew;
+                    isNew = _ref2.isNew,
+                    requestOptions = _ref2.requestOptions;
 
                 var method = isNew ? 'post' : 'patch';
-                return this[method](url, data, { params: params })
+                return this[method](url, data, requestOptions)
                     .then(function(newData) {
                         return { data: newData };
                     })
@@ -2204,12 +2208,17 @@ var BinderApi = (function() {
             value: function saveAllModels(_ref3) {
                 var url = _ref3.url,
                     data = _ref3.data,
-                    model = _ref3.model;
+                    model = _ref3.model,
+                    requestOptions = _ref3.requestOptions;
 
-                return this.put(url, {
-                    data: data.data,
-                    with: data.relations,
-                })
+                return this.put(
+                    url,
+                    {
+                        data: data.data,
+                        with: data.relations,
+                    },
+                    requestOptions
+                )
                     .then(function(res) {
                         // TODO: I really dislike this, but at the moment Binder doesn't return all models after saving the data.
                         // Instead, it only returns an ID map to map the negative fake IDs to real ones.
