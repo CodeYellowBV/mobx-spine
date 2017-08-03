@@ -115,9 +115,9 @@ export default class BinderApi {
         });
     }
 
-    saveModel({ url, data, params, isNew }) {
+    saveModel({ url, data, isNew, requestOptions }) {
         const method = isNew ? 'post' : 'patch';
-        return this[method](url, data, { params })
+        return this[method](url, data, requestOptions)
             .then(newData => {
                 return { data: newData };
             })
@@ -129,11 +129,15 @@ export default class BinderApi {
             });
     }
 
-    saveAllModels({ url, data, model }) {
-        return this.put(url, {
-            data: data.data,
-            with: data.relations,
-        })
+    saveAllModels({ url, data, model, requestOptions }) {
+        return this.put(
+            url,
+            {
+                data: data.data,
+                with: data.relations,
+            },
+            requestOptions
+        )
             .then(res => {
                 // TODO: I really dislike this, but at the moment Binder doesn't return all models after saving the data.
                 // Instead, it only returns an ID map to map the negative fake IDs to real ones.

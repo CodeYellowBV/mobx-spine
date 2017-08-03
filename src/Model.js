@@ -479,8 +479,8 @@ export default class Model {
             .saveModel({
                 url: options.url || this.url,
                 data: this.toBackend(),
-                params: options.params,
                 isNew: this.isNew,
+                requestOptions: omit(options, 'url'),
             })
             .then(
                 action(res => {
@@ -523,6 +523,7 @@ export default class Model {
                 url: result(this, 'urlRoot'),
                 model: this,
                 data: this.toBackendAll(null, { relations: options.relations }),
+                requestOptions: omit(options, 'relations'),
             })
             .then(
                 action(res => {
@@ -631,7 +632,7 @@ export default class Model {
             .fetchModel({
                 url: options.url || this.url,
                 data,
-                requestOptions: omit(options, 'data'),
+                requestOptions: omit(options, ['data', 'url']),
             })
             .then(
                 action(res => {
