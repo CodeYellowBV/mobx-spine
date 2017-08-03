@@ -477,7 +477,7 @@ export default class Model {
         // TODO: Allow data from an argument to be saved?
         return this.__getApi()
             .saveModel({
-                url: this.url,
+                url: options.url || this.url,
                 data: this.toBackend(),
                 params: options.params,
                 isNew: this.isNew,
@@ -604,7 +604,10 @@ export default class Model {
 
         this.__pendingRequestCount += 1;
         return this.__getApi()
-            .deleteModel({ url: this.url, params: options.params })
+            .deleteModel({
+                url: options.url || this.url,
+                params: options.params,
+            })
             .then(
                 action(() => {
                     this.__pendingRequestCount -= 1;
@@ -626,7 +629,7 @@ export default class Model {
         );
         return this.__getApi()
             .fetchModel({
-                url: this.url,
+                url: options.url || this.url,
                 data,
                 requestOptions: omit(options, 'data'),
             })

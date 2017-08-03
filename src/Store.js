@@ -241,7 +241,7 @@ export default class Store {
         );
         return this.__getApi()
             .fetchStore({
-                url: result(this, 'url'),
+                url: options.url || result(this, 'url'),
                 data,
                 requestOptions: omit(options, 'data'),
             })
