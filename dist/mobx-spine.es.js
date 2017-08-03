@@ -460,7 +460,7 @@ var Store = (
                         );
                         return this.__getApi()
                             .fetchStore({
-                                url: result(this, 'url'),
+                                url: options.url || result(this, 'url'),
                                 data: data,
                                 requestOptions: omit(options, 'data'),
                             })
@@ -1609,7 +1609,7 @@ var Model = (
                             // TODO: Allow data from an argument to be saved?
                             return this.__getApi()
                                 .saveModel({
-                                    url: this.url,
+                                    url: options.url || this.url,
                                     data: this.toBackend(),
                                     params: options.params,
                                     isNew: this.isNew,
@@ -1782,7 +1782,7 @@ var Model = (
                             this.__pendingRequestCount += 1;
                             return this.__getApi()
                                 .deleteModel({
-                                    url: this.url,
+                                    url: options.url || this.url,
                                     params: options.params,
                                 })
                                 .then(
@@ -1817,7 +1817,7 @@ var Model = (
                             );
                             return this.__getApi()
                                 .fetchModel({
-                                    url: this.url,
+                                    url: options.url || this.url,
                                     data: data,
                                     requestOptions: omit(options, 'data'),
                                 })

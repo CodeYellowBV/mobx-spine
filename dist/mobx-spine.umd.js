@@ -458,7 +458,9 @@
                             );
                             return this.__getApi()
                                 .fetchStore({
-                                    url: lodash.result(this, 'url'),
+                                    url:
+                                        options.url ||
+                                            lodash.result(this, 'url'),
                                     data: data,
                                     requestOptions: lodash.omit(
                                         options,
@@ -1690,7 +1692,7 @@
                                 // TODO: Allow data from an argument to be saved?
                                 return this.__getApi()
                                     .saveModel({
-                                        url: this.url,
+                                        url: options.url || this.url,
                                         data: this.toBackend(),
                                         params: options.params,
                                         isNew: this.isNew,
@@ -1866,7 +1868,7 @@
                                 this.__pendingRequestCount += 1;
                                 return this.__getApi()
                                     .deleteModel({
-                                        url: this.url,
+                                        url: options.url || this.url,
                                         params: options.params,
                                     })
                                     .then(
@@ -1901,7 +1903,7 @@
                                 );
                                 return this.__getApi()
                                     .fetchModel({
-                                        url: this.url,
+                                        url: options.url || this.url,
                                         data: data,
                                         requestOptions: lodash.omit(
                                             options,
