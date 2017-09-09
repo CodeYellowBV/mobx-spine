@@ -54,7 +54,11 @@ export default {
             }
             invariant(
                 false,
-                `Value set to attribute \`${attr}\`, ${JSON.stringify(value)}, is not one of the allowed enum: ${JSON.stringify(expectedValues)}`
+                `Value set to attribute \`${attr}\`, ${JSON.stringify(
+                    value
+                )}, is not one of the allowed enum: ${JSON.stringify(
+                    expectedValues
+                )}`
             );
         }
         return {

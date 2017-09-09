@@ -26,7 +26,8 @@ export default class Store {
     // Holds the fetch parameters
     @observable params = {};
     @observable __pendingRequestCount = 0;
-    @observable __state = {
+    @observable
+    __state = {
         currentPage: 1,
         limit: 25,
         totalRecords: 0,

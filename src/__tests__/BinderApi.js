@@ -170,10 +170,13 @@ test('Failing request without onRequestError', () => {
     const api = new BinderApi();
     api.__responseFormatter = jest.fn();
 
-    return api.delete('/api/asdf/').catch(() => errorHandle()).then(() => {
-        expect(api.__responseFormatter).not.toHaveBeenCalled();
-        expect(errorHandle).toHaveBeenCalled();
-    });
+    return api
+        .delete('/api/asdf/')
+        .catch(() => errorHandle())
+        .then(() => {
+            expect(api.__responseFormatter).not.toHaveBeenCalled();
+            expect(errorHandle).toHaveBeenCalled();
+        });
 });
 
 test('Failing request with onRequestError', () => {
@@ -187,11 +190,14 @@ test('Failing request with onRequestError', () => {
     api.__responseFormatter = jest.fn();
     api.onRequestError = jest.fn();
 
-    return api.delete('/api/asdf/').catch(() => errorHandle()).then(() => {
-        expect(api.onRequestError).toHaveBeenCalled();
-        expect(api.__responseFormatter).not.toHaveBeenCalled();
-        expect(errorHandle).toHaveBeenCalled();
-    });
+    return api
+        .delete('/api/asdf/')
+        .catch(() => errorHandle())
+        .then(() => {
+            expect(api.onRequestError).toHaveBeenCalled();
+            expect(api.__responseFormatter).not.toHaveBeenCalled();
+            expect(errorHandle).toHaveBeenCalled();
+        });
 });
 
 test('Failing request with onRequestError and skipRequestError option', () => {

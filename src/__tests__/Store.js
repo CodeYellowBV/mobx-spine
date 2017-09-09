@@ -132,10 +132,12 @@ test('Store -> Store relation', () => {
     });
 
     expect(customerStore.at(0).oldTowns.map('id')).toEqual([1, 2]);
-    expect(customerStore.at(0).oldTowns.at(0).restaurants.map('id')).toEqual([
-        10,
-        20,
-    ]);
+    expect(
+        customerStore
+            .at(0)
+            .oldTowns.at(0)
+            .restaurants.map('id')
+    ).toEqual([10, 20]);
 });
 
 test('get specific model', () => {
