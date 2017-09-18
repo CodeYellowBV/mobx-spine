@@ -480,7 +480,6 @@ export default class Model {
     save(options = {}) {
         this.clearValidationErrors();
         this.__pendingRequestCount += 1;
-        // TODO: Allow data from an argument to be saved?
         return this.__getApi()
             .saveModel({
                 url: options.url || this.url,
