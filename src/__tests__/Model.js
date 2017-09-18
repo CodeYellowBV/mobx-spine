@@ -408,6 +408,25 @@ test('toBackend with relations', () => {
     });
 });
 
+test('toBackend with specified attributes & relations', () => {
+    const animal = new Animal(
+        {
+            id: 4,
+            name: 'Donkey',
+        },
+        { relations: ['kind', 'owner'] }
+    );
+
+    animal.kind.id = 8;
+
+    const serialized = animal.toBackend({ fields: ['id', 'kind'] });
+
+    expect(serialized).toEqual({
+        id: 4,
+        kind: 8,
+    });
+});
+
 test('toBackend with store relation', () => {
     const animal = new Animal(
         {

@@ -204,9 +204,13 @@ export default class Model {
         return snakeToCamel(attrKey);
     }
 
-    toBackend() {
+    toBackend(options = {}) {
         const output = {};
-        this.__attributes.forEach(attr => {
+        // By default we'll include all fields (attributes+relations), but sometimes you might want to specify the fields to be included.
+        const fieldFilter = field => {
+            return options.fields ? options.fields.includes(field) : true;
+        };
+        this.__attributes.filter(fieldFilter).forEach(attr => {
             if (!attr.startsWith('_')) {
                 output[
                     this.constructor.toBackendAttrKey(attr)
@@ -214,18 +218,20 @@ export default class Model {
             }
         });
         // Add active relations as id.
-        this.__activeCurrentRelations.forEach(currentRel => {
-            const rel = this[currentRel];
-            const relBackendName = this.constructor.toBackendAttrKey(
-                currentRel
-            );
-            if (rel instanceof Model) {
-                output[relBackendName] = rel[rel.constructor.primaryKey];
-            }
-            if (rel instanceof Store) {
-                output[relBackendName] = rel.mapByPrimaryKey();
-            }
-        });
+        this.__activeCurrentRelations
+            .filter(fieldFilter)
+            .forEach(currentRel => {
+                const rel = this[currentRel];
+                const relBackendName = this.constructor.toBackendAttrKey(
+                    currentRel
+                );
+                if (rel instanceof Model) {
+                    output[relBackendName] = rel[rel.constructor.primaryKey];
+                }
+                if (rel instanceof Store) {
+                    output[relBackendName] = rel.mapByPrimaryKey();
+                }
+            });
         return output;
     }
 
@@ -478,7 +484,7 @@ export default class Model {
         return this.__getApi()
             .saveModel({
                 url: options.url || this.url,
-                data: this.toBackend(),
+                data: this.toBackend({ fields: options.fields }),
                 isNew: this.isNew,
                 requestOptions: omit(options, 'url'),
             })
