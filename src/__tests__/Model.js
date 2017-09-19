@@ -781,7 +781,33 @@ test('setInput on non-existing field', () => {
     const animal = new Animal();
     expect(() => {
         return animal.setInput('asdf', 'Jo');
-    }).toThrow('Attribute `asdf` does not exist on the model.');
+    }).toThrow('Field `asdf` does not exist on the model.');
+});
+
+test('setInput to parse model relation', () => {
+    const animal = new Animal(null, { relations: ['kind'] });
+    const kind = new Kind({ id: 100 });
+    animal.__backendValidationErrors = { kind: ['required'] };
+    animal.setInput('kind', kind);
+    expect(animal.kind.id).toBe(100);
+    // it should parse to a new model, not the existing one
+    expect(animal.kind.cid).not.toBe(kind.cid);
+    expect(animal.backendValidationErrors.kind).toBe(undefined);
+
+    animal.setInput('kind', null);
+    expect(animal.kind.id).toBe(null);
+});
+
+test('setInput to parse store relation', () => {
+    const animal = new Animal(null, { relations: ['pastOwners'] });
+    const pastOwners = [new Person({ id: 2 }), new Person({ id: 3 })];
+
+    animal.setInput('pastOwners', pastOwners);
+    expect(animal.pastOwners.map('id')).toEqual([2, 3]);
+    expect(animal.pastOwners.at(0).cid).not.toBe(pastOwners[0].cid);
+
+    animal.setInput('pastOwners', null);
+    expect(animal.pastOwners.length).toBe(0);
 });
 
 describe('requests', () => {

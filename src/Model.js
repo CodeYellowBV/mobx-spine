@@ -507,10 +507,22 @@ export default class Model {
     @action
     setInput(name, value) {
         invariant(
-            this.__attributes.includes(name),
-            `Attribute \`${name}\` does not exist on the model.`
+            this.__attributes.includes(name) ||
+                this.__activeCurrentRelations.includes(name),
+            `Field \`${name}\` does not exist on the model.`
         );
-        this[name] = value;
+        if (this.__activeCurrentRelations.includes(name)) {
+            if (isArray(value)) {
+                this[name].clear();
+                this[name].add(value.map(v => v.toJS()));
+            } else if (value) {
+                this[name].parse(value.toJS());
+            } else {
+                this[name].clear();
+            }
+        } else {
+            this[name] = value;
+        }
         if (this.backendValidationErrors[name]) {
             this.__backendValidationErrors = Object.assign(
                 this.backendValidationErrors,
