@@ -3,7 +3,7 @@ const babel = require('rollup-plugin-babel');
 
 rollup
     .rollup({
-        entry: './src/index.js',
+        input: './src/index.js',
         external: ['lodash', 'mobx', 'axios', 'moment'],
         plugins: [
             babel({
@@ -14,13 +14,13 @@ rollup
     .then(bundle => {
         bundle.write({
             format: 'es',
-            dest: 'dist/mobx-spine.es.js',
+            file: 'dist/mobx-spine.es.js',
         });
         bundle.write({
             format: 'umd',
             moduleId: 'mobx-spine',
-            moduleName: 'mobxSpine',
-            dest: 'dist/mobx-spine.umd.js',
+            name: 'mobxSpine',
+            file: 'dist/mobx-spine.umd.js',
             globals: {
                 lodash: '_',
                 mobx: 'mobx',
