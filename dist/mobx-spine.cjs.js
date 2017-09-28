@@ -1,34 +1,15 @@
-import {
-    action,
-    autorun,
-    computed,
-    extendObservable,
-    isObservable,
-    isObservableArray,
-    isObservableObject,
-    observable,
-    toJS,
-} from 'mobx';
-import {
-    each,
-    filter,
-    find,
-    forIn,
-    get,
-    isArray,
-    isPlainObject,
-    map,
-    mapKeys,
-    mapValues,
-    omit,
-    result,
-    sortBy,
-    uniq,
-    uniqBy,
-    uniqueId,
-} from 'lodash';
-import axios from 'axios';
-import moment from 'moment';
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+function _interopDefault(ex) {
+    return ex && typeof ex === 'object' && 'default' in ex ? ex['default'] : ex;
+}
+
+var mobx = require('mobx');
+var lodash = require('lodash');
+var axios = _interopDefault(require('axios'));
+var moment = _interopDefault(require('moment'));
 
 function invariant(condition) {
     var message =
@@ -345,10 +326,10 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         this.api = null;
 
         invariant(
-            isPlainObject(options),
+            lodash.isPlainObject(options),
             'Store only accepts an object with options. Chain `.parse(data)` to add models.'
         );
-        forIn(options, function(value, option) {
+        lodash.forIn(options, function(value, option) {
             invariant(
                 AVAILABLE_CONST_OPTIONS.includes(option),
                 'Unknown option passed to store: ' + option
@@ -382,7 +363,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                     'You are trying to perform a API request without an `api` property defined on the store.'
                 );
                 invariant(
-                    result(this, 'url'),
+                    lodash.result(this, 'url'),
                     'You are trying to perform a API request without an `url` property defined on the store.'
                 );
                 return this.api;
@@ -436,7 +417,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                         : {};
 
                 invariant(
-                    isPlainObject(options),
+                    lodash.isPlainObject(options),
                     'Expecting a plain object for options.'
                 );
                 if (!this.comparator) {
@@ -454,7 +435,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
             key: 'parse',
             value: function parse(models) {
                 invariant(
-                    isArray(models),
+                    lodash.isArray(models),
                     'Parameter supplied to `parse()` is not an array, got: ' +
                         JSON.stringify(models)
                 );
@@ -485,7 +466,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
             value: function add(models) {
                 var _this2 = this;
 
-                var singular = !isArray(models);
+                var singular = !lodash.isArray(models);
                 models = singular ? [models] : models.slice();
 
                 var modelInstances = models.map(this._newModel.bind(this));
@@ -510,7 +491,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
             value: function remove(models) {
                 var _this3 = this;
 
-                var singular = !isArray(models);
+                var singular = !lodash.isArray(models);
                 models = singular ? [models] : models.slice();
 
                 models.forEach(function(model) {
@@ -525,7 +506,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
             value: function removeById(ids) {
                 var _this4 = this;
 
-                var singular = !isArray(ids);
+                var singular = !lodash.isArray(ids);
                 ids = singular ? [ids] : ids.slice();
                 invariant(
                     !ids.some(isNaN),
@@ -570,12 +551,12 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                 );
                 return this.__getApi()
                     .fetchStore({
-                        url: options.url || result(this, 'url'),
+                        url: options.url || lodash.result(this, 'url'),
                         data: data,
-                        requestOptions: omit(options, 'data'),
+                        requestOptions: lodash.omit(options, 'data'),
                     })
                     .then(
-                        action(function(res) {
+                        mobx.action(function(res) {
                             _this5.__pendingRequestCount -= 1;
                             _this5.__state.totalRecords = res.totalRecords;
                             _this5.fromBackend(res);
@@ -678,12 +659,12 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
 
                 modelData.forEach(function(model) {
                     data = data.concat(model.data);
-                    forIn(model.relations, function(relModel, key) {
+                    lodash.forIn(model.relations, function(relModel, key) {
                         relations[key] = relations[key]
                             ? relations[key].concat(relModel)
                             : relModel;
                         // TODO: this primaryKey is not the primaryKey of the relation we're de-duplicating...
-                        relations[key] = uniqBy(
+                        relations[key] = lodash.uniqBy(
                             relations[key],
                             _this6.Model.primaryKey
                         );
@@ -709,7 +690,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                     comparator: comparator,
                 });
                 // Oh gawd MobX is so awesome.
-                var events = autorun(function() {
+                var events = mobx.autorun(function() {
                     var models = _this7.filter(filter$$1);
                     store.models.replace(models);
                     store.sort();
@@ -743,7 +724,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         {
             key: 'map',
             value: function map$$1(predicate) {
-                return map(this.models, predicate);
+                return lodash.map(this.models, predicate);
             },
         },
         {
@@ -755,13 +736,13 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         {
             key: 'filter',
             value: function filter$$1(predicate) {
-                return filter(this.models, predicate);
+                return lodash.filter(this.models, predicate);
             },
         },
         {
             key: 'find',
             value: function find$$1(predicate) {
-                return find(this.models, predicate);
+                return lodash.find(this.models, predicate);
             },
         },
         {
@@ -773,7 +754,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         {
             key: 'sortBy',
             value: function sortBy$$1(iteratees) {
-                return sortBy(this.models, iteratees);
+                return lodash.sortBy(this.models, iteratees);
             },
         },
         {
@@ -831,7 +812,7 @@ _temp$1)),
 ((_descriptor$1 = _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'models',
-    [observable],
+    [mobx.observable],
     {
         enumerable: true,
         initializer: function initializer() {
@@ -842,7 +823,7 @@ _temp$1)),
 (_descriptor2$1 = _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'params',
-    [observable],
+    [mobx.observable],
     {
         enumerable: true,
         initializer: function initializer() {
@@ -853,7 +834,7 @@ _temp$1)),
 (_descriptor3$1 = _applyDecoratedDescriptor$1(
     _class$1.prototype,
     '__pendingRequestCount',
-    [observable],
+    [mobx.observable],
     {
         enumerable: true,
         initializer: function initializer() {
@@ -864,7 +845,7 @@ _temp$1)),
 (_descriptor4 = _applyDecoratedDescriptor$1(
     _class$1.prototype,
     '__state',
-    [observable],
+    [mobx.observable],
     {
         enumerable: true,
         initializer: function initializer() {
@@ -879,126 +860,126 @@ _temp$1)),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'isLoading',
-    [computed],
+    [mobx.computed],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'length',
-    [computed],
+    [mobx.computed],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'length'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'fromBackend',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'sort',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'sort'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'parse',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'add',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'add'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'remove',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'remove'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'removeById',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'removeById'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'clear',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'fetch',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'setLimit',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'setLimit'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'totalPages',
-    [computed],
+    [mobx.computed],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'totalPages'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'currentPage',
-    [computed],
+    [mobx.computed],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'currentPage'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'hasNextPage',
-    [computed],
+    [mobx.computed],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasNextPage'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'hasPreviousPage',
-    [computed],
+    [mobx.computed],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasPreviousPage'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'getNextPage',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'getNextPage'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'getPreviousPage',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'getPreviousPage'),
     _class$1.prototype
 ),
 _applyDecoratedDescriptor$1(
     _class$1.prototype,
     'setPage',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'setPage'),
     _class$1.prototype
 )),
@@ -1129,7 +1110,9 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             key: 'url',
             get: function get$$1() {
                 var id = this[this.constructor.primaryKey];
-                return '' + result(this, 'urlRoot') + (id ? id + '/' : '');
+                return (
+                    '' + lodash.result(this, 'urlRoot') + (id ? id + '/' : '')
+                );
             },
         },
         {
@@ -1177,7 +1160,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
         this.__activeRelations = [];
         this.__activeCurrentRelations = [];
         this.api = null;
-        this.cid = 'm' + uniqueId();
+        this.cid = 'm' + lodash.uniqueId();
 
         _initDefineProp(this, '__backendValidationErrors', _descriptor, this);
 
@@ -1188,8 +1171,8 @@ var Model = ((_class = ((_temp = _class2 = (function() {
         this.__store = options.store;
         this.__repository = options.repository;
         // Find all attributes. Not all observables are an attribute.
-        forIn(this, function(value, key) {
-            if (!key.startsWith('__') && isObservable(_this, key)) {
+        lodash.forIn(this, function(value, key) {
+            if (!key.startsWith('__') && mobx.isObservable(_this, key)) {
                 invariant(
                     !FORBIDDEN_ATTRS.includes(key),
                     'Forbidden attribute key used: `' + key + '`'
@@ -1198,9 +1181,9 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                 var newValue = value;
                 // An array or object observable can be mutated, so we want to ensure we always have
                 // the original not-yet-mutated object/array.
-                if (isObservableArray(value)) {
+                if (mobx.isObservableArray(value)) {
                     newValue = value.slice();
-                } else if (isObservableObject(value)) {
+                } else if (mobx.isObservableObject(value)) {
                     newValue = Object.assign({}, value);
                 }
                 _this.__originalAttributes[key] = newValue;
@@ -1253,9 +1236,12 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                             _this2.__activeCurrentRelations.push(currentRel);
                         }
                     });
-                    extendObservable(
+                    mobx.extendObservable(
                         this,
-                        mapValues(relModels, function(otherRelNames, relName) {
+                        lodash.mapValues(relModels, function(
+                            otherRelNames,
+                            relName
+                        ) {
                             var RelModel = relations[relName];
                             invariant(
                                 RelModel,
@@ -1363,7 +1349,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                             if (data[relBackendName] === null) {
                                 myNewId = rel.getNegativeId();
                                 data[relBackendName] = myNewId;
-                            } else if (isArray(data[relBackendName])) {
+                            } else if (lodash.isArray(data[relBackendName])) {
                                 myNewId = data[relBackendName].map(function(
                                     id,
                                     idx
@@ -1372,7 +1358,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                                         ? rel.at(idx).getNegativeId()
                                         : id;
                                 });
-                                data[relBackendName] = uniq(myNewId);
+                                data[relBackendName] = lodash.uniq(myNewId);
                             }
 
                             // We want to pass through nested relations to the next relation, but pop of the first level.
@@ -1401,13 +1387,13 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                             );
 
                             // De-duplicate relations based on `primaryKey`.
-                            relations[realBackendName] = uniqBy(
+                            relations[realBackendName] = lodash.uniqBy(
                                 relations[realBackendName],
                                 rel.constructor.primaryKey ||
                                     rel.Model.primaryKey
                             );
 
-                            forIn(relBackendData.relations, function(
+                            lodash.forIn(relBackendData.relations, function(
                                 relB,
                                 key
                             ) {
@@ -1444,9 +1430,9 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     var casts = this.casts();
                     var cast = casts[attr];
                     if (cast !== undefined) {
-                        return toJS(cast.toJS(attr, value));
+                        return mobx.toJS(cast.toJS(attr, value));
                     }
-                    return toJS(value);
+                    return mobx.toJS(value);
                 },
             },
             {
@@ -1458,12 +1444,12 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             {
                 key: '__parseRepositoryToData',
                 value: function __parseRepositoryToData(key, repository) {
-                    if (isArray(key)) {
-                        return filter(repository, function(m) {
+                    if (lodash.isArray(key)) {
+                        return lodash.filter(repository, function(m) {
                             return key.includes(m.id);
                         });
                     }
-                    return find(repository, { id: key });
+                    return lodash.find(repository, { id: key });
                 },
 
                 /**
@@ -1493,7 +1479,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     var scopedRepos = {};
                     var scopedRelMapping = {};
 
-                    forIn(mapping, function(repoName, relName) {
+                    lodash.forIn(mapping, function(repoName, relName) {
                         var repository = repos[repoName];
                         relName = _this6.constructor.fromBackendAttrKey(
                             relName
@@ -1559,7 +1545,9 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     //
                     // So when we have a model with a `town.restaurants.chef` relation,
                     // we call fromBackend on the `town` relation.
-                    each(this.__activeCurrentRelations, function(relName) {
+                    lodash.each(this.__activeCurrentRelations, function(
+                        relName
+                    ) {
                         var rel = _this7[relName];
                         var resScoped = _this7.__scopeBackendResponse({
                             data: data,
@@ -1598,7 +1586,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                         'You are trying to perform a API request without an `api` property defined on the model.'
                     );
                     invariant(
-                        result(this, 'urlRoot'),
+                        lodash.result(this, 'urlRoot'),
                         'You are trying to perform a API request without an `urlRoot` property defined on the model.'
                     );
                     return this.api;
@@ -1610,11 +1598,11 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     var _this8 = this;
 
                     invariant(
-                        isPlainObject(data),
+                        lodash.isPlainObject(data),
                         'Parameter supplied to `parse()` is not an object, got: ' +
                             JSON.stringify(data)
                     );
-                    forIn(data, function(value, key) {
+                    lodash.forIn(data, function(value, key) {
                         var attr = _this8.constructor.fromBackendAttrKey(key);
                         if (_this8.__attributes.includes(attr)) {
                             _this8[attr] = _this8.__parseAttr(attr, value);
@@ -1624,8 +1612,8 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                             // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                             // However, it can also be an object if there are nested relations (non flattened).
                             if (
-                                isPlainObject(value) ||
-                                isPlainObject(get(value, '[0]'))
+                                lodash.isPlainObject(value) ||
+                                lodash.isPlainObject(lodash.get(value, '[0]'))
                             ) {
                                 _this8[attr].parse(value);
                             }
@@ -1663,16 +1651,16 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                             url: options.url || this.url,
                             data: this.toBackend({ fields: options.fields }),
                             isNew: this.isNew,
-                            requestOptions: omit(options, 'url'),
+                            requestOptions: lodash.omit(options, 'url'),
                         })
                         .then(
-                            action(function(res) {
+                            mobx.action(function(res) {
                                 _this9.__pendingRequestCount -= 1;
                                 _this9.saveFromBackend(res);
                             })
                         )
                         .catch(
-                            action(function(err) {
+                            mobx.action(function(err) {
                                 _this9.__pendingRequestCount -= 1;
                                 if (err.valErrors) {
                                     _this9.parseValidationErrors(err.valErrors);
@@ -1691,7 +1679,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                         'Field `' + name + '` does not exist on the model.'
                     );
                     if (this.__activeCurrentRelations.includes(name)) {
-                        if (isArray(value)) {
+                        if (lodash.isArray(value)) {
                             this[name].clear();
                             this[name].add(
                                 value.map(function(v) {
@@ -1728,21 +1716,21 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     this.__pendingRequestCount += 1;
                     return this.__getApi()
                         .saveAllModels({
-                            url: result(this, 'urlRoot'),
+                            url: lodash.result(this, 'urlRoot'),
                             model: this,
                             data: this.toBackendAll(null, {
                                 relations: options.relations,
                             }),
-                            requestOptions: omit(options, 'relations'),
+                            requestOptions: lodash.omit(options, 'relations'),
                         })
                         .then(
-                            action(function(res) {
+                            mobx.action(function(res) {
                                 _this10.__pendingRequestCount -= 1;
                                 _this10.saveFromBackend(res);
                             })
                         )
                         .catch(
-                            action(function(err) {
+                            mobx.action(function(err) {
                                 _this10.__pendingRequestCount -= 1;
                                 if (err.valErrors) {
                                     _this10.parseValidationErrors(
@@ -1769,13 +1757,13 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                         var errorsForModel =
                             valErrors[bname][id] || valErrors[bname]['null'];
                         if (errorsForModel) {
-                            var camelCasedErrors = mapKeys(
+                            var camelCasedErrors = lodash.mapKeys(
                                 errorsForModel,
                                 function(value, key) {
                                     return snakeToCamel(key);
                                 }
                             );
-                            var formattedErrors = mapValues(
+                            var formattedErrors = lodash.mapValues(
                                 camelCasedErrors,
                                 function(valError) {
                                     return valError.map(function(obj) {
@@ -1843,7 +1831,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                             params: options.params,
                         })
                         .then(
-                            action(function() {
+                            mobx.action(function() {
                                 _this13.__pendingRequestCount -= 1;
                                 if (!options.immediate) {
                                     removeFromStore();
@@ -1873,10 +1861,13 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                         .fetchModel({
                             url: options.url || this.url,
                             data: data,
-                            requestOptions: omit(options, ['data', 'url']),
+                            requestOptions: lodash.omit(options, [
+                                'data',
+                                'url',
+                            ]),
                         })
                         .then(
-                            action(function(res) {
+                            mobx.action(function(res) {
                                 _this14.fromBackend(res);
                                 _this14.__pendingRequestCount -= 1;
                             })
@@ -1888,7 +1879,10 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                 value: function clear() {
                     var _this15 = this;
 
-                    forIn(this.__originalAttributes, function(value, key) {
+                    lodash.forIn(this.__originalAttributes, function(
+                        value,
+                        key
+                    ) {
                         _this15[key] = value;
                     });
 
@@ -1929,7 +1923,7 @@ _temp)),
 ((_descriptor = _applyDecoratedDescriptor(
     _class.prototype,
     '__backendValidationErrors',
-    [observable],
+    [mobx.observable],
     {
         enumerable: true,
         initializer: function initializer() {
@@ -1940,7 +1934,7 @@ _temp)),
 (_descriptor2 = _applyDecoratedDescriptor(
     _class.prototype,
     '__pendingRequestCount',
-    [observable],
+    [mobx.observable],
     {
         enumerable: true,
         initializer: function initializer() {
@@ -1951,7 +1945,7 @@ _temp)),
 (_descriptor3 = _applyDecoratedDescriptor(
     _class.prototype,
     '__fetchParams',
-    [observable],
+    [mobx.observable],
     {
         enumerable: true,
         initializer: function initializer() {
@@ -1962,84 +1956,84 @@ _temp)),
 _applyDecoratedDescriptor(
     _class.prototype,
     'url',
-    [computed],
+    [mobx.computed],
     Object.getOwnPropertyDescriptor(_class.prototype, 'url'),
     _class.prototype
 ),
 _applyDecoratedDescriptor(
     _class.prototype,
     'isNew',
-    [computed],
+    [mobx.computed],
     Object.getOwnPropertyDescriptor(_class.prototype, 'isNew'),
     _class.prototype
 ),
 _applyDecoratedDescriptor(
     _class.prototype,
     'isLoading',
-    [computed],
+    [mobx.computed],
     Object.getOwnPropertyDescriptor(_class.prototype, 'isLoading'),
     _class.prototype
 ),
 _applyDecoratedDescriptor(
     _class.prototype,
     '__parseRelations',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class.prototype, '__parseRelations'),
     _class.prototype
 ),
 _applyDecoratedDescriptor(
     _class.prototype,
     'fromBackend',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class.prototype, 'fromBackend'),
     _class.prototype
 ),
 _applyDecoratedDescriptor(
     _class.prototype,
     'parse',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class.prototype, 'parse'),
     _class.prototype
 ),
 _applyDecoratedDescriptor(
     _class.prototype,
     'save',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class.prototype, 'save'),
     _class.prototype
 ),
 _applyDecoratedDescriptor(
     _class.prototype,
     'setInput',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class.prototype, 'setInput'),
     _class.prototype
 ),
 _applyDecoratedDescriptor(
     _class.prototype,
     'saveAll',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class.prototype, 'saveAll'),
     _class.prototype
 ),
 _applyDecoratedDescriptor(
     _class.prototype,
     'parseValidationErrors',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class.prototype, 'parseValidationErrors'),
     _class.prototype
 ),
 _applyDecoratedDescriptor(
     _class.prototype,
     'clearValidationErrors',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class.prototype, 'clearValidationErrors'),
     _class.prototype
 ),
 _applyDecoratedDescriptor(
     _class.prototype,
     'backendValidationErrors',
-    [computed],
+    [mobx.computed],
     Object.getOwnPropertyDescriptor(
         _class.prototype,
         'backendValidationErrors'
@@ -2049,21 +2043,21 @@ _applyDecoratedDescriptor(
 _applyDecoratedDescriptor(
     _class.prototype,
     'delete',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class.prototype, 'delete'),
     _class.prototype
 ),
 _applyDecoratedDescriptor(
     _class.prototype,
     'fetch',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class.prototype, 'fetch'),
     _class.prototype
 ),
 _applyDecoratedDescriptor(
     _class.prototype,
     'clear',
-    [action],
+    [mobx.action],
     Object.getOwnPropertyDescriptor(_class.prototype, 'clear'),
     _class.prototype
 )),
@@ -2077,7 +2071,7 @@ function csrfSafeMethod(method) {
 }
 
 function parseBackendValidationErrors(response) {
-    var valErrors = get(response, 'data.errors');
+    var valErrors = lodash.get(response, 'data.errors');
     if (response.status === 400 && valErrors) {
         return valErrors;
     }
@@ -2370,7 +2364,7 @@ var Casts = {
     },
     enum: function _enum(expectedValues) {
         invariant(
-            isArray(expectedValues),
+            lodash.isArray(expectedValues),
             'Invalid argument suplied to `Casts.enum`, expected an instance of array.'
         );
         function checkExpectedValues(attr, value) {
@@ -2397,4 +2391,7 @@ var Casts = {
     },
 };
 
-export { Model, Store, BinderApi, Casts };
+exports.Model = Model;
+exports.Store = Store;
+exports.BinderApi = BinderApi;
+exports.Casts = Casts;

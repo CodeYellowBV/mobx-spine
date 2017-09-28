@@ -17,16 +17,8 @@ rollup
             file: 'dist/mobx-spine.es.js',
         });
         bundle.write({
-            format: 'umd',
-            moduleId: 'mobx-spine',
-            name: 'mobxSpine',
-            file: 'dist/mobx-spine.umd.js',
-            globals: {
-                lodash: '_',
-                mobx: 'mobx',
-                axios: 'axios',
-                moment: 'moment',
-            },
+            format: 'cjs',
+            file: 'dist/mobx-spine.cjs.js',
         });
     })
     .catch(err => {
