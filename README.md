@@ -7,6 +7,11 @@ A frontend package built upon [MobX](https://mobx.js.org/) to add models and col
 
 By default it comes with a "communication layer" for [Django Binder](https://github.com/CodeYellowBV/django-binder), which is Code Yellow's Python backend framework. It is easy to add support for another backend.
 
+```shell
+yarn add mobx-spine lodash mobx moment
+npm install mobx-spine lodash mobx moment
+```
+
 **Work In Progress.**
 
 mobx-spine is highly inspired by Backbone and by the package we built on top of Backbone, [Backbone Relation](https://github.com/CodeYellowBV/backbone-relation).
