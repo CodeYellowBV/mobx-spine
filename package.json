@@ -5,7 +5,7 @@
   "author": "Kees Kluskens <kees@webduck.nl>",
   "description": "MobX with support for models, relations and an API.",
   "module": "dist/mobx-spine.es.js",
-  "main": "dist/mobx-spine.umd.js",
+  "main": "dist/mobx-spine.cjs.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/CodeYellowBV/mobx-spine.git"
