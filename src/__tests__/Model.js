@@ -1196,3 +1196,106 @@ describe('requests', () => {
         });
     });
 });
+
+describe('changes', () => {
+    test('toBackend should detect changes', () => {
+        const animal = new Animal(
+            { id: 1, name: 'Lino', kind: { id: 2 } },
+            { relations: ['kind'] }
+        );
+        const output = animal.toBackend({ onlyChanges: true });
+        expect(output).toEqual({});
+
+        animal.setInput('name', 'Lion');
+
+        expect(animal.__changes).toEqual(['name']);
+        const output2 = animal.toBackend({ onlyChanges: true });
+        // `kind: 2` should not appear in here.
+        expect(output2).toEqual({
+            name: 'Lion',
+        });
+    });
+
+    test('toBackend should detect changes - but not twice', () => {
+        const animal = new Animal({ id: 1 });
+
+        animal.setInput('name', 'Lino');
+        animal.setInput('name', 'Lion');
+        expect(animal.__changes).toEqual(['name']);
+        const output = animal.toBackend({ onlyChanges: true });
+        expect(output).toEqual({
+            name: 'Lion',
+        });
+    });
+
+    test('toBackendAll should detect changes', () => {
+        const animal = new Animal(
+            {
+                id: 1,
+                name: 'Lino',
+                kind: {
+                    id: 2,
+                    breed: { name: 'Cat' },
+                    owner: { id: 4 },
+                },
+                pastOwners: [{ id: 5, name: 'Henk' }],
+            },
+            { relations: ['kind.breed', 'owner', 'pastOwners'] }
+        );
+        const output = animal.toBackendAll(null, {
+            // The `owner` relation is just here to verify that it is not included
+            relations: ['kind.breed', 'pastOwners'],
+            onlyChanges: true,
+        });
+        expect(output).toEqual({
+            data: [{ kind: 2, past_owners: [5] }],
+            relations: {
+                kind: [
+                    {
+                        breed: -3,
+                    },
+                ],
+                breed: [
+                    {
+                        id: -3,
+                        name: 'Cat',
+                    },
+                ],
+                past_owners: [
+                    {
+                        id: 5,
+                    },
+                ],
+            },
+        });
+    });
+
+    test('isChanged should detect changes in current fields', () => {
+        const animal = new Animal({ id: 1 });
+        expect(animal.isChanged()).toBe(false);
+
+        animal.setInput('name', 'Lino');
+        expect(animal.isChanged()).toBe(true);
+    });
+
+    test('isChanged should detect changes in model relations', () => {
+        const animal = new Animal({ id: 1 }, { relations: ['kind.breed'] });
+        expect(animal.isChanged()).toBe(false);
+
+        animal.kind.breed.setInput('name', 'Katachtige');
+        expect(animal.isChanged()).toBe(true);
+    });
+
+    test('isChanged should detect changes in store relations', () => {
+        const animal = new Animal(
+            { id: 1, pastOwners: [{ id: 1 }] },
+            { relations: ['pastOwners'] }
+        );
+
+        expect(animal.isChanged()).toBe(false);
+
+        animal.pastOwners.at(0).setInput('name', 'Henk');
+
+        expect(animal.isChanged()).toBe(true);
+    });
+});

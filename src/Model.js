@@ -68,6 +68,8 @@ export default class Model {
     __activeRelations = [];
     // Holds activated - non-nested - relations (e.g. `['animal']`)
     __activeCurrentRelations = [];
+    // Holds fields (attrs+relations) that have been changed via setInput()
+    __changes = [];
     __repository;
     __store;
     api = null;
@@ -204,11 +206,30 @@ export default class Model {
         return snakeToCamel(attrKey);
     }
 
+    isChanged() {
+        if (this.__changes.length > 0) {
+            return true;
+        }
+        return this.__activeCurrentRelations.some(rel => {
+            return this[rel].isChanged();
+        });
+    }
+
     toBackend(options = {}) {
         const output = {};
         // By default we'll include all fields (attributes+relations), but sometimes you might want to specify the fields to be included.
         const fieldFilter = field => {
-            return options.fields ? options.fields.includes(field) : true;
+            if (options.fields) {
+                return options.fields.includes(field);
+            }
+            if (!this.isNew && options.onlyChanges) {
+                const forceFields = options.forceFields || [];
+                return (
+                    forceFields.includes(field) ||
+                    this.__changes.includes(field)
+                );
+            }
+            return true;
         };
         this.__attributes.filter(fieldFilter).forEach(attr => {
             if (!attr.startsWith('_')) {
@@ -238,7 +259,15 @@ export default class Model {
     toBackendAll(newId, options = {}) {
         // TODO: This implementation is more a proof of concept; it's very shitty coded.
         const includeRelations = options.relations || [];
-        const data = this.toBackend();
+        const firstLevelRelations = uniq(
+            includeRelations.map(rel => {
+                return rel.split('.')[0];
+            })
+        );
+        const data = this.toBackend({
+            onlyChanges: options.onlyChanges,
+            forceFields: firstLevelRelations,
+        });
         const relations = {};
 
         if (newId) {
@@ -284,6 +313,7 @@ export default class Model {
                     .filter(rel => !!rel);
                 const relBackendData = rel.toBackendAll(myNewId, {
                     relations: relativeRelations,
+                    onlyChanges: options.onlyChanges,
                 });
                 // Sometimes the backend knows the relation by a different name, e.g. the relation is called
                 // `activities`, but the name in the backend is `activity`.
@@ -483,7 +513,10 @@ export default class Model {
         return this.__getApi()
             .saveModel({
                 url: options.url || this.url,
-                data: this.toBackend({ fields: options.fields }),
+                data: this.toBackend({
+                    fields: options.fields,
+                    onlyChanges: options.onlyChanges,
+                }),
                 isNew: this.isNew,
                 requestOptions: omit(options, 'url'),
             })
@@ -511,6 +544,9 @@ export default class Model {
                 this.__activeCurrentRelations.includes(name),
             `Field \`${name}\` does not exist on the model.`
         );
+        if (!this.__changes.includes(name)) {
+            this.__changes.push(name);
+        }
         if (this.__activeCurrentRelations.includes(name)) {
             if (isArray(value)) {
                 this[name].clear();
@@ -539,7 +575,10 @@ export default class Model {
             .saveAllModels({
                 url: result(this, 'urlRoot'),
                 model: this,
-                data: this.toBackendAll(null, { relations: options.relations }),
+                data: this.toBackendAll(null, {
+                    relations: options.relations,
+                    onlyChanges: options.onlyChanges,
+                }),
                 requestOptions: omit(options, 'relations'),
             })
             .then(

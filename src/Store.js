@@ -328,11 +328,18 @@ export default class Store {
         return Promise.resolve();
     }
 
+    isChanged() {
+        return this.models.some(m => m.isChanged());
+    }
+
     toBackendAll(newIds = [], options = {}) {
         const modelData = this.models.map((model, i) => {
             return model.toBackendAll(
                 newIds && newIds[i] !== undefined ? newIds[i] : null,
-                { relations: options.relations }
+                {
+                    relations: options.relations,
+                    onlyChanges: options.onlyChanges,
+                }
             );
         });
 
