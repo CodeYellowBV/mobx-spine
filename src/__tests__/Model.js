@@ -1183,6 +1183,27 @@ describe('requests', () => {
         return animal.delete({ params: { branch_id: 1 } });
     });
 
+    test('delete with requestOptions', () => {
+        const animal = new Animal({ id: 1 });
+        const spy = jest.spyOn(animal.api, 'delete');
+        const requestOptions = {
+            params: { branch_id: 1 },
+            skipRequestErrors: true,
+        };
+
+        mock.onAny().replyOnce(config => {
+            return [204, null];
+        });
+
+        animal.delete(requestOptions);
+
+        expect(spy).toHaveBeenCalledWith(
+            '/api/animal/1/',
+            null,
+            requestOptions
+        );
+    });
+
     test('isLoading', () => {
         const animal = new Animal({ id: 2 });
         expect(animal.isLoading).toBe(false);

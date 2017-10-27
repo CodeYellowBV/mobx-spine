@@ -663,7 +663,7 @@ export default class Model {
         return this.__getApi()
             .deleteModel({
                 url: options.url || this.url,
-                params: options.params,
+                requestOptions: omit(options, ['immediate', 'url']),
             })
             .then(
                 action(() => {
