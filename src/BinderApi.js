@@ -56,10 +56,9 @@ export default class BinderApi {
             xhr.catch(this.onRequestError);
         }
 
-        const onSuccess =
-            options.skipFormatter === true
-                ? Promise.resolve()
-                : this.__responseFormatter;
+        const onSuccess = options.skipFormatter === true
+            ? Promise.resolve()
+            : this.__responseFormatter;
         return xhr.then(onSuccess);
     }
 
@@ -161,9 +160,9 @@ export default class BinderApi {
             });
     }
 
-    deleteModel({ url, params }) {
+    deleteModel({ url, requestOptions }) {
         // TODO: kind of silly now, but we'll probably want better error handling soon.
-        return this.delete(url, null, { params });
+        return this.delete(url, null, requestOptions);
     }
 
     buildFetchStoreParams(store) {
