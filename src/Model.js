@@ -238,6 +238,10 @@ export default class Model {
                 ] = this.__toJSAttr(attr, this[attr]);
             }
         });
+
+        // Primary key is always forced to be included.
+        output[this.constructor.primaryKey] = this[this.constructor.primaryKey];
+
         // Add active relations as id.
         this.__activeCurrentRelations
             .filter(fieldFilter)

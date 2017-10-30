@@ -1225,7 +1225,7 @@ describe('changes', () => {
             { relations: ['kind'] }
         );
         const output = animal.toBackend({ onlyChanges: true });
-        expect(output).toEqual({});
+        expect(output).toEqual({ id: 1 });
 
         animal.setInput('name', 'Lion');
 
@@ -1233,6 +1233,7 @@ describe('changes', () => {
         const output2 = animal.toBackend({ onlyChanges: true });
         // `kind: 2` should not appear in here.
         expect(output2).toEqual({
+            id: 1,
             name: 'Lion',
         });
     });
@@ -1245,6 +1246,7 @@ describe('changes', () => {
         expect(animal.__changes).toEqual(['name']);
         const output = animal.toBackend({ onlyChanges: true });
         expect(output).toEqual({
+            id: 1,
             name: 'Lion',
         });
     });
@@ -1269,10 +1271,11 @@ describe('changes', () => {
             onlyChanges: true,
         });
         expect(output).toEqual({
-            data: [{ kind: 2, past_owners: [5] }],
+            data: [{ id: 1, kind: 2, past_owners: [5] }],
             relations: {
                 kind: [
                     {
+                        id: 2,
                         breed: -3,
                     },
                 ],
