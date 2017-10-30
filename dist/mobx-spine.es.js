@@ -653,6 +653,14 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
             },
         },
         {
+            key: 'isChanged',
+            value: function isChanged() {
+                return this.models.some(function(m) {
+                    return m.isChanged();
+                });
+            },
+        },
+        {
             key: 'toBackendAll',
             value: function toBackendAll() {
                 var _this6 = this;
@@ -669,7 +677,10 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                 var modelData = this.models.map(function(model, i) {
                     return model.toBackendAll(
                         newIds && newIds[i] !== undefined ? newIds[i] : null,
-                        { relations: options.relations }
+                        {
+                            relations: options.relations,
+                            onlyChanges: options.onlyChanges,
+                        }
                     );
                 });
 
@@ -1101,6 +1112,8 @@ var Model = ((_class = ((_temp = _class2 = (function() {
 
             // Holds activated - non-nested - relations (e.g. `['animal']`)
 
+            // Holds fields (attrs+relations) that have been changed via setInput()
+
             // A `cid` can be used to identify the model locally.
 
             // URL query params that are added to fetch requests.
@@ -1176,6 +1189,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
         this.__originalAttributes = {};
         this.__activeRelations = [];
         this.__activeCurrentRelations = [];
+        this.__changes = [];
         this.api = null;
         this.cid = 'm' + uniqueId();
 
@@ -1275,9 +1289,22 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                 // Many backends use snake_case for attribute names, so we convert to snake_case by default.
             },
             {
+                key: 'isChanged',
+                value: function isChanged() {
+                    var _this3 = this;
+
+                    if (this.__changes.length > 0) {
+                        return true;
+                    }
+                    return this.__activeCurrentRelations.some(function(rel) {
+                        return _this3[rel].isChanged();
+                    });
+                },
+            },
+            {
                 key: 'toBackend',
                 value: function toBackend() {
-                    var _this3 = this;
+                    var _this4 = this;
 
                     var options =
                         arguments.length > 0 && arguments[0] !== undefined
@@ -1287,25 +1314,33 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     var output = {};
                     // By default we'll include all fields (attributes+relations), but sometimes you might want to specify the fields to be included.
                     var fieldFilter = function fieldFilter(field) {
-                        return options.fields
-                            ? options.fields.includes(field)
-                            : true;
+                        if (options.fields) {
+                            return options.fields.includes(field);
+                        }
+                        if (!_this4.isNew && options.onlyChanges) {
+                            var forceFields = options.forceFields || [];
+                            return (
+                                forceFields.includes(field) ||
+                                _this4.__changes.includes(field)
+                            );
+                        }
+                        return true;
                     };
                     this.__attributes
                         .filter(fieldFilter)
                         .forEach(function(attr) {
                             if (!attr.startsWith('_')) {
                                 output[
-                                    _this3.constructor.toBackendAttrKey(attr)
-                                ] = _this3.__toJSAttr(attr, _this3[attr]);
+                                    _this4.constructor.toBackendAttrKey(attr)
+                                ] = _this4.__toJSAttr(attr, _this4[attr]);
                             }
                         });
                     // Add active relations as id.
                     this.__activeCurrentRelations
                         .filter(fieldFilter)
                         .forEach(function(currentRel) {
-                            var rel = _this3[currentRel];
-                            var relBackendName = _this3.constructor.toBackendAttrKey(
+                            var rel = _this4[currentRel];
+                            var relBackendName = _this4.constructor.toBackendAttrKey(
                                 currentRel
                             );
                             if (rel instanceof Model) {
@@ -1322,7 +1357,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             {
                 key: 'toBackendAll',
                 value: function toBackendAll(newId) {
-                    var _this4 = this;
+                    var _this5 = this;
 
                     var options =
                         arguments.length > 1 && arguments[1] !== undefined
@@ -1331,7 +1366,15 @@ var Model = ((_class = ((_temp = _class2 = (function() {
 
                     // TODO: This implementation is more a proof of concept; it's very shitty coded.
                     var includeRelations = options.relations || [];
-                    var data = this.toBackend();
+                    var firstLevelRelations = uniq(
+                        includeRelations.map(function(rel) {
+                            return rel.split('.')[0];
+                        })
+                    );
+                    var data = this.toBackend({
+                        onlyChanges: options.onlyChanges,
+                        forceFields: firstLevelRelations,
+                    });
                     var relations = {};
 
                     if (newId) {
@@ -1343,9 +1386,9 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     }
 
                     this.__activeCurrentRelations.forEach(function(currentRel) {
-                        var rel = _this4[currentRel];
+                        var rel = _this5[currentRel];
                         var myNewId = null;
-                        var relBackendName = _this4.constructor.toBackendAttrKey(
+                        var relBackendName = _this5.constructor.toBackendAttrKey(
                             currentRel
                         );
 
@@ -1387,6 +1430,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                                 });
                             var relBackendData = rel.toBackendAll(myNewId, {
                                 relations: relativeRelations,
+                                onlyChanges: options.onlyChanges,
                             });
                             // Sometimes the backend knows the relation by a different name, e.g. the relation is called
                             // `activities`, but the name in the backend is `activity`.
@@ -1422,15 +1466,15 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             {
                 key: 'toJS',
                 value: function toJS$$1() {
-                    var _this5 = this;
+                    var _this6 = this;
 
                     var output = {};
                     this.__attributes.forEach(function(attr) {
-                        output[attr] = _this5.__toJSAttr(attr, _this5[attr]);
+                        output[attr] = _this6.__toJSAttr(attr, _this6[attr]);
                     });
 
                     this.__activeCurrentRelations.forEach(function(currentRel) {
-                        var model = _this5[currentRel];
+                        var model = _this6[currentRel];
                         if (model) {
                             output[currentRel] = model.toJS();
                         }
@@ -1481,7 +1525,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             {
                 key: '__scopeBackendResponse',
                 value: function __scopeBackendResponse(_ref) {
-                    var _this6 = this;
+                    var _this7 = this;
 
                     var data = _ref.data,
                         targetRelName = _ref.targetRelName,
@@ -1495,7 +1539,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
 
                     forIn(mapping, function(repoName, relName) {
                         var repository = repos[repoName];
-                        relName = _this6.constructor.fromBackendAttrKey(
+                        relName = _this7.constructor.fromBackendAttrKey(
                             relName
                         );
 
@@ -1507,9 +1551,9 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                             relevant = true;
                             var relKey =
                                 data[
-                                    _this6.constructor.toBackendAttrKey(relName)
+                                    _this7.constructor.toBackendAttrKey(relName)
                                 ];
-                            scopedData = _this6.__parseRepositoryToData(
+                            scopedData = _this7.__parseRepositoryToData(
                                 relKey,
                                 repository
                             );
@@ -1548,7 +1592,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             {
                 key: 'fromBackend',
                 value: function fromBackend(_ref2) {
-                    var _this7 = this;
+                    var _this8 = this;
 
                     var data = _ref2.data,
                         repos = _ref2.repos,
@@ -1560,8 +1604,8 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     // So when we have a model with a `town.restaurants.chef` relation,
                     // we call fromBackend on the `town` relation.
                     each(this.__activeCurrentRelations, function(relName) {
-                        var rel = _this7[relName];
-                        var resScoped = _this7.__scopeBackendResponse({
+                        var rel = _this8[relName];
+                        var resScoped = _this8.__scopeBackendResponse({
                             data: data,
                             targetRelName: relName,
                             repos: repos,
@@ -1607,7 +1651,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             {
                 key: 'parse',
                 value: function parse(data) {
-                    var _this8 = this;
+                    var _this9 = this;
 
                     invariant(
                         isPlainObject(data),
@@ -1615,11 +1659,11 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                             JSON.stringify(data)
                     );
                     forIn(data, function(value, key) {
-                        var attr = _this8.constructor.fromBackendAttrKey(key);
-                        if (_this8.__attributes.includes(attr)) {
-                            _this8[attr] = _this8.__parseAttr(attr, value);
+                        var attr = _this9.constructor.fromBackendAttrKey(key);
+                        if (_this9.__attributes.includes(attr)) {
+                            _this9[attr] = _this9.__parseAttr(attr, value);
                         } else if (
-                            _this8.__activeCurrentRelations.includes(attr)
+                            _this9.__activeCurrentRelations.includes(attr)
                         ) {
                             // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                             // However, it can also be an object if there are nested relations (non flattened).
@@ -1627,7 +1671,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                                 isPlainObject(value) ||
                                 isPlainObject(get(value, '[0]'))
                             ) {
-                                _this8[attr].parse(value);
+                                _this9[attr].parse(value);
                             }
                         }
                     });
@@ -1649,7 +1693,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             {
                 key: 'save',
                 value: function save() {
-                    var _this9 = this;
+                    var _this10 = this;
 
                     var options =
                         arguments.length > 0 && arguments[0] !== undefined
@@ -1661,21 +1705,26 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     return this.__getApi()
                         .saveModel({
                             url: options.url || this.url,
-                            data: this.toBackend({ fields: options.fields }),
+                            data: this.toBackend({
+                                fields: options.fields,
+                                onlyChanges: options.onlyChanges,
+                            }),
                             isNew: this.isNew,
                             requestOptions: omit(options, 'url'),
                         })
                         .then(
                             action(function(res) {
-                                _this9.__pendingRequestCount -= 1;
-                                _this9.saveFromBackend(res);
+                                _this10.__pendingRequestCount -= 1;
+                                _this10.saveFromBackend(res);
                             })
                         )
                         .catch(
                             action(function(err) {
-                                _this9.__pendingRequestCount -= 1;
+                                _this10.__pendingRequestCount -= 1;
                                 if (err.valErrors) {
-                                    _this9.parseValidationErrors(err.valErrors);
+                                    _this10.parseValidationErrors(
+                                        err.valErrors
+                                    );
                                 }
                                 throw err;
                             })
@@ -1690,6 +1739,9 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                             this.__activeCurrentRelations.includes(name),
                         'Field `' + name + '` does not exist on the model.'
                     );
+                    if (!this.__changes.includes(name)) {
+                        this.__changes.push(name);
+                    }
                     if (this.__activeCurrentRelations.includes(name)) {
                         if (isArray(value)) {
                             this[name].clear();
@@ -1717,7 +1769,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             {
                 key: 'saveAll',
                 value: function saveAll() {
-                    var _this10 = this;
+                    var _this11 = this;
 
                     var options =
                         arguments.length > 0 && arguments[0] !== undefined
@@ -1732,20 +1784,21 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                             model: this,
                             data: this.toBackendAll(null, {
                                 relations: options.relations,
+                                onlyChanges: options.onlyChanges,
                             }),
                             requestOptions: omit(options, 'relations'),
                         })
                         .then(
                             action(function(res) {
-                                _this10.__pendingRequestCount -= 1;
-                                _this10.saveFromBackend(res);
+                                _this11.__pendingRequestCount -= 1;
+                                _this11.saveFromBackend(res);
                             })
                         )
                         .catch(
                             action(function(err) {
-                                _this10.__pendingRequestCount -= 1;
+                                _this11.__pendingRequestCount -= 1;
                                 if (err.valErrors) {
-                                    _this10.parseValidationErrors(
+                                    _this11.parseValidationErrors(
                                         err.valErrors
                                     );
                                 }
@@ -1757,7 +1810,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             {
                 key: 'parseValidationErrors',
                 value: function parseValidationErrors(valErrors) {
-                    var _this11 = this;
+                    var _this12 = this;
 
                     var bname = this.constructor.backendResourceName;
 
@@ -1788,18 +1841,18 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     }
 
                     this.__activeCurrentRelations.forEach(function(currentRel) {
-                        _this11[currentRel].parseValidationErrors(valErrors);
+                        _this12[currentRel].parseValidationErrors(valErrors);
                     });
                 },
             },
             {
                 key: 'clearValidationErrors',
                 value: function clearValidationErrors() {
-                    var _this12 = this;
+                    var _this13 = this;
 
                     this.__backendValidationErrors = {};
                     this.__activeCurrentRelations.forEach(function(currentRel) {
-                        _this12[currentRel].clearValidationErrors();
+                        _this13[currentRel].clearValidationErrors();
                     });
                 },
 
@@ -1817,7 +1870,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             {
                 key: 'delete',
                 value: function _delete() {
-                    var _this13 = this;
+                    var _this14 = this;
 
                     var options =
                         arguments.length > 0 && arguments[0] !== undefined
@@ -1825,8 +1878,8 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                             : {};
 
                     var removeFromStore = function removeFromStore() {
-                        return _this13.__store
-                            ? _this13.__store.remove(_this13)
+                        return _this14.__store
+                            ? _this14.__store.remove(_this14)
                             : null;
                     };
                     if (options.immediate || this.isNew) {
@@ -1840,11 +1893,11 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     return this.__getApi()
                         .deleteModel({
                             url: options.url || this.url,
-                            params: options.params,
+                            requestOptions: omit(options, ['immediate', 'url']),
                         })
                         .then(
                             action(function() {
-                                _this13.__pendingRequestCount -= 1;
+                                _this14.__pendingRequestCount -= 1;
                                 if (!options.immediate) {
                                     removeFromStore();
                                 }
@@ -1855,7 +1908,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             {
                 key: 'fetch',
                 value: function fetch() {
-                    var _this14 = this;
+                    var _this15 = this;
 
                     var options =
                         arguments.length > 0 && arguments[0] !== undefined
@@ -1877,8 +1930,8 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                         })
                         .then(
                             action(function(res) {
-                                _this14.fromBackend(res);
-                                _this14.__pendingRequestCount -= 1;
+                                _this15.fromBackend(res);
+                                _this15.__pendingRequestCount -= 1;
                             })
                         );
                 },
@@ -1886,14 +1939,14 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             {
                 key: 'clear',
                 value: function clear() {
-                    var _this15 = this;
+                    var _this16 = this;
 
                     forIn(this.__originalAttributes, function(value, key) {
-                        _this15[key] = value;
+                        _this16[key] = value;
                     });
 
                     this.__activeCurrentRelations.forEach(function(currentRel) {
-                        _this15[currentRel].clear();
+                        _this16[currentRel].clear();
                     });
                 },
             },
@@ -2288,10 +2341,10 @@ var BinderApi = (function() {
             key: 'deleteModel',
             value: function deleteModel(_ref4) {
                 var url = _ref4.url,
-                    params = _ref4.params;
+                    requestOptions = _ref4.requestOptions;
 
                 // TODO: kind of silly now, but we'll probably want better error handling soon.
-                return this.delete(url, null, { params: params });
+                return this.delete(url, null, requestOptions);
             },
         },
         {
