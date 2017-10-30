@@ -1321,6 +1321,12 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                                 ] = _this4.__toJSAttr(attr, _this4[attr]);
                             }
                         });
+
+                    // Primary key is always forced to be included.
+                    output[this.constructor.primaryKey] = this[
+                        this.constructor.primaryKey
+                    ];
+
                     // Add active relations as id.
                     this.__activeCurrentRelations
                         .filter(fieldFilter)
