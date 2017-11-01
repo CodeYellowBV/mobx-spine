@@ -602,6 +602,26 @@ export default class Model {
             );
     }
 
+    // After saving a model, we should get back an ID mapping from the backend which looks like:
+    // `{ "animal": [[-1, 10]] }`
+    __parseNewIds(idMaps) {
+        const backendName = this.constructor.backendResourceName;
+        if (backendName && idMaps[backendName]) {
+            const idMap = idMaps[backendName].find(
+                ids =>
+                    ids[0] === this[this.constructor.primaryKey] ||
+                    this.getNegativeId()
+            );
+            if (idMap) {
+                this[this.constructor.primaryKey] = idMap[1];
+            }
+        }
+        each(this.__activeCurrentRelations, relName => {
+            const rel = this[relName];
+            rel.__parseNewIds(idMaps);
+        });
+    }
+
     @action
     parseValidationErrors(valErrors) {
         const bname = this.constructor.backendResourceName;

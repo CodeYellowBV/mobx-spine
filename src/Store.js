@@ -255,6 +255,10 @@ export default class Store {
             );
     }
 
+    __parseNewIds(idMaps) {
+        this.each(model => model.__parseNewIds(idMaps));
+    }
+
     toJS() {
         return this.models.map(model => model.toJS());
     }

@@ -996,8 +996,12 @@ describe('requests', () => {
 
     test('save all with relations', () => {
         const animal = new Animal(
-            { name: 'Doggo', kind: { name: 'Dog' } },
-            { relations: ['kind'] }
+            {
+                name: 'Doggo',
+                kind: { name: 'Dog' },
+                pastOwners: [{ name: 'Henk' }],
+            },
+            { relations: ['kind', 'pastOwners'] }
         );
         const spy = jest.spyOn(animal, 'saveFromBackend');
         mock.onAny().replyOnce(config => {
@@ -1009,8 +1013,8 @@ describe('requests', () => {
         return animal.saveAll({ relations: ['kind'] }).then(() => {
             expect(spy).toHaveBeenCalled();
             expect(animal.id).toBe(10);
-            // FIXME
-            // expect(animal.kind.id).toBe(4);
+            expect(animal.kind.id).toBe(4);
+            expect(animal.pastOwners.at(0).id).toBe(100);
 
             spy.mockReset();
             spy.mockRestore();

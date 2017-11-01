@@ -56,9 +56,10 @@ export default class BinderApi {
             xhr.catch(this.onRequestError);
         }
 
-        const onSuccess = options.skipFormatter === true
-            ? Promise.resolve()
-            : this.__responseFormatter;
+        const onSuccess =
+            options.skipFormatter === true
+                ? Promise.resolve()
+                : this.__responseFormatter;
         return xhr.then(onSuccess);
     }
 
@@ -139,16 +140,8 @@ export default class BinderApi {
             requestOptions
         )
             .then(res => {
-                // TODO: I really dislike this, but at the moment Binder doesn't return all models after saving the data.
-                // Instead, it only returns an ID map to map the negative fake IDs to real ones.
-                const backendName = model.constructor.backendResourceName;
-                if (res.idmap && backendName && res.idmap[backendName]) {
-                    const idMap = res.idmap[backendName].find(
-                        ids =>
-                            ids[0] === model[model.constructor.primaryKey] ||
-                            model.getNegativeId()
-                    );
-                    model[model.constructor.primaryKey] = idMap[1];
+                if (res.idmap) {
+                    model.__parseNewIds(res.idmap);
                 }
                 return res;
             })
