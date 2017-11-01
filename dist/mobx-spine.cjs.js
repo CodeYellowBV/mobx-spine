@@ -565,6 +565,14 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
             },
         },
         {
+            key: '__parseNewIds',
+            value: function __parseNewIds(idMaps) {
+                this.each(function(model) {
+                    return model.__parseNewIds(idMaps);
+                });
+            },
+        },
+        {
             key: 'toJS',
             value: function toJS$$1() {
                 return this.models.map(function(model) {
@@ -1800,11 +1808,40 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                             })
                         );
                 },
+
+                // After saving a model, we should get back an ID mapping from the backend which looks like:
+                // `{ "animal": [[-1, 10]] }`
+            },
+            {
+                key: '__parseNewIds',
+                value: function __parseNewIds(idMaps) {
+                    var _this12 = this;
+
+                    var backendName = this.constructor.backendResourceName;
+                    if (backendName && idMaps[backendName]) {
+                        var idMap = idMaps[backendName].find(function(ids) {
+                            return (
+                                ids[0] ===
+                                    _this12[_this12.constructor.primaryKey] ||
+                                _this12.getNegativeId()
+                            );
+                        });
+                        if (idMap) {
+                            this[this.constructor.primaryKey] = idMap[1];
+                        }
+                    }
+                    lodash.each(this.__activeCurrentRelations, function(
+                        relName
+                    ) {
+                        var rel = _this12[relName];
+                        rel.__parseNewIds(idMaps);
+                    });
+                },
             },
             {
                 key: 'parseValidationErrors',
                 value: function parseValidationErrors(valErrors) {
-                    var _this12 = this;
+                    var _this13 = this;
 
                     var bname = this.constructor.backendResourceName;
 
@@ -1835,18 +1872,18 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     }
 
                     this.__activeCurrentRelations.forEach(function(currentRel) {
-                        _this12[currentRel].parseValidationErrors(valErrors);
+                        _this13[currentRel].parseValidationErrors(valErrors);
                     });
                 },
             },
             {
                 key: 'clearValidationErrors',
                 value: function clearValidationErrors() {
-                    var _this13 = this;
+                    var _this14 = this;
 
                     this.__backendValidationErrors = {};
                     this.__activeCurrentRelations.forEach(function(currentRel) {
-                        _this13[currentRel].clearValidationErrors();
+                        _this14[currentRel].clearValidationErrors();
                     });
                 },
 
@@ -1864,7 +1901,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             {
                 key: 'delete',
                 value: function _delete() {
-                    var _this14 = this;
+                    var _this15 = this;
 
                     var options =
                         arguments.length > 0 && arguments[0] !== undefined
@@ -1872,8 +1909,8 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                             : {};
 
                     var removeFromStore = function removeFromStore() {
-                        return _this14.__store
-                            ? _this14.__store.remove(_this14)
+                        return _this15.__store
+                            ? _this15.__store.remove(_this15)
                             : null;
                     };
                     if (options.immediate || this.isNew) {
@@ -1894,7 +1931,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                         })
                         .then(
                             mobx.action(function() {
-                                _this14.__pendingRequestCount -= 1;
+                                _this15.__pendingRequestCount -= 1;
                                 if (!options.immediate) {
                                     removeFromStore();
                                 }
@@ -1905,7 +1942,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             {
                 key: 'fetch',
                 value: function fetch() {
-                    var _this15 = this;
+                    var _this16 = this;
 
                     var options =
                         arguments.length > 0 && arguments[0] !== undefined
@@ -1930,8 +1967,8 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                         })
                         .then(
                             mobx.action(function(res) {
-                                _this15.fromBackend(res);
-                                _this15.__pendingRequestCount -= 1;
+                                _this16.fromBackend(res);
+                                _this16.__pendingRequestCount -= 1;
                             })
                         );
                 },
@@ -1939,17 +1976,17 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             {
                 key: 'clear',
                 value: function clear() {
-                    var _this16 = this;
+                    var _this17 = this;
 
                     lodash.forIn(this.__originalAttributes, function(
                         value,
                         key
                     ) {
-                        _this16[key] = value;
+                        _this17[key] = value;
                     });
 
                     this.__activeCurrentRelations.forEach(function(currentRel) {
-                        _this16[currentRel].clear();
+                        _this17[currentRel].clear();
                     });
                 },
             },
@@ -2309,24 +2346,8 @@ var BinderApi = (function() {
                     requestOptions
                 )
                     .then(function(res) {
-                        // TODO: I really dislike this, but at the moment Binder doesn't return all models after saving the data.
-                        // Instead, it only returns an ID map to map the negative fake IDs to real ones.
-                        var backendName = model.constructor.backendResourceName;
-                        if (
-                            res.idmap &&
-                            backendName &&
-                            res.idmap[backendName]
-                        ) {
-                            var idMap = res.idmap[backendName].find(function(
-                                ids
-                            ) {
-                                return (
-                                    ids[0] ===
-                                        model[model.constructor.primaryKey] ||
-                                    model.getNegativeId()
-                                );
-                            });
-                            model[model.constructor.primaryKey] = idMap[1];
+                        if (res.idmap) {
+                            model.__parseNewIds(res.idmap);
                         }
                         return res;
                     })
