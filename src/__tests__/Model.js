@@ -1021,6 +1021,28 @@ describe('requests', () => {
         });
     });
 
+    test('save all with relations - verify ids are mapped correctly', () => {
+        const animal = new Animal(
+            {
+                pastOwners: [{ name: 'Henk' }, { id: 125, name: 'Hanos' }],
+            },
+            { relations: ['pastOwners'] }
+        );
+        // Sanity check unrelated to the actual test.
+        expect(animal.pastOwners.at(0).getInternalId()).toBe(-2);
+
+        mock.onAny().replyOnce(config => {
+            return [
+                201,
+                { idmap: { animal: [[-1, 10]], person: [[-2, 100]] } },
+            ];
+        });
+
+        return animal.saveAll({ relations: ['pastOwners'] }).then(() => {
+            expect(animal.pastOwners.map('id')).toEqual([100, 125]);
+        });
+    });
+
     test('save all with validation errors', () => {
         const animal = new Animal(
             {

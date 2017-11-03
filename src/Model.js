@@ -85,6 +85,13 @@ export default class Model {
         return -parseInt(this.cid.replace('m', ''));
     }
 
+    getInternalId() {
+        if (this.isNew) {
+            return this.getNegativeId();
+        }
+        return this[this.constructor.primaryKey];
+    }
+
     @computed
     get url() {
         const id = this[this.constructor.primaryKey];
@@ -605,12 +612,10 @@ export default class Model {
     // After saving a model, we should get back an ID mapping from the backend which looks like:
     // `{ "animal": [[-1, 10]] }`
     __parseNewIds(idMaps) {
-        const backendName = this.constructor.backendResourceName;
-        if (backendName && idMaps[backendName]) {
-            const idMap = idMaps[backendName].find(
-                ids =>
-                    ids[0] === this[this.constructor.primaryKey] ||
-                    this.getNegativeId()
+        const bName = this.constructor.backendResourceName;
+        if (bName && idMaps[bName]) {
+            const idMap = idMaps[bName].find(
+                ids => ids[0] === this.getInternalId()
             );
             if (idMap) {
                 this[this.constructor.primaryKey] = idMap[1];
@@ -627,9 +632,7 @@ export default class Model {
         const bname = this.constructor.backendResourceName;
 
         if (valErrors[bname]) {
-            const id = this.isNew
-                ? this.getNegativeId()
-                : this[this.constructor.primaryKey];
+            const id = this.getInternalId();
             // When there is no id or negative id, the backend may use the string 'null'. Bit weird, but eh.
             const errorsForModel =
                 valErrors[bname][id] || valErrors[bname]['null'];
