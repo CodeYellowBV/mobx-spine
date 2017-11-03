@@ -1135,6 +1135,15 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             },
         },
         {
+            key: 'getInternalId',
+            value: function getInternalId() {
+                if (this.isNew) {
+                    return this.getNegativeId();
+                }
+                return this[this.constructor.primaryKey];
+            },
+        },
+        {
             key: 'casts',
             value: function casts() {
                 return {};
@@ -1829,14 +1838,10 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                 value: function __parseNewIds(idMaps) {
                     var _this12 = this;
 
-                    var backendName = this.constructor.backendResourceName;
-                    if (backendName && idMaps[backendName]) {
-                        var idMap = idMaps[backendName].find(function(ids) {
-                            return (
-                                ids[0] ===
-                                    _this12[_this12.constructor.primaryKey] ||
-                                _this12.getNegativeId()
-                            );
+                    var bName = this.constructor.backendResourceName;
+                    if (bName && idMaps[bName]) {
+                        var idMap = idMaps[bName].find(function(ids) {
+                            return ids[0] === _this12.getInternalId();
                         });
                         if (idMap) {
                             this[this.constructor.primaryKey] = idMap[1];
@@ -1856,9 +1861,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     var bname = this.constructor.backendResourceName;
 
                     if (valErrors[bname]) {
-                        var id = this.isNew
-                            ? this.getNegativeId()
-                            : this[this.constructor.primaryKey];
+                        var id = this.getInternalId();
                         // When there is no id or negative id, the backend may use the string 'null'. Bit weird, but eh.
                         var errorsForModel =
                             valErrors[bname][id] || valErrors[bname]['null'];
