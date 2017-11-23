@@ -167,12 +167,18 @@ export default class Model {
         const relations = this.relations && this.relations();
         const relModels = {};
         activeRelations.forEach(aRel => {
+            // If aRel is null, this relation is already defined by another aRel
+            // IE.: town.restaurants.chef && town
+            if (aRel === null) {
+                return;
+            }
             const relNames = aRel.match(RE_SPLIT_FIRST_RELATION);
 
             const currentRel = relNames ? relNames[1] : aRel;
             const otherRelNames = relNames && relNames[2];
             const currentProp = relModels[currentRel];
             const otherRels = otherRelNames && [otherRelNames];
+
             // When two nested relations are defined next to each other (e.g. `['kind.breed', 'kind.location']`),
             // the relation `kind` only needs to be initialized once.
             relModels[currentRel] = currentProp
