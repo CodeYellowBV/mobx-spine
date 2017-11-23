@@ -15,6 +15,7 @@ import { CustomerStore } from './fixtures/Customer';
 import animalsWithPastOwnersData from './fixtures/animals-with-past-owners.json';
 import animalsWithKindBreedData from './fixtures/animals-with-kind-breed.json';
 import customersWithTownRestaurants from './fixtures/customers-with-town-restaurants.json';
+import customersWithTownRestaurantsUnbalanced from './fixtures/customers-with-town-restaurants-unbalanced.json';
 import customersWithOldTowns from './fixtures/customers-with-old-towns.json';
 import animalsData from './fixtures/animals.json';
 import pagination1Data from './fixtures/pagination/1.json';
@@ -132,12 +133,10 @@ test('Store -> Store relation', () => {
     });
 
     expect(customerStore.at(0).oldTowns.map('id')).toEqual([1, 2]);
-    expect(
-        customerStore
-            .at(0)
-            .oldTowns.at(0)
-            .restaurants.map('id')
-    ).toEqual([10, 20]);
+    expect(customerStore.at(0).oldTowns.at(0).restaurants.map('id')).toEqual([
+        10,
+        20,
+    ]);
 });
 
 test('get specific model', () => {
@@ -572,6 +571,38 @@ describe('requests', () => {
                 offset: null,
             });
             return [200, customersWithTownRestaurants];
+        });
+
+        return customerStore.fetch().then(() => {
+            expect(customerStore.at(0).id).toBe(1);
+            expect(customerStore.at(0).town.name).toBe('Hardinxveld');
+            expect(customerStore.at(0).town.restaurants.length).toBe(2);
+            expect(customerStore.at(0).town.restaurants.get(1).name).toBe(
+                'Fastfood'
+            );
+            expect(customerStore.at(0).town.restaurants.get(2).name).toBe(
+                'Seafood'
+            );
+            expect(customerStore.at(0).town.restaurants.get(1).chef.name).toBe(
+                'Snor'
+            );
+            expect(customerStore.at(0).town.restaurants.get(2).chef.name).toBe(
+                'Baard'
+            );
+        });
+    });
+
+    test('fetch with unbalanced complex relations', () => {
+        const customerStore = new CustomerStore({
+            relations: ['town.restaurants.chef', 'town'],
+        });
+        mock.onAny().replyOnce(config => {
+            expect(config.params).toEqual({
+                with: 'town.restaurants.chef,town',
+                limit: 25,
+                offset: null,
+            });
+            return [200, customersWithTownRestaurantsUnbalanced];
         });
 
         return customerStore.fetch().then(() => {

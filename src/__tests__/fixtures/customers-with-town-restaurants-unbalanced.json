@@ -1,0 +1,61 @@
+{
+  "data": [
+    {
+        "id": 1,
+        "name": "Henk",
+        "town": 1
+    },
+    {
+        "id": 2,
+        "name": "Karel",
+        "town": 2
+    }
+  ],
+  "with": {
+    "town": [
+      {
+        "id": 1,
+        "name": "Hardinxveld",
+        "restaurants": [
+          1,
+          2
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Meerkerk",
+        "restaurants": []
+      }
+    ],
+    "restaurant": [
+      {
+        "id": 1,
+        "name": "Fastfood",
+        "chef": 1
+      },
+      {
+        "id": 2,
+        "name": "Seafood",
+        "chef": 2
+      }
+    ],
+    "cook": [
+      {
+        "id": 1,
+        "name": "Snor"
+      },
+      {
+        "id": 2,
+        "name": "Baard"
+      }
+    ]
+  },
+  "meta": {
+    "total_records": 1
+  },
+  "with_mapping": {
+    "town": "town",
+    "town.restaurants": "restaurant",
+    "town.restaurants.chef": "cook"
+  }
+}
