@@ -133,10 +133,12 @@ test('Store -> Store relation', () => {
     });
 
     expect(customerStore.at(0).oldTowns.map('id')).toEqual([1, 2]);
-    expect(customerStore.at(0).oldTowns.at(0).restaurants.map('id')).toEqual([
-        10,
-        20,
-    ]);
+    expect(
+        customerStore
+            .at(0)
+            .oldTowns.at(0)
+            .restaurants.map('id')
+    ).toEqual([10, 20]);
 });
 
 test('get specific model', () => {
@@ -574,21 +576,7 @@ describe('requests', () => {
         });
 
         return customerStore.fetch().then(() => {
-            expect(customerStore.at(0).id).toBe(1);
-            expect(customerStore.at(0).town.name).toBe('Hardinxveld');
-            expect(customerStore.at(0).town.restaurants.length).toBe(2);
-            expect(customerStore.at(0).town.restaurants.get(1).name).toBe(
-                'Fastfood'
-            );
-            expect(customerStore.at(0).town.restaurants.get(2).name).toBe(
-                'Seafood'
-            );
-            expect(customerStore.at(0).town.restaurants.get(1).chef.name).toBe(
-                'Snor'
-            );
-            expect(customerStore.at(0).town.restaurants.get(2).chef.name).toBe(
-                'Baard'
-            );
+            expect(customerStore.toJS()).toMatchSnapshot();
         });
     });
 
@@ -606,21 +594,7 @@ describe('requests', () => {
         });
 
         return customerStore.fetch().then(() => {
-            expect(customerStore.at(0).id).toBe(1);
-            expect(customerStore.at(0).town.name).toBe('Hardinxveld');
-            expect(customerStore.at(0).town.restaurants.length).toBe(2);
-            expect(customerStore.at(0).town.restaurants.get(1).name).toBe(
-                'Fastfood'
-            );
-            expect(customerStore.at(0).town.restaurants.get(2).name).toBe(
-                'Seafood'
-            );
-            expect(customerStore.at(0).town.restaurants.get(1).chef.name).toBe(
-                'Snor'
-            );
-            expect(customerStore.at(0).town.restaurants.get(2).chef.name).toBe(
-                'Baard'
-            );
+            expect(customerStore.toJS()).toMatchSnapshot();
         });
     });
 

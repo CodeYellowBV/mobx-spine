@@ -1,0 +1,76 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`requests fetch with complex nested relations 1`] = `
+Array [
+  Object {
+    "id": 1,
+    "name": "Henk",
+    "town": Object {
+      "id": 1,
+      "name": "Hardinxveld",
+      "restaurants": Array [
+        Object {
+          "chef": Object {
+            "id": 1,
+            "name": "Snor",
+            "profession": "chef",
+          },
+          "id": 1,
+          "name": "Fastfood",
+        },
+        Object {
+          "chef": Object {
+            "id": 2,
+            "name": "Baard",
+            "profession": "chef",
+          },
+          "id": 2,
+          "name": "Seafood",
+        },
+      ],
+    },
+  },
+]
+`;
+
+exports[`requests fetch with unbalanced complex relations 1`] = `
+Array [
+  Object {
+    "id": 1,
+    "name": "Henk",
+    "town": Object {
+      "id": 1,
+      "name": "Hardinxveld",
+      "restaurants": Array [
+        Object {
+          "chef": Object {
+            "id": 1,
+            "name": "Snor",
+            "profession": "chef",
+          },
+          "id": 1,
+          "name": "Fastfood",
+        },
+        Object {
+          "chef": Object {
+            "id": 2,
+            "name": "Baard",
+            "profession": "chef",
+          },
+          "id": 2,
+          "name": "Seafood",
+        },
+      ],
+    },
+  },
+  Object {
+    "id": 2,
+    "name": "Karel",
+    "town": Object {
+      "id": 2,
+      "name": "Meerkerk",
+      "restaurants": Array [],
+    },
+  },
+]
+`;
