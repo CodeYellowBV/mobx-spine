@@ -1242,12 +1242,18 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                     var relations = this.relations && this.relations();
                     var relModels = {};
                     activeRelations.forEach(function(aRel) {
+                        // If aRel is null, this relation is already defined by another aRel
+                        // IE.: town.restaurants.chef && town
+                        if (aRel === null) {
+                            return;
+                        }
                         var relNames = aRel.match(RE_SPLIT_FIRST_RELATION);
 
                         var currentRel = relNames ? relNames[1] : aRel;
                         var otherRelNames = relNames && relNames[2];
                         var currentProp = relModels[currentRel];
                         var otherRels = otherRelNames && [otherRelNames];
+
                         // When two nested relations are defined next to each other (e.g. `['kind.breed', 'kind.location']`),
                         // the relation `kind` only needs to be initialized once.
                         relModels[currentRel] = currentProp
