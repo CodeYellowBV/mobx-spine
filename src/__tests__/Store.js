@@ -209,6 +209,17 @@ test('each model', () => {
     expect(ids).toEqual([2, 3, 10]);
 });
 
+test('forEach model', () => {
+    const animalStore = new AnimalStore();
+    animalStore.parse(simpleData);
+    const ids = [];
+
+    animalStore.each(model => {
+        ids.push(model.id);
+    });
+    expect(ids).toEqual([2, 3, 10]);
+});
+
 test('remove one model', () => {
     const animalStore = new AnimalStore();
     animalStore.parse(simpleData);

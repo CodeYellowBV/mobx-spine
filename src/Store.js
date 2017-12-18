@@ -417,6 +417,10 @@ export default class Store {
         return this.models.forEach(predicate);
     }
 
+    forEach(predicate) {
+        return this.models.forEach(predicate);
+    }
+
     sortBy(iteratees) {
         return sortBy(this.models, iteratees);
     }
