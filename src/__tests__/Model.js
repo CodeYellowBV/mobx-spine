@@ -1255,7 +1255,7 @@ describe('changes', () => {
 
         animal.setInput('name', 'Lion');
 
-        expect(animal.__changes).toEqual(['name']);
+        expect(toJS(animal.__changes)).toEqual(['name']);
         const output2 = animal.toBackend({ onlyChanges: true });
         // `kind: 2` should not appear in here.
         expect(output2).toEqual({
@@ -1269,7 +1269,7 @@ describe('changes', () => {
 
         animal.setInput('name', 'Lino');
         animal.setInput('name', 'Lion');
-        expect(animal.__changes).toEqual(['name']);
+        expect(toJS(animal.__changes)).toEqual(['name']);
         const output = animal.toBackend({ onlyChanges: true });
         expect(output).toEqual({
             id: 1,
@@ -1320,32 +1320,32 @@ describe('changes', () => {
         });
     });
 
-    test('isChanged should detect changes in current fields', () => {
+    test('hasUserChanges should detect changes in current fields', () => {
         const animal = new Animal({ id: 1 });
-        expect(animal.isChanged()).toBe(false);
+        expect(animal.hasUserChanges).toBe(false);
 
         animal.setInput('name', 'Lino');
-        expect(animal.isChanged()).toBe(true);
+        expect(animal.hasUserChanges).toBe(true);
     });
 
-    test('isChanged should detect changes in model relations', () => {
+    test('hasUserChanges should detect changes in model relations', () => {
         const animal = new Animal({ id: 1 }, { relations: ['kind.breed'] });
-        expect(animal.isChanged()).toBe(false);
+        expect(animal.hasUserChanges).toBe(false);
 
         animal.kind.breed.setInput('name', 'Katachtige');
-        expect(animal.isChanged()).toBe(true);
+        expect(animal.hasUserChanges).toBe(true);
     });
 
-    test('isChanged should detect changes in store relations', () => {
+    test('hasUserChanges should detect changes in store relations', () => {
         const animal = new Animal(
             { id: 1, pastOwners: [{ id: 1 }] },
             { relations: ['pastOwners'] }
         );
 
-        expect(animal.isChanged()).toBe(false);
+        expect(animal.hasUserChanges).toBe(false);
 
         animal.pastOwners.at(0).setInput('name', 'Henk');
 
-        expect(animal.isChanged()).toBe(true);
+        expect(animal.hasUserChanges).toBe(true);
     });
 });

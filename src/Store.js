@@ -332,8 +332,9 @@ export default class Store {
         return Promise.resolve();
     }
 
-    isChanged() {
-        return this.models.some(m => m.isChanged());
+    @computed
+    get hasUserChanges() {
+        return this.models.some(m => m.hasUserChanges);
     }
 
     toBackendAll(newIds = [], options = {}) {

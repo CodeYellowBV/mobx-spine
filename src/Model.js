@@ -68,8 +68,6 @@ export default class Model {
     __activeRelations = [];
     // Holds activated - non-nested - relations (e.g. `['animal']`)
     __activeCurrentRelations = [];
-    // Holds fields (attrs+relations) that have been changed via setInput()
-    __changes = [];
     __repository;
     __store;
     api = null;
@@ -79,6 +77,8 @@ export default class Model {
     @observable __pendingRequestCount = 0;
     // URL query params that are added to fetch requests.
     @observable __fetchParams = {};
+    // Holds fields (attrs+relations) that have been changed via setInput()
+    @observable __changes = [];
 
     // Useful to reference to this model in a relation - that is not yet saved to the backend.
     getNegativeId() {
@@ -219,12 +219,13 @@ export default class Model {
         return snakeToCamel(attrKey);
     }
 
-    isChanged() {
+    @computed
+    get hasUserChanges() {
         if (this.__changes.length > 0) {
             return true;
         }
         return this.__activeCurrentRelations.some(rel => {
-            return this[rel].isChanged();
+            return this[rel].hasUserChanges;
         });
     }
 
