@@ -133,6 +133,41 @@ test('POST request with CSRF', () => {
     return api.post('/api/asdf/', { foo: 'bar' });
 });
 
+test('POST request with failing CSRF', () => {
+    mock.onAny().replyOnce(config => {
+        return [403, { code: 'CSRFFailure' }];
+    });
+    mock.onGet('/api/bootstrap/').replyOnce(config => {
+        return [200, { csrf_token: 'beasts' }];
+    });
+    mock.onAny().replyOnce(config => {
+        return [200, { foo: true }];
+    });
+    const api = new BinderApi();
+    api.csrfToken = 'ponys';
+    return api.post('/api/asdf/', { foo: 'bar' }).then(res => {
+        expect(res).toEqual({ foo: true });
+        expect(api.csrfToken).toBe('beasts');
+    });
+});
+
+test('POST request with failing second CSRF', () => {
+    mock.onAny().replyOnce(config => {
+        return [403, { code: 'CSRFFailure' }];
+    });
+    mock.onGet('/api/bootstrap/').replyOnce(config => {
+        return [200, { csrf_token: 'beasts' }];
+    });
+    mock.onAny().replyOnce(config => {
+        return [403, { code: 'CSRFFailure' }];
+    });
+    const api = new BinderApi();
+    api.csrfToken = 'ponys';
+    return api.post('/api/asdf/', { foo: 'bar' }).catch(err => {
+        expect(err.response.status).toBe(403);
+    });
+});
+
 test('PUT request', () => {
     mock.onAny().replyOnce(config => {
         expect(config.method).toBe('put');

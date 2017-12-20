@@ -214,7 +214,7 @@ test('forEach model', () => {
     animalStore.parse(simpleData);
     const ids = [];
 
-    animalStore.each(model => {
+    animalStore.forEach(model => {
         ids.push(model.id);
     });
     expect(ids).toEqual([2, 3, 10]);

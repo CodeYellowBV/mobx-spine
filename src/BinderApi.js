@@ -20,6 +20,32 @@ export default class BinderApi {
     baseUrl = null;
     csrfToken = null;
     defaultHeaders = {};
+    axios = axios.create();
+
+    constructor() {
+        this.__initializeCsrfHandling();
+    }
+
+    __initializeCsrfHandling() {
+        this.axios.interceptors.response.use(null, err => {
+            const status = get(err, 'response.status');
+            const statusErrCode = get(err, 'response.data.code');
+            const doNotRetry = get(err, 'response.config.doNotRetry');
+            if (
+                status === 403 &&
+                statusErrCode === 'CSRFFailure' &&
+                !doNotRetry
+            ) {
+                return this.fetchCsrfToken().then(() =>
+                    this.axios({
+                        ...err.response.config,
+                        doNotRetry: true,
+                    })
+                );
+            }
+            return Promise.reject(err);
+        });
+    }
 
     __request(method, url, data, options) {
         options || (options = {});
@@ -49,7 +75,7 @@ export default class BinderApi {
         );
         axiosOptions.headers = headers;
 
-        const xhr = axios(axiosOptions);
+        const xhr = this.axios(axiosOptions);
 
         // We fork the promise tree as we want to have the error traverse to the listeners
         if (this.onRequestError && options.skipRequestError !== true) {
@@ -61,6 +87,12 @@ export default class BinderApi {
                 ? Promise.resolve()
                 : this.__responseFormatter;
         return xhr.then(onSuccess);
+    }
+
+    fetchCsrfToken() {
+        return this.get('/api/bootstrap/').then(res => {
+            this.csrfToken = res.csrf_token;
+        });
     }
 
     __responseFormatter(res) {
