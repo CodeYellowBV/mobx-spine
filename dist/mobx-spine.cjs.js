@@ -78,6 +78,22 @@ var defineProperty = function(obj, key, value) {
     return obj;
 };
 
+var _extends =
+    Object.assign ||
+    function(target) {
+        for (var i = 1; i < arguments.length; i++) {
+            var source = arguments[i];
+
+            for (var key in source) {
+                if (Object.prototype.hasOwnProperty.call(source, key)) {
+                    target[key] = source[key];
+                }
+            }
+        }
+
+        return target;
+    };
+
 var _class$1;
 var _descriptor$1;
 var _descriptor2$1;
@@ -2104,9 +2120,41 @@ var BinderApi = (function() {
         this.baseUrl = null;
         this.csrfToken = null;
         this.defaultHeaders = {};
+        this.axios = axios.create();
+
+        this.__initializeCsrfHandling();
     }
 
     createClass(BinderApi, [
+        {
+            key: '__initializeCsrfHandling',
+            value: function __initializeCsrfHandling() {
+                var _this = this;
+
+                this.axios.interceptors.response.use(null, function(err) {
+                    var status = lodash.get(err, 'response.status');
+                    var statusErrCode = lodash.get(err, 'response.data.code');
+                    var doNotRetry = lodash.get(
+                        err,
+                        'response.config.doNotRetry'
+                    );
+                    if (
+                        status === 403 &&
+                        statusErrCode === 'CSRFFailure' &&
+                        !doNotRetry
+                    ) {
+                        return _this.fetchCsrfToken().then(function() {
+                            return _this.axios(
+                                _extends({}, err.response.config, {
+                                    doNotRetry: true,
+                                })
+                            );
+                        });
+                    }
+                    return Promise.reject(err);
+                });
+            },
+        },
         {
             key: '__request',
             value: function __request(method, url, data, options) {
@@ -2137,7 +2185,7 @@ var BinderApi = (function() {
                 );
                 axiosOptions.headers = headers;
 
-                var xhr = axios(axiosOptions);
+                var xhr = this.axios(axiosOptions);
 
                 // We fork the promise tree as we want to have the error traverse to the listeners
                 if (this.onRequestError && options.skipRequestError !== true) {
@@ -2149,6 +2197,16 @@ var BinderApi = (function() {
                         ? Promise.resolve()
                         : this.__responseFormatter;
                 return xhr.then(onSuccess);
+            },
+        },
+        {
+            key: 'fetchCsrfToken',
+            value: function fetchCsrfToken() {
+                var _this2 = this;
+
+                return this.get('/api/bootstrap/').then(function(res) {
+                    _this2.csrfToken = res.csrf_token;
+                });
             },
         },
         {
