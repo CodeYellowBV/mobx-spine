@@ -275,6 +275,10 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                     repos = _ref.repos,
                     relMapping = _ref.relMapping;
 
+                if (data === undefined) {
+                    throw 'Backend error. Data is not set. HINT: DID YOU FORGET THE M2M again?';
+                }
+
                 this.models.replace(
                     data.map(function(record) {
                         // TODO: I'm not happy at all about how this looks.

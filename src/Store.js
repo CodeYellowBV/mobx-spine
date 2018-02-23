@@ -109,6 +109,10 @@ export default class Store {
 
     @action
     fromBackend({ data, repos, relMapping }) {
+        if (data === undefined) {
+            throw 'Backend error. Data is not set. HINT: DID YOU FORGET THE M2M again?';
+        }
+
         this.models.replace(
             data.map(record => {
                 // TODO: I'm not happy at all about how this looks.
