@@ -12,13 +12,13 @@ function checkMomentInstance(attr, value) {
 export default {
     date: {
         parse(attr, value) {
-            if (value === null) {
+            if (value === null || value === undefined) {
                 return null;
             }
             return moment(value, 'YYYY-MM-DD');
         },
         toJS(attr, value) {
-            if (value === null) {
+            if (value === null || value === undefined) {
                 return null;
             }
             checkMomentInstance(attr, value);
