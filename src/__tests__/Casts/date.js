@@ -25,6 +25,24 @@ test('should parse to model', () => {
     expect(animal.birthDate.format('YYYY-MM-DD')).toBe('1995-03-22');
 });
 
+test('parse should treat undefined as null', () => {
+    const animal = new Animal({ birthDate: '1995-03-22' });
+    expect(animal.birthDate).toBeInstanceOf(moment);
+
+    animal.parse({
+        birthDate: undefined,
+    });
+
+    expect(animal.birthDate).toBe(null);
+});
+
+test('toJS should treat undefined as null', () => {
+    const animal = new Animal({ birthDate: '1995-03-22' });
+    animal.birthDate = undefined;
+
+    expect(animal.toJS().birthDate).toBe(null);
+});
+
 test('should parse to model when null', () => {
     const animal = new Animal({ birthDate: '1995-03-22' });
     expect(animal.birthDate).toBeInstanceOf(moment);
