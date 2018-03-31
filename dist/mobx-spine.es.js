@@ -2112,14 +2112,6 @@ function csrfSafeMethod(method) {
     return /^(GET|HEAD|OPTIONS|TRACE)$/i.test(method);
 }
 
-function parseBackendValidationErrors(response) {
-    var valErrors = get(response, 'data.errors');
-    if (response.status === 400 && valErrors) {
-        return valErrors;
-    }
-    return null;
-}
-
 var BinderApi = (function() {
     function BinderApi() {
         classCallCheck(this, BinderApi);
@@ -2200,6 +2192,16 @@ var BinderApi = (function() {
                         ? Promise.resolve()
                         : this.__responseFormatter;
                 return xhr.then(onSuccess);
+            },
+        },
+        {
+            key: 'parseBackendValidationErrors',
+            value: function parseBackendValidationErrors(response) {
+                var valErrors = get(response, 'data.errors');
+                if (response.status === 400 && valErrors) {
+                    return valErrors;
+                }
+                return null;
             },
         },
         {
@@ -2291,6 +2293,8 @@ var BinderApi = (function() {
         {
             key: 'saveModel',
             value: function saveModel(_ref2) {
+                var _this3 = this;
+
                 var url = _ref2.url,
                     data = _ref2.data,
                     isNew = _ref2.isNew,
@@ -2303,7 +2307,7 @@ var BinderApi = (function() {
                     })
                     .catch(function(err) {
                         if (err.response) {
-                            err.valErrors = parseBackendValidationErrors(
+                            err.valErrors = _this3.parseBackendValidationErrors(
                                 err.response
                             );
                         }
@@ -2314,6 +2318,8 @@ var BinderApi = (function() {
         {
             key: 'saveAllModels',
             value: function saveAllModels(_ref3) {
+                var _this4 = this;
+
                 var url = _ref3.url,
                     data = _ref3.data,
                     model = _ref3.model,
@@ -2335,7 +2341,7 @@ var BinderApi = (function() {
                     })
                     .catch(function(err) {
                         if (err.response) {
-                            err.valErrors = parseBackendValidationErrors(
+                            err.valErrors = _this4.parseBackendValidationErrors(
                                 err.response
                             );
                         }
@@ -2399,13 +2405,13 @@ function checkMomentInstance(attr, value) {
 var Casts = {
     date: {
         parse: function parse(attr, value) {
-            if (value === null) {
+            if (value === null || value === undefined) {
                 return null;
             }
             return moment(value, 'YYYY-MM-DD');
         },
         toJS: function toJS$$1(attr, value) {
-            if (value === null) {
+            if (value === null || value === undefined) {
                 return null;
             }
             checkMomentInstance(attr, value);
