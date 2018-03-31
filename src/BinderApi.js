@@ -8,14 +8,6 @@ function csrfSafeMethod(method) {
     return /^(GET|HEAD|OPTIONS|TRACE)$/i.test(method);
 }
 
-function parseBackendValidationErrors(response) {
-    const valErrors = get(response, 'data.errors');
-    if (response.status === 400 && valErrors) {
-        return valErrors;
-    }
-    return null;
-}
-
 export default class BinderApi {
     baseUrl = null;
     csrfToken = null;
@@ -89,6 +81,14 @@ export default class BinderApi {
         return xhr.then(onSuccess);
     }
 
+    parseBackendValidationErrors(response) {
+        const valErrors = get(response, 'data.errors');
+        if (response.status === 400 && valErrors) {
+            return valErrors;
+        }
+        return null;
+    }
+
     fetchCsrfToken() {
         return this.get('/api/bootstrap/').then(res => {
             this.csrfToken = res.csrf_token;
@@ -156,7 +156,9 @@ export default class BinderApi {
             })
             .catch(err => {
                 if (err.response) {
-                    err.valErrors = parseBackendValidationErrors(err.response);
+                    err.valErrors = this.parseBackendValidationErrors(
+                        err.response
+                    );
                 }
                 throw err;
             });
@@ -179,7 +181,9 @@ export default class BinderApi {
             })
             .catch(err => {
                 if (err.response) {
-                    err.valErrors = parseBackendValidationErrors(err.response);
+                    err.valErrors = this.parseBackendValidationErrors(
+                        err.response
+                    );
                 }
                 throw err;
             });
