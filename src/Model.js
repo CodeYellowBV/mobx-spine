@@ -634,6 +634,8 @@ export default class Model {
         });
     }
 
+    validationErrorFormatter = obj => obj.code;
+
     @action
     parseValidationErrors(valErrors) {
         const bname = this.constructor.backendResourceName;
@@ -650,7 +652,7 @@ export default class Model {
                 const formattedErrors = mapValues(
                     camelCasedErrors,
                     valError => {
-                        return valError.map(obj => obj.code);
+                        return valError.map(this.validationErrorFormatter);
                     }
                 );
                 this.__backendValidationErrors = formattedErrors;
