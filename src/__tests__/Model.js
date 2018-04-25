@@ -777,6 +777,27 @@ test('setInput to clear backend validation errors', () => {
     expect(animal.backendValidationErrors.name).toBe(undefined);
 });
 
+test('allow custom validationErrorFormatter', () => {
+    const location = new class extends Location {
+        static backendResourceName = 'location';
+        validationErrorFormatter(obj) {
+            return obj.msg;
+        }
+    }({ id: 2 });
+
+    location.parseValidationErrors({
+        location: {
+            2: {
+                name: [{ msg: 'Error 1' }, { msg: 'Error 2' }],
+            },
+        },
+    });
+
+    expect(toJS(location.backendValidationErrors)).toEqual({
+        name: ['Error 1', 'Error 2'],
+    });
+});
+
 test('setInput on non-existing field', () => {
     const animal = new Animal();
     expect(() => {

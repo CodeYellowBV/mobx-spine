@@ -634,12 +634,13 @@ export default class Model {
         });
     }
 
-    validationErrorFormatter = obj => obj.code;
+    validationErrorFormatter(obj) {
+        return obj.code;
+    }
 
     @action
     parseValidationErrors(valErrors) {
         const bname = this.constructor.backendResourceName;
-
         if (valErrors[bname]) {
             const id = this.getInternalId();
             // When there is no id or negative id, the backend may use the string 'null'. Bit weird, but eh.
