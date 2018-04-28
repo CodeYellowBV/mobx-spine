@@ -377,13 +377,20 @@ export default class Store {
             relations: this.__activeRelations,
             comparator,
         });
+
         // Oh gawd MobX is so awesome.
         const events = autorun(() => {
             const models = this.filter(filter);
             store.models.replace(models);
             store.sort();
+
+            // When the parent store is busy, make sure the virtual store is
+            // also busy.
+            store.__pendingRequestCount = this.__pendingRequestCount;
         });
+
         store.unsubscribeVirtualStore = events;
+
         return store;
     }
 

@@ -358,12 +358,20 @@ test('virtualStore with basic properties', () => {
         filter: m => m.name.includes('e'),
     });
     expect(virtual.map('id')).toEqual([2, 3]);
+
     const newModel = animalStore.add({ id: 5, name: 'eeeee' });
     expect(virtual.map('id')).toEqual([2, 3, 5]);
+
     animalStore.remove(newModel);
     expect(virtual.map('id')).toEqual([2, 3]);
+
     animalStore.get(2).name = 'aaaaa';
     expect(virtual.map('id')).toEqual([3]);
+
+    // Verify that if the original store is busy, the virtual store is busy
+    // as well.
+    animalStore.__pendingRequestCount = 1337;
+    expect(virtual.__pendingRequestCount).toBe(1337);
 });
 
 test('virtualStore unsubscribe', () => {
