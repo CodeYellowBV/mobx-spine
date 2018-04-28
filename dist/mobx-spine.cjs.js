@@ -94,15 +94,15 @@ var _extends =
         return target;
     };
 
-var _class$1;
-var _descriptor$1;
-var _descriptor2$1;
-var _descriptor3$1;
-var _descriptor4$1;
-var _class2$1;
-var _temp$1;
+var _class,
+    _descriptor,
+    _descriptor2,
+    _descriptor3,
+    _descriptor4,
+    _class2,
+    _temp;
 
-function _initDefineProp$1(target, property, descriptor, context) {
+function _initDefineProp(target, property, descriptor, context) {
     if (!descriptor) return;
     Object.defineProperty(target, property, {
         enumerable: descriptor.enumerable,
@@ -114,7 +114,7 @@ function _initDefineProp$1(target, property, descriptor, context) {
     });
 }
 
-function _applyDecoratedDescriptor$1(
+function _applyDecoratedDescriptor(
     target,
     property,
     decorators,
@@ -159,7 +159,7 @@ var AVAILABLE_CONST_OPTIONS = [
     'repository',
 ];
 
-var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
+var Store = ((_class = ((_temp = _class2 = (function() {
     createClass(Store, [
         {
             key: 'url',
@@ -210,13 +210,13 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                 : {};
         classCallCheck(this, Store);
 
-        _initDefineProp$1(this, 'models', _descriptor$1, this);
+        _initDefineProp(this, 'models', _descriptor, this);
 
-        _initDefineProp$1(this, 'params', _descriptor2$1, this);
+        _initDefineProp(this, 'params', _descriptor2, this);
 
-        _initDefineProp$1(this, '__pendingRequestCount', _descriptor3$1, this);
+        _initDefineProp(this, '__pendingRequestCount', _descriptor3, this);
 
-        _initDefineProp$1(this, '__state', _descriptor4$1, this);
+        _initDefineProp(this, '__state', _descriptor4, this);
 
         this.__activeRelations = [];
         this.Model = null;
@@ -476,7 +476,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         },
         {
             key: 'toJS',
-            value: function toJS$$1() {
+            value: function toJS() {
                 return this.models.map(function(model) {
                     return model.toJS();
                 });
@@ -595,20 +595,27 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
             value: function virtualStore(_ref2) {
                 var _this7 = this;
 
-                var filter$$1 = _ref2.filter,
+                var filter = _ref2.filter,
                     comparator = _ref2.comparator;
 
                 var store = new this.constructor({
                     relations: this.__activeRelations,
                     comparator: comparator,
                 });
+
                 // Oh gawd MobX is so awesome.
                 var events = mobx.autorun(function() {
-                    var models = _this7.filter(filter$$1);
+                    var models = _this7.filter(filter);
                     store.models.replace(models);
                     store.sort();
+
+                    // When the parent store is busy, make sure the virtual store is
+                    // also busy.
+                    store.__pendingRequestCount = _this7.__pendingRequestCount;
                 });
+
                 store.unsubscribeVirtualStore = events;
+
                 return store;
             },
 
@@ -636,7 +643,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         },
         {
             key: 'map',
-            value: function map$$1(predicate) {
+            value: function map(predicate) {
                 return lodash.map(this.models, predicate);
             },
         },
@@ -648,19 +655,19 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         },
         {
             key: 'filter',
-            value: function filter$$1(predicate) {
+            value: function filter(predicate) {
                 return lodash.filter(this.models, predicate);
             },
         },
         {
             key: 'find',
-            value: function find$$1(predicate) {
+            value: function find(predicate) {
                 return lodash.find(this.models, predicate);
             },
         },
         {
             key: 'each',
-            value: function each$$1(predicate) {
+            value: function each(predicate) {
                 return this.models.forEach(predicate);
             },
         },
@@ -672,7 +679,7 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         },
         {
             key: 'sortBy',
-            value: function sortBy$$1(iteratees) {
+            value: function sortBy(iteratees) {
                 return lodash.sortBy(this.models, iteratees);
             },
         },
@@ -734,10 +741,10 @@ var Store = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
     ]);
     return Store;
 })()),
-(_class2$1.backendResourceName = ''),
-_temp$1)),
-(_descriptor$1 = _applyDecoratedDescriptor$1(
-    _class$1.prototype,
+(_class2.backendResourceName = ''),
+_temp)),
+(_descriptor = _applyDecoratedDescriptor(
+    _class.prototype,
     'models',
     [mobx.observable],
     {
@@ -747,8 +754,8 @@ _temp$1)),
         },
     }
 )),
-(_descriptor2$1 = _applyDecoratedDescriptor$1(
-    _class$1.prototype,
+(_descriptor2 = _applyDecoratedDescriptor(
+    _class.prototype,
     'params',
     [mobx.observable],
     {
@@ -758,8 +765,8 @@ _temp$1)),
         },
     }
 )),
-(_descriptor3$1 = _applyDecoratedDescriptor$1(
-    _class$1.prototype,
+(_descriptor3 = _applyDecoratedDescriptor(
+    _class.prototype,
     '__pendingRequestCount',
     [mobx.observable],
     {
@@ -769,8 +776,8 @@ _temp$1)),
         },
     }
 )),
-(_descriptor4$1 = _applyDecoratedDescriptor$1(
-    _class$1.prototype,
+(_descriptor4 = _applyDecoratedDescriptor(
+    _class.prototype,
     '__state',
     [mobx.observable],
     {
@@ -784,150 +791,150 @@ _temp$1)),
         },
     }
 )),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'isLoading',
     [mobx.computed],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'isLoading'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'length',
     [mobx.computed],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'length'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'length'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'fromBackend',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'fromBackend'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'sort',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'sort'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'sort'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'parse',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'parse'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'add',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'add'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'add'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'remove',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'remove'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'remove'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'removeById',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'removeById'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'removeById'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'clear',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'clear'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'fetch',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'fetch'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'setLimit',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'setLimit'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'setLimit'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'totalPages',
     [mobx.computed],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'totalPages'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'totalPages'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'currentPage',
     [mobx.computed],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'currentPage'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'currentPage'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'hasNextPage',
     [mobx.computed],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasNextPage'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'hasNextPage'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'hasPreviousPage',
     [mobx.computed],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasPreviousPage'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'hasPreviousPage'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'getNextPage',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'getNextPage'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'getNextPage'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'getPreviousPage',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'getPreviousPage'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'getPreviousPage'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'setPage',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'setPage'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'setPage'),
+    _class.prototype
 ),
-_applyDecoratedDescriptor$1(
-    _class$1.prototype,
+_applyDecoratedDescriptor(
+    _class.prototype,
     'hasUserChanges',
     [mobx.computed],
-    Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasUserChanges'),
-    _class$1.prototype
+    Object.getOwnPropertyDescriptor(_class.prototype, 'hasUserChanges'),
+    _class.prototype
 ),
-_class$1);
+_class);
 
-var _class;
-var _descriptor;
-var _descriptor2;
-var _descriptor3;
-var _descriptor4;
-var _class2;
-var _temp;
+var _class$1,
+    _descriptor$1,
+    _descriptor2$1,
+    _descriptor3$1,
+    _descriptor4$1,
+    _class2$1,
+    _temp$1;
 
-function _initDefineProp(target, property, descriptor, context) {
+function _initDefineProp$1(target, property, descriptor, context) {
     if (!descriptor) return;
     Object.defineProperty(target, property, {
         enumerable: descriptor.enumerable,
@@ -939,7 +946,7 @@ function _initDefineProp(target, property, descriptor, context) {
     });
 }
 
-function _applyDecoratedDescriptor(
+function _applyDecoratedDescriptor$1(
     target,
     property,
     decorators,
@@ -997,7 +1004,7 @@ var FORBIDDEN_ATTRS = [
     'clear',
 ];
 
-var Model = ((_class = ((_temp = _class2 = (function() {
+var Model = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
     createClass(Model, [
         {
             key: 'urlRoot',
@@ -1108,13 +1115,18 @@ var Model = ((_class = ((_temp = _class2 = (function() {
         this.api = null;
         this.cid = 'm' + lodash.uniqueId();
 
-        _initDefineProp(this, '__backendValidationErrors', _descriptor, this);
+        _initDefineProp$1(
+            this,
+            '__backendValidationErrors',
+            _descriptor$1,
+            this
+        );
 
-        _initDefineProp(this, '__pendingRequestCount', _descriptor2, this);
+        _initDefineProp$1(this, '__pendingRequestCount', _descriptor2$1, this);
 
-        _initDefineProp(this, '__fetchParams', _descriptor3, this);
+        _initDefineProp$1(this, '__fetchParams', _descriptor3$1, this);
 
-        _initDefineProp(this, '__changes', _descriptor4, this);
+        _initDefineProp$1(this, '__changes', _descriptor4$1, this);
 
         this.__store = options.store;
         this.__repository = options.repository;
@@ -1384,7 +1396,7 @@ var Model = ((_class = ((_temp = _class2 = (function() {
             },
             {
                 key: 'toJS',
-                value: function toJS$$1() {
+                value: function toJS() {
                     var _this5 = this;
 
                     var output = {};
@@ -1752,6 +1764,12 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                 },
             },
             {
+                key: 'validationErrorFormatter',
+                value: function validationErrorFormatter(obj) {
+                    return obj.code;
+                },
+            },
+            {
                 key: 'parseValidationErrors',
                 value: function parseValidationErrors(valErrors) {
                     var _this12 = this;
@@ -1773,9 +1791,9 @@ var Model = ((_class = ((_temp = _class2 = (function() {
                             var formattedErrors = lodash.mapValues(
                                 camelCasedErrors,
                                 function(valError) {
-                                    return valError.map(function(obj) {
-                                        return obj.code;
-                                    });
+                                    return valError.map(
+                                        _this12.validationErrorFormatter
+                                    );
                                 }
                             );
                             this.__backendValidationErrors = formattedErrors;
@@ -1940,11 +1958,11 @@ var Model = ((_class = ((_temp = _class2 = (function() {
     );
     return Model;
 })()),
-(_class2.primaryKey = 'id'),
-(_class2.backendResourceName = ''),
-_temp)),
-(_descriptor = _applyDecoratedDescriptor(
-    _class.prototype,
+(_class2$1.primaryKey = 'id'),
+(_class2$1.backendResourceName = ''),
+_temp$1)),
+(_descriptor$1 = _applyDecoratedDescriptor$1(
+    _class$1.prototype,
     '__backendValidationErrors',
     [mobx.observable],
     {
@@ -1954,8 +1972,8 @@ _temp)),
         },
     }
 )),
-(_descriptor2 = _applyDecoratedDescriptor(
-    _class.prototype,
+(_descriptor2$1 = _applyDecoratedDescriptor$1(
+    _class$1.prototype,
     '__pendingRequestCount',
     [mobx.observable],
     {
@@ -1965,8 +1983,8 @@ _temp)),
         },
     }
 )),
-(_descriptor3 = _applyDecoratedDescriptor(
-    _class.prototype,
+(_descriptor3$1 = _applyDecoratedDescriptor$1(
+    _class$1.prototype,
     '__fetchParams',
     [mobx.observable],
     {
@@ -1976,8 +1994,8 @@ _temp)),
         },
     }
 )),
-(_descriptor4 = _applyDecoratedDescriptor(
-    _class.prototype,
+(_descriptor4$1 = _applyDecoratedDescriptor$1(
+    _class$1.prototype,
     '__changes',
     [mobx.observable],
     {
@@ -1987,122 +2005,128 @@ _temp)),
         },
     }
 )),
-_applyDecoratedDescriptor(
-    _class.prototype,
+_applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'url',
     [mobx.computed],
-    Object.getOwnPropertyDescriptor(_class.prototype, 'url'),
-    _class.prototype
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'url'),
+    _class$1.prototype
 ),
-_applyDecoratedDescriptor(
-    _class.prototype,
+_applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'isNew',
     [mobx.computed],
-    Object.getOwnPropertyDescriptor(_class.prototype, 'isNew'),
-    _class.prototype
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'isNew'),
+    _class$1.prototype
 ),
-_applyDecoratedDescriptor(
-    _class.prototype,
+_applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'isLoading',
     [mobx.computed],
-    Object.getOwnPropertyDescriptor(_class.prototype, 'isLoading'),
-    _class.prototype
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'),
+    _class$1.prototype
 ),
-_applyDecoratedDescriptor(
-    _class.prototype,
+_applyDecoratedDescriptor$1(
+    _class$1.prototype,
     '__parseRelations',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class.prototype, '__parseRelations'),
-    _class.prototype
+    Object.getOwnPropertyDescriptor(_class$1.prototype, '__parseRelations'),
+    _class$1.prototype
 ),
-_applyDecoratedDescriptor(
-    _class.prototype,
+_applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'hasUserChanges',
     [mobx.computed],
-    Object.getOwnPropertyDescriptor(_class.prototype, 'hasUserChanges'),
-    _class.prototype
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasUserChanges'),
+    _class$1.prototype
 ),
-_applyDecoratedDescriptor(
-    _class.prototype,
+_applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'fromBackend',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class.prototype, 'fromBackend'),
-    _class.prototype
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'),
+    _class$1.prototype
 ),
-_applyDecoratedDescriptor(
-    _class.prototype,
+_applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'parse',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class.prototype, 'parse'),
-    _class.prototype
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'),
+    _class$1.prototype
 ),
-_applyDecoratedDescriptor(
-    _class.prototype,
+_applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'save',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class.prototype, 'save'),
-    _class.prototype
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'save'),
+    _class$1.prototype
 ),
-_applyDecoratedDescriptor(
-    _class.prototype,
+_applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'setInput',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class.prototype, 'setInput'),
-    _class.prototype
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'setInput'),
+    _class$1.prototype
 ),
-_applyDecoratedDescriptor(
-    _class.prototype,
+_applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'saveAll',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class.prototype, 'saveAll'),
-    _class.prototype
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'saveAll'),
+    _class$1.prototype
 ),
-_applyDecoratedDescriptor(
-    _class.prototype,
+_applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'parseValidationErrors',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class.prototype, 'parseValidationErrors'),
-    _class.prototype
+    Object.getOwnPropertyDescriptor(
+        _class$1.prototype,
+        'parseValidationErrors'
+    ),
+    _class$1.prototype
 ),
-_applyDecoratedDescriptor(
-    _class.prototype,
+_applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'clearValidationErrors',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class.prototype, 'clearValidationErrors'),
-    _class.prototype
+    Object.getOwnPropertyDescriptor(
+        _class$1.prototype,
+        'clearValidationErrors'
+    ),
+    _class$1.prototype
 ),
-_applyDecoratedDescriptor(
-    _class.prototype,
+_applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'backendValidationErrors',
     [mobx.computed],
     Object.getOwnPropertyDescriptor(
-        _class.prototype,
+        _class$1.prototype,
         'backendValidationErrors'
     ),
-    _class.prototype
+    _class$1.prototype
 ),
-_applyDecoratedDescriptor(
-    _class.prototype,
+_applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'delete',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class.prototype, 'delete'),
-    _class.prototype
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'delete'),
+    _class$1.prototype
 ),
-_applyDecoratedDescriptor(
-    _class.prototype,
+_applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'fetch',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class.prototype, 'fetch'),
-    _class.prototype
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'),
+    _class$1.prototype
 ),
-_applyDecoratedDescriptor(
-    _class.prototype,
+_applyDecoratedDescriptor$1(
+    _class$1.prototype,
     'clear',
     [mobx.action],
-    Object.getOwnPropertyDescriptor(_class.prototype, 'clear'),
-    _class.prototype
+    Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'),
+    _class$1.prototype
 ),
-_class);
+_class$1);
 
 // Function ripped from Django docs.
 // See: https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
@@ -2412,7 +2436,7 @@ var Casts = {
             }
             return moment(value, 'YYYY-MM-DD');
         },
-        toJS: function toJS$$1(attr, value) {
+        toJS: function toJS(attr, value) {
             if (value === null || value === undefined) {
                 return null;
             }
@@ -2427,7 +2451,7 @@ var Casts = {
             }
             return moment(value);
         },
-        toJS: function toJS$$1(attr, value) {
+        toJS: function toJS(attr, value) {
             if (value === null) {
                 return null;
             }
