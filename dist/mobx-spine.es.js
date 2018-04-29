@@ -1561,6 +1561,7 @@ var Model = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                         if (!resScoped) {
                             return;
                         }
+
                         var scopedData = resScoped.scopedData,
                             scopedRepos = resScoped.scopedRepos,
                             scopedRelMapping = resScoped.scopedRelMapping;
@@ -1603,6 +1604,7 @@ var Model = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                         'Parameter supplied to `parse()` is not an object, got: ' +
                             JSON.stringify(data)
                     );
+
                     forIn(data, function(value, key) {
                         var attr = _this8.constructor.fromBackendAttrKey(key);
                         if (_this8.__attributes.includes(attr)) {
@@ -1617,6 +1619,9 @@ var Model = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                                 isPlainObject(get(value, '[0]'))
                             ) {
                                 _this8[attr].parse(value);
+                            } else if (value === null) {
+                                // The relation is cleared.
+                                _this8[attr].clear();
                             }
                         }
                     });
