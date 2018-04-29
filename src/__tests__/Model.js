@@ -272,6 +272,33 @@ test('Parsing empty relation', () => {
     expect(customer.bestCook.id).toBe(null);
 });
 
+test.only('Parsing empty relation which was already set', () => {
+    const customer = new CLocation(
+        {
+            bestCook: {
+                id: 1,
+                name: 'Zaico',
+                profession: 'Noob',
+            },
+        },
+        { relations: ['bestCook.currentWork'] }
+    );
+
+    expect(customer.bestCook.id).toBe(1);
+    expect(customer.bestCook.name).toBe('Zaico');
+    expect(customer.bestCook.profession).toBe('Noob');
+
+    customer.fromBackend({
+        data: customersLocationBestCookWorkPlaces.data,
+        repos: customersLocationBestCookWorkPlaces.with,
+        relMapping: customersLocationBestCookWorkPlaces.with_mapping,
+    });
+
+    expect(customer.bestCook.id).toBe(null);
+    expect(customer.bestCook.name).toBe('');
+    expect(customer.bestCook.profession).toBe('chef');
+});
+
 test('Parsing two-level relation (nested)', () => {
     const animal = new Animal(null, {
         relations: ['kind.breed'],

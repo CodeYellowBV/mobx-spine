@@ -464,6 +464,7 @@ export default class Model {
             if (!resScoped) {
                 return;
             }
+
             const { scopedData, scopedRepos, scopedRelMapping } = resScoped;
             rel.fromBackend({
                 data: scopedData,
@@ -499,6 +500,7 @@ export default class Model {
                 data
             )}`
         );
+
         forIn(data, (value, key) => {
             const attr = this.constructor.fromBackendAttrKey(key);
             if (this.__attributes.includes(attr)) {
@@ -508,6 +510,9 @@ export default class Model {
                 // However, it can also be an object if there are nested relations (non flattened).
                 if (isPlainObject(value) || isPlainObject(get(value, '[0]'))) {
                     this[attr].parse(value);
+                } else if (value === null) {
+                    // The relation is cleared.
+                    this[attr].clear();
                 }
             }
         });
