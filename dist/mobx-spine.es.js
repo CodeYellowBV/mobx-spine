@@ -762,7 +762,7 @@ var Store = ((_class = ((_temp = _class2 = (function() {
 })()),
 (_class2.backendResourceName = ''),
 _temp)),
-(_descriptor = _applyDecoratedDescriptor(
+((_descriptor = _applyDecoratedDescriptor(
     _class.prototype,
     'models',
     [observable],
@@ -942,7 +942,7 @@ _applyDecoratedDescriptor(
     [computed],
     Object.getOwnPropertyDescriptor(_class.prototype, 'hasUserChanges'),
     _class.prototype
-),
+)),
 _class);
 
 var _class$1,
@@ -1967,7 +1967,7 @@ var Model = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
 (_class2$1.primaryKey = 'id'),
 (_class2$1.backendResourceName = ''),
 _temp$1)),
-(_descriptor$1 = _applyDecoratedDescriptor$1(
+((_descriptor$1 = _applyDecoratedDescriptor$1(
     _class$1.prototype,
     '__backendValidationErrors',
     [observable],
@@ -2131,7 +2131,7 @@ _applyDecoratedDescriptor$1(
     [action],
     Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'),
     _class$1.prototype
-),
+)),
 _class$1);
 
 // Function ripped from Django docs.
