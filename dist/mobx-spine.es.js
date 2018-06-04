@@ -1740,6 +1740,8 @@ var Model = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
                             action(function(res) {
                                 _this10.__pendingRequestCount -= 1;
                                 _this10.saveFromBackend(res);
+
+                                return res;
                             })
                         )
                         .catch(
