@@ -608,6 +608,8 @@ export default class Model {
                 action(res => {
                     this.__pendingRequestCount -= 1;
                     this.saveFromBackend(res);
+
+                    return res;
                 })
             )
             .catch(

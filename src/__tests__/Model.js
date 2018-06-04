@@ -1042,7 +1042,7 @@ describe('requests', () => {
         return animal.save({ params: { branch_id: 1 } });
     });
 
-    test('save all with relations', () => {
+    test.only('save all with relations', () => {
         const animal = new Animal(
             {
                 name: 'Doggo',
@@ -1058,11 +1058,12 @@ describe('requests', () => {
             return [201, animalMultiPutResponse];
         });
 
-        return animal.saveAll({ relations: ['kind'] }).then(() => {
+        return animal.saveAll({ relations: ['kind'] }).then(response => {
             expect(spy).toHaveBeenCalled();
             expect(animal.id).toBe(10);
             expect(animal.kind.id).toBe(4);
             expect(animal.pastOwners.at(0).id).toBe(100);
+            expect(response).toEqual(animalMultiPutResponse);
 
             spy.mockReset();
             spy.mockRestore();
