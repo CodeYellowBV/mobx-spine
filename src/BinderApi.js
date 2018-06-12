@@ -210,6 +210,7 @@ export default class BinderApi {
     fetchStore({ url, data, requestOptions }) {
         return this.get(url, data, requestOptions).then(res => {
             return {
+                response: res,
                 data: res.data,
                 repos: res.with,
                 relMapping: res.with_mapping,

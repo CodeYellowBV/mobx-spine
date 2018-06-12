@@ -523,9 +523,10 @@ describe('requests', () => {
             return [200, animalsData];
         });
 
-        return animalStore.fetch().then(() => {
+        return animalStore.fetch().then(response => {
             expect(animalStore.length).toBe(2);
             expect(animalStore.map('id')).toEqual([2, 3]);
+            expect(response).toEqual(animalsData);
         });
     });
 

@@ -272,7 +272,7 @@ test('Parsing empty relation', () => {
     expect(customer.bestCook.id).toBe(null);
 });
 
-test.only('Parsing empty relation which was already set', () => {
+test('Parsing empty relation which was already set', () => {
     const customer = new CLocation(
         {
             bestCook: {
@@ -1042,7 +1042,7 @@ describe('requests', () => {
         return animal.save({ params: { branch_id: 1 } });
     });
 
-    test.only('save all with relations', () => {
+    test('save all with relations', () => {
         const animal = new Animal(
             {
                 name: 'Doggo',

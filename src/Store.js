@@ -256,6 +256,8 @@ export default class Store {
                     this.__pendingRequestCount -= 1;
                     this.__state.totalRecords = res.totalRecords;
                     this.fromBackend(res);
+
+                    return res.response;
                 })
             );
     }
