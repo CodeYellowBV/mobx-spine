@@ -462,6 +462,8 @@ var Store = ((_class = ((_temp = _class2 = (function() {
                             _this5.__pendingRequestCount -= 1;
                             _this5.__state.totalRecords = res.totalRecords;
                             _this5.fromBackend(res);
+
+                            return res.response;
                         })
                     );
             },
@@ -2416,6 +2418,7 @@ var BinderApi = (function() {
 
                 return this.get(url, data, requestOptions).then(function(res) {
                     return {
+                        response: res,
                         data: res.data,
                         repos: res.with,
                         relMapping: res.with_mapping,
