@@ -1132,7 +1132,7 @@ var Model = ((_class$1 = ((_temp$1 = _class2$1 = (function() {
         this.__repository = options.repository;
         // Find all attributes. Not all observables are an attribute.
         lodash.forIn(this, function(value, key) {
-            if (!key.startsWith('__') && mobx.isObservable(_this, key)) {
+            if (!key.startsWith('__') && mobx.isObservableProp(_this, key)) {
                 invariant(
                     !FORBIDDEN_ATTRS.includes(key),
                     'Forbidden attribute key used: `' + key + '`'
