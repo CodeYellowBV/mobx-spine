@@ -1,6 +1,6 @@
 import {
     observable,
-    isObservable,
+    isObservableProp,
     extendObservable,
     isObservableArray,
     isObservableObject,
@@ -134,7 +134,7 @@ export default class Model {
         this.__repository = options.repository;
         // Find all attributes. Not all observables are an attribute.
         forIn(this, (value, key) => {
-            if (!key.startsWith('__') && isObservable(this, key)) {
+            if (!key.startsWith('__') && isObservableProp(this, key)) {
                 invariant(
                     !FORBIDDEN_ATTRS.includes(key),
                     `Forbidden attribute key used: \`${key}\``
