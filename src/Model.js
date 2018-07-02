@@ -736,12 +736,10 @@ export default class Model {
                 data,
                 requestOptions: omit(options, ['data', 'url']),
             })
-            .then(
-                action(res => {
-                    this.fromBackend(res);
-                    this.__pendingRequestCount -= 1;
-                })
-            );
+            .then(action(res => {
+                this.fromBackend(res);
+                this.__pendingRequestCount -= 1;
+            }));
 
         promise.catch(() => {
             this.__pendingRequestCount -= 1;

@@ -18,7 +18,7 @@
     "preversion": "npm run -s lint && npm test && npm run -s build",
     "version": "git add -A dist",
     "build": "rm -f dist/** && BABEL_ENV=production node build.js",
-    "precommit": "lint-staged",
+    "//precommit": "lint-staged",
     "ci": "npm run -s lint && npm run -s test-coverage && codecov"
   },
   "lint-staged": {

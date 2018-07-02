@@ -252,15 +252,13 @@ export default class Store {
                 data,
                 requestOptions: omit(options, 'data'),
             })
-            .then(
-                action(res => {
-                    this.__pendingRequestCount -= 1;
-                    this.__state.totalRecords = res.totalRecords;
-                    this.fromBackend(res);
+            .then(action(res => {
+                this.__pendingRequestCount -= 1;
+                this.__state.totalRecords = res.totalRecords;
+                this.fromBackend(res);
 
-                    return res.response;
-                })
-            );
+                return res.response;
+            }));
 
         promise.catch(() => {
             this.__pendingRequestCount -= 1;
