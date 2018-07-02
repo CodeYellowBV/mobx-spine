@@ -1291,6 +1291,19 @@ describe('requests', () => {
             expect(animal.isLoading).toBe(false);
         });
     });
+
+    test('isLoading with failed request', () => {
+        const animal = new Animal({ id: 2 });
+
+        mock.onAny().replyOnce(() => {
+            expect(animal.isLoading).toBe(true);
+            return [404];
+        });
+
+        return animal.fetch().catch(() => {
+            expect(animal.isLoading).toBe(false);
+        });
+    });
 });
 
 describe('changes', () => {

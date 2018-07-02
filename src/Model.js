@@ -729,7 +729,8 @@ export default class Model {
             this.__fetchParams,
             options.data
         );
-        return this.__getApi()
+
+        const promise = this.__getApi()
             .fetchModel({
                 url: options.url || this.url,
                 data,
@@ -741,6 +742,12 @@ export default class Model {
                     this.__pendingRequestCount -= 1;
                 })
             );
+
+        promise.catch(() => {
+            this.__pendingRequestCount -= 1;
+        });
+
+        return promise;
     }
 
     @action

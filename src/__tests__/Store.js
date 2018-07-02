@@ -630,6 +630,19 @@ describe('requests', () => {
             expect(animalStore.isLoading).toBe(false);
         });
     });
+
+    test('isLoading with failed request', () => {
+        const animalStore = new AnimalStore();
+
+        mock.onAny().replyOnce(() => {
+            expect(animalStore.isLoading).toBe(true);
+            return [404];
+        });
+
+        return animalStore.fetch().catch(() => {
+            expect(animalStore.isLoading).toBe(false);
+        });
+    });
 });
 
 describe('Pagination', () => {

@@ -245,7 +245,8 @@ export default class Store {
             this.params,
             options.data
         );
-        return this.__getApi()
+
+        const promise = this.__getApi()
             .fetchStore({
                 url: options.url || result(this, 'url'),
                 data,
@@ -260,6 +261,12 @@ export default class Store {
                     return res.response;
                 })
             );
+
+        promise.catch(() => {
+            this.__pendingRequestCount -= 1;
+        });
+
+        return promise;
     }
 
     __parseNewIds(idMaps) {
