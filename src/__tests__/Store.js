@@ -498,6 +498,12 @@ test('virtualStore with comparator', () => {
     expect(virtual.map('name')).toEqual(['Boogie', 'Jojo', 'Monkey']);
 });
 
+test('allow options.params to be set', () => {
+    const animalStore = new AnimalStore({ params: { foo: 'bar' } });
+
+    expect(animalStore.params).toEqual({ foo: 'bar' });
+});
+
 describe('requests', () => {
     let mock;
     beforeEach(() => {

@@ -17,6 +17,7 @@ const AVAILABLE_CONST_OPTIONS = [
     'relations',
     'limit',
     'comparator',
+    'params',
     'repository',
 ];
 
@@ -87,6 +88,9 @@ export default class Store {
         }
         if (options.comparator) {
             this.comparator = options.comparator;
+        }
+        if (options.params) {
+            this.params = options.params;
         }
         this.initialize();
     }
