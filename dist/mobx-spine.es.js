@@ -122,7 +122,7 @@ function _applyDecoratedDescriptor(target, property, decorators, descriptor, con
     return desc;
 }
 
-var AVAILABLE_CONST_OPTIONS = ['relations', 'limit', 'comparator', 'repository'];
+var AVAILABLE_CONST_OPTIONS = ['relations', 'limit', 'comparator', 'params', 'repository'];
 
 var Store = (_class = (_temp = _class2 = function () {
     createClass(Store, [{
@@ -189,6 +189,9 @@ var Store = (_class = (_temp = _class2 = function () {
         }
         if (options.comparator) {
             this.comparator = options.comparator;
+        }
+        if (options.params) {
+            this.params = options.params;
         }
         this.initialize();
     }
