@@ -450,35 +450,6 @@ export default class Model {
         });
 
         if (!relevant) {
-            // Try finding the reverse attribute's relation first before bailing out.
-            forIn(reverseMapping, (reverseAttribName, relName) => {
-                const repository = repos[repoName];
-                reverseAttribName = this.constructor.fromBackendAttrKey(reverseRelName);
-                relName = this.constructor.fromBackendAttrKey(relName);
-
-                if (targetRelName === relName) {
-                    const relKey = data[this.constructor.toBackendAttrKey(relName)];
-                    if (relKey !== undefined) {
-                        relevant = true;
-                        scopedData = this.__parseRepositoryToData(relKey, repository);
-                    }
-                    return;
-                }
-
-                if (relName.startsWith(`${targetRelName}.`)) {
-                    // If we have town.restaurants and the targetRel = town
-                    // we need "restaurants" in the repository
-                    relevant = true;
-                    const relNames = relName.match(RE_SPLIT_FIRST_RELATION);
-                    const scopedRelName = relNames[2];
-                    scopedRepos[repoName] = repository;
-                    scopedRelMapping[scopedRelName] = repoName;
-                    scopedReverseRelMapping[scopedRelName] = repoName;
-                }
-            });
-        }
-
-        if (!relevant) {
             return null;
         }
 
