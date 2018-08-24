@@ -14,6 +14,7 @@ import {
 import { CustomerStore } from './fixtures/Customer';
 import animalsWithPastOwnersData from './fixtures/animals-with-past-owners.json';
 import animalsWithKindBreedData from './fixtures/animals-with-kind-breed.json';
+import personsWithPetsNoIdListData from './fixtures/persons-with-pets-no-id-list.json';
 import customersWithTownRestaurants from './fixtures/customers-with-town-restaurants.json';
 import customersWithTownRestaurantsUnbalanced from './fixtures/customers-with-town-restaurants-unbalanced.json';
 import customersWithOldTowns from './fixtures/customers-with-old-towns.json';
@@ -130,6 +131,7 @@ test('Store -> Store relation', () => {
         data: customersWithOldTowns.data,
         repos: customersWithOldTowns.with,
         relMapping: customersWithOldTowns.with_mapping,
+        reverseRelMapping: customersWithOldTowns.with_related_name_mapping, // undefined!
     });
 
     expect(customerStore.at(0).oldTowns.map('id')).toEqual([1, 2]);
@@ -407,11 +409,34 @@ test('One-level store relation', () => {
         data: animalsWithPastOwnersData.data,
         repos: animalsWithPastOwnersData.with,
         relMapping: animalsWithPastOwnersData.with_mapping,
+        reverseRelMapping: personsWithPetsNoIdListData.with_related_name_mapping,
     });
 
     expect(animalStore.at(0).pastOwners).toBeInstanceOf(PersonStore);
     expect(animalStore.get(2).pastOwners.map('id')).toEqual([2, 3]);
     expect(animalStore.get(3).pastOwners.map('id')).toEqual([1]);
+});
+
+// This test is a test for Binder-style models where we didn't add an
+// m2m_fields list, so the id list is missing from the response.
+// However, there is a id mapping back from the related object to the
+// main object.
+test('One-level store relation without id list (using reverse mapping)', () => {
+    const personStore = new PersonStore({
+        relations: ['pets'],
+    });
+
+    personStore.fromBackend({
+        data: personsWithPetsNoIdListData.data,
+        repos: personsWithPetsNoIdListData.with,
+        relMapping: personsWithPetsNoIdListData.with_mapping,
+        reverseRelMapping: personsWithPetsNoIdListData.with_related_name_mapping,
+    });
+
+    expect(personStore.at(0).pets).toBeInstanceOf(AnimalStore); // Jon's pets:
+    expect(personStore.get(1).pets.map('id')).toEqual([3, 4]);  // Garfield and Odie
+    expect(personStore.get(2).pets.map('id')).toEqual([]); // Bobbie has no pets
+    expect(personStore.get(3).pets.map('id')).toEqual([2]); // Oessein's pet: "Cat"
 });
 
 test('toJS', () => {

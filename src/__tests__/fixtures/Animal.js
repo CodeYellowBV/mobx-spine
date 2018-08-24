@@ -20,12 +20,14 @@ export class Breed extends Model {
 
 export class Person extends Model {
     static backendResourceName = 'person';
+    api = new BinderApi();
     @observable id = null;
     @observable name = '';
 
     relations() {
         return {
             town: Location,
+            pets: AnimalStore,
         };
     }
 }

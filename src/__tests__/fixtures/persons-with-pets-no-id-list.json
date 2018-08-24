@@ -1,0 +1,61 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Jon Arbuckle"
+    },
+    {
+      "id": 2,
+      "name": "Bobbie"
+    },
+    {
+      "id": 3,
+      "name": "Oessein"
+    }
+  ],
+  "with": {
+    "animal": [
+      {
+        "color": "Dark as a sheep",
+        "owner": null,
+        "name": "Woofer",
+        "kind": 4,
+        "id": 1,
+        "deleted": false
+      },
+      {
+        "color": "Brown",
+        "owner": 3,
+        "name": "Cat",
+        "kind": 2,
+        "id": 2,
+        "deleted": false
+      },
+      {
+        "color": "Orange",
+        "owner": 1,
+        "name": "Garfield",
+        "kind": 2,
+        "id": 3,
+        "deleted": false
+      },
+      {
+        "color": "Yellow",
+        "owner": 1,
+        "name": "Odie",
+        "kind": 4,
+        "id": 4,
+        "deleted": true
+      }
+    ]
+  },
+  "meta": {
+    "total_records": 3
+  },
+  "with_mapping": {
+    "pets": "animal"
+  },
+  "with_related_name_mapping": {
+    "pets": "owner"
+  }
+}

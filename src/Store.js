@@ -112,7 +112,7 @@ export default class Store {
     }
 
     @action
-    fromBackend({ data, repos, relMapping }) {
+    fromBackend({ data, repos, relMapping, reverseRelMapping }) {
         invariant(
             data,
             'Backend error. Data is not set. HINT: DID YOU FORGET THE M2M again?'
@@ -127,6 +127,7 @@ export default class Store {
                     data: record,
                     repos,
                     relMapping,
+                    reverseRelMapping,
                 });
                 return model;
             })

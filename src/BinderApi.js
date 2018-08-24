@@ -144,6 +144,7 @@ export default class BinderApi {
                 data: res.data,
                 repos: res.with,
                 relMapping: res.with_mapping,
+                reverseRelMapping: res.with_related_name_mapping,
             };
         });
     }
@@ -214,6 +215,7 @@ export default class BinderApi {
                 data: res.data,
                 repos: res.with,
                 relMapping: res.with_mapping,
+                reverseRelMapping: res.with_related_name_mapping,
                 totalRecords: res.meta.total_records,
             };
         });

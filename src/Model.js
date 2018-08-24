@@ -390,6 +390,12 @@ export default class Model {
         return find(repository, { id: key });
     }
 
+    __parseReverseRepositoryToData(reverseKeyName, key, repository) {
+        const searchKey = {};
+        searchKey[reverseKeyName] = key;
+        return filter(repository, searchKey);
+    }
+
     /**
      * We handle the fromBackend recursively.
      * But when recursing, we don't send the full repository, we need to only send the repo
@@ -401,24 +407,33 @@ export default class Model {
      * Here we create a scoped repository.
      * The root gets a `town.restaurants` repo, but the `town` relation only gets the `restaurants` repo
      */
-    __scopeBackendResponse({ data, targetRelName, repos, mapping }) {
+    __scopeBackendResponse({ data, targetRelName, repos, mapping, reverseMapping }) {
         let scopedData = null;
         let relevant = false;
         const scopedRepos = {};
         const scopedRelMapping = {};
+        const scopedReverseRelMapping = {};
+
+        if (!data) {
+            return null;
+        }
 
         forIn(mapping, (repoName, relName) => {
             const repository = repos[repoName];
+            // For backwards compatibility, reverseMapping is optional (for now)
+            const reverseRelName = reverseMapping ? reverseMapping[relName] : null;
             relName = this.constructor.fromBackendAttrKey(relName);
 
-            if (!data) {
-                return null;
-            }
-
             if (targetRelName === relName) {
-                relevant = true;
                 const relKey = data[this.constructor.toBackendAttrKey(relName)];
-                scopedData = this.__parseRepositoryToData(relKey, repository);
+                if (relKey !== undefined) {
+                    relevant = true;
+                    scopedData = this.__parseRepositoryToData(relKey, repository);
+                } else if (repository && reverseRelName) {
+                    const pk = data[this.constructor.primaryKey];
+                    relevant = true;
+                    scopedData = this.__parseReverseRepositoryToData(reverseRelName, pk, repository);
+                }
                 return;
             }
 
@@ -430,14 +445,44 @@ export default class Model {
                 const scopedRelName = relNames[2];
                 scopedRepos[repoName] = repository;
                 scopedRelMapping[scopedRelName] = repoName;
+                scopedReverseRelMapping[scopedRelName] = repoName;
             }
         });
+
+        if (!relevant) {
+            // Try finding the reverse attribute's relation first before bailing out.
+            forIn(reverseMapping, (reverseAttribName, relName) => {
+                const repository = repos[repoName];
+                reverseAttribName = this.constructor.fromBackendAttrKey(reverseRelName);
+                relName = this.constructor.fromBackendAttrKey(relName);
+
+                if (targetRelName === relName) {
+                    const relKey = data[this.constructor.toBackendAttrKey(relName)];
+                    if (relKey !== undefined) {
+                        relevant = true;
+                        scopedData = this.__parseRepositoryToData(relKey, repository);
+                    }
+                    return;
+                }
+
+                if (relName.startsWith(`${targetRelName}.`)) {
+                    // If we have town.restaurants and the targetRel = town
+                    // we need "restaurants" in the repository
+                    relevant = true;
+                    const relNames = relName.match(RE_SPLIT_FIRST_RELATION);
+                    const scopedRelName = relNames[2];
+                    scopedRepos[repoName] = repository;
+                    scopedRelMapping[scopedRelName] = repoName;
+                    scopedReverseRelMapping[scopedRelName] = repoName;
+                }
+            });
+        }
 
         if (!relevant) {
             return null;
         }
 
-        return { scopedData, scopedRepos, scopedRelMapping };
+        return { scopedData, scopedRepos, scopedRelMapping, scopedReverseRelMapping };
     }
 
     // `data` contains properties for the current model.
@@ -445,7 +490,7 @@ export default class Model {
     // e.g. "animal_kind", while the relation name would be "kind".
     // `relMapping` maps relation names to repositories.
     @action
-    fromBackend({ data, repos, relMapping }) {
+    fromBackend({ data, repos, relMapping, reverseRelMapping, }) {
         // We handle the fromBackend recursively. On each relation of the source model
         // fromBackend gets called as well, but with data scoped for itself
         //
@@ -458,6 +503,7 @@ export default class Model {
                 targetRelName: relName,
                 repos,
                 mapping: relMapping,
+                reverseMapping: reverseRelMapping,
             });
 
             // Make sure we don't parse every relation for nothing
@@ -465,11 +511,12 @@ export default class Model {
                 return;
             }
 
-            const { scopedData, scopedRepos, scopedRelMapping } = resScoped;
+            const { scopedData, scopedRepos, scopedRelMapping, scopedReverseRelMapping } = resScoped;
             rel.fromBackend({
                 data: scopedData,
                 repos: scopedRepos,
                 relMapping: scopedRelMapping,
+                reverseRelMapping: scopedReverseRelMapping,
             });
         });
 
