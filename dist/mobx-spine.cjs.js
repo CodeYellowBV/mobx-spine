@@ -221,7 +221,8 @@ var Store = (_class = (_temp = _class2 = function () {
 
             var data = _ref.data,
                 repos = _ref.repos,
-                relMapping = _ref.relMapping;
+                relMapping = _ref.relMapping,
+                reverseRelMapping = _ref.reverseRelMapping;
 
             invariant(data, 'Backend error. Data is not set. HINT: DID YOU FORGET THE M2M again?');
 
@@ -232,7 +233,8 @@ var Store = (_class = (_temp = _class2 = function () {
                 model.fromBackend({
                     data: record,
                     repos: repos,
-                    relMapping: relMapping
+                    relMapping: relMapping,
+                    reverseRelMapping: reverseRelMapping
                 });
                 return model;
             }));
@@ -995,6 +997,13 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             }
             return lodash.find(repository, { id: key });
         }
+    }, {
+        key: '__parseReverseRepositoryToData',
+        value: function __parseReverseRepositoryToData(reverseKeyName, key, repository) {
+            var searchKey = {};
+            searchKey[reverseKeyName] = key;
+            return lodash.filter(repository, searchKey);
+        }
 
         /**
          * We handle the fromBackend recursively.
@@ -1016,25 +1025,35 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             var data = _ref.data,
                 targetRelName = _ref.targetRelName,
                 repos = _ref.repos,
-                mapping = _ref.mapping;
+                mapping = _ref.mapping,
+                reverseMapping = _ref.reverseMapping;
 
             var scopedData = null;
             var relevant = false;
             var scopedRepos = {};
             var scopedRelMapping = {};
+            var scopedReverseRelMapping = {};
+
+            if (!data) {
+                return null;
+            }
 
             lodash.forIn(mapping, function (repoName, relName) {
                 var repository = repos[repoName];
+                // For backwards compatibility, reverseMapping is optional (for now)
+                var reverseRelName = reverseMapping ? reverseMapping[relName] : null;
                 relName = _this6.constructor.fromBackendAttrKey(relName);
 
-                if (!data) {
-                    return null;
-                }
-
                 if (targetRelName === relName) {
-                    relevant = true;
                     var relKey = data[_this6.constructor.toBackendAttrKey(relName)];
-                    scopedData = _this6.__parseRepositoryToData(relKey, repository);
+                    if (relKey !== undefined) {
+                        relevant = true;
+                        scopedData = _this6.__parseRepositoryToData(relKey, repository);
+                    } else if (repository && reverseRelName) {
+                        var pk = data[_this6.constructor.primaryKey];
+                        relevant = true;
+                        scopedData = _this6.__parseReverseRepositoryToData(reverseRelName, pk, repository);
+                    }
                     return;
                 }
 
@@ -1046,6 +1065,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     var scopedRelName = relNames[2];
                     scopedRepos[repoName] = repository;
                     scopedRelMapping[scopedRelName] = repoName;
+                    scopedReverseRelMapping[scopedRelName] = repoName;
                 }
             });
 
@@ -1053,7 +1073,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 return null;
             }
 
-            return { scopedData: scopedData, scopedRepos: scopedRepos, scopedRelMapping: scopedRelMapping };
+            return { scopedData: scopedData, scopedRepos: scopedRepos, scopedRelMapping: scopedRelMapping, scopedReverseRelMapping: scopedReverseRelMapping };
         }
 
         // `data` contains properties for the current model.
@@ -1068,7 +1088,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             var data = _ref2.data,
                 repos = _ref2.repos,
-                relMapping = _ref2.relMapping;
+                relMapping = _ref2.relMapping,
+                reverseRelMapping = _ref2.reverseRelMapping;
 
             // We handle the fromBackend recursively. On each relation of the source model
             // fromBackend gets called as well, but with data scoped for itself
@@ -1081,7 +1102,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     data: data,
                     targetRelName: relName,
                     repos: repos,
-                    mapping: relMapping
+                    mapping: relMapping,
+                    reverseMapping: reverseRelMapping
                 });
 
                 // Make sure we don't parse every relation for nothing
@@ -1091,12 +1113,14 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
                 var scopedData = resScoped.scopedData,
                     scopedRepos = resScoped.scopedRepos,
-                    scopedRelMapping = resScoped.scopedRelMapping;
+                    scopedRelMapping = resScoped.scopedRelMapping,
+                    scopedReverseRelMapping = resScoped.scopedReverseRelMapping;
 
                 rel.fromBackend({
                     data: scopedData,
                     repos: scopedRepos,
-                    relMapping: scopedRelMapping
+                    relMapping: scopedRelMapping,
+                    reverseRelMapping: scopedReverseRelMapping
                 });
             });
 
@@ -1575,7 +1599,8 @@ var BinderApi = function () {
                 return {
                     data: res.data,
                     repos: res.with,
-                    relMapping: res.with_mapping
+                    relMapping: res.with_mapping,
+                    reverseRelMapping: res.with_related_name_mapping
                 };
             });
         }
@@ -1657,6 +1682,7 @@ var BinderApi = function () {
                     data: res.data,
                     repos: res.with,
                     relMapping: res.with_mapping,
+                    reverseRelMapping: res.with_related_name_mapping,
                     totalRecords: res.meta.total_records
                 };
             });
