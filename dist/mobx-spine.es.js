@@ -343,6 +343,11 @@ var Store = (_class = (_temp = _class2 = function () {
             this.models.clear();
         }
     }, {
+        key: 'buildFetchData',
+        value: function buildFetchData(options) {
+            return Object.assign(this.__getApi().buildFetchStoreParams(this), this.params, options.data);
+        }
+    }, {
         key: 'fetch',
         value: function fetch() {
             var _this5 = this;
@@ -350,8 +355,8 @@ var Store = (_class = (_temp = _class2 = function () {
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
             this.__pendingRequestCount += 1;
-            var data = Object.assign(this.__getApi().buildFetchStoreParams(this), this.params, options.data);
 
+            var data = this.buildFetchData(options);
             var promise = this.__getApi().fetchStore({
                 url: options.url || result(this, 'url'),
                 data: data,
@@ -1354,6 +1359,11 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             }));
         }
     }, {
+        key: 'buildFetchData',
+        value: function buildFetchData(options) {
+            return Object.assign(this.__getApi().buildFetchModelParams(this), this.__fetchParams, options.data);
+        }
+    }, {
         key: 'fetch',
         value: function fetch() {
             var _this15 = this;
@@ -1362,8 +1372,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             invariant(!this.isNew, 'Trying to fetch model without id!');
             this.__pendingRequestCount += 1;
-            var data = Object.assign(this.__getApi().buildFetchModelParams(this), this.__fetchParams, options.data);
 
+            var data = this.buildFetchData(options);
             var promise = this.__getApi().fetchModel({
                 url: options.url || this.url,
                 data: data,
