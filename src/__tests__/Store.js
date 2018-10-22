@@ -1,6 +1,6 @@
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { Store } from '../';
+import { Model, Store, BinderApi } from '../';
 import {
     Animal,
     AnimalStore,
@@ -559,6 +559,32 @@ describe('requests', () => {
             expect(animalStore.map('id')).toEqual([2, 3]);
             expect(response).toEqual(animalsData);
         });
+    });
+
+
+    test('fetch with custom buildFetchData', () => {
+        const store = new class extends Store {
+            Model = Model;
+            api = new BinderApi();
+            static backendResourceName = 'resource';
+
+            buildFetchData(options) {
+                return { custom: 'data' };
+            }
+        }();
+
+        mock.onAny().replyOnce(config => {
+            expect(config.params).toEqual({
+                custom: 'data'
+            });
+
+            return [200, {
+                data: [],
+                meta: { total_records: 0 }
+            }];
+        });
+
+        return store.fetch();
     });
 
     test('fetch with auto-generated URL', () => {

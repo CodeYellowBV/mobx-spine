@@ -242,15 +242,19 @@ export default class Store {
         this.models.clear();
     }
 
-    @action
-    fetch(options = {}) {
-        this.__pendingRequestCount += 1;
-        const data = Object.assign(
+    buildFetchData(options) {
+        return Object.assign(
             this.__getApi().buildFetchStoreParams(this),
             this.params,
             options.data
         );
+    }
 
+    @action
+    fetch(options = {}) {
+        this.__pendingRequestCount += 1;
+
+        const data = this.buildFetchData(options);
         const promise = this.__getApi()
             .fetchStore({
                 url: options.url || result(this, 'url'),

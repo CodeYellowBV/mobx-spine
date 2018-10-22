@@ -936,6 +936,32 @@ describe('requests', () => {
         return animal.fetch();
     });
 
+    test.only('fetch with custom buildFetchData', () => {
+        const model = new class extends Model {
+            api = new BinderApi();
+            static backendResourceName = 'resource';
+
+            @observable id = 1;
+
+            buildFetchData(options) {
+                return { custom: 'data' };
+            }
+        }();
+
+        mock.onAny().replyOnce(config => {
+            expect(config.params).toEqual({
+                custom: 'data'
+            });
+
+            return [200, {
+                data: {},
+            }];
+        });
+
+        return model.fetch();
+    });
+
+
     test('fetch should pass through request options', () => {
         const myApi = new BinderApi();
         mock.onAny().replyOnce(200, {});

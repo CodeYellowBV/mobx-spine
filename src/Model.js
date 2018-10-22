@@ -738,16 +738,20 @@ export default class Model {
             );
     }
 
-    @action
-    fetch(options = {}) {
-        invariant(!this.isNew, 'Trying to fetch model without id!');
-        this.__pendingRequestCount += 1;
-        const data = Object.assign(
+    buildFetchData(options) {
+        return Object.assign(
             this.__getApi().buildFetchModelParams(this),
             this.__fetchParams,
             options.data
         );
+    }
 
+    @action
+    fetch(options = {}) {
+        invariant(!this.isNew, 'Trying to fetch model without id!');
+        this.__pendingRequestCount += 1;
+
+        const data = this.buildFetchData(options);
         const promise = this.__getApi()
             .fetchModel({
                 url: options.url || this.url,
