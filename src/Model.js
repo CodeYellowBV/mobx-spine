@@ -242,7 +242,12 @@ export default class Model {
                 const forceFields = options.forceFields || [];
                 return (
                     forceFields.includes(field) ||
-                    this.__changes.includes(field)
+                        this.__changes.includes(field) ||
+                        (this[field] instanceof Store && this[field].hasSetChanges) ||
+                        // isNew is always true for relations that haven't been saved.
+                        // If no property has been tweaked, its id serializes as null.
+                        // So, we need to skip saving the id if new and no changes.
+                        (this[field] instanceof Model && this[field].isNew && this[field].hasUserChanges)
                 );
             }
             return true;
@@ -280,11 +285,6 @@ export default class Model {
         const nestedRelations = options.nestedRelations || {};
         const data = this.toBackend({
             onlyChanges: options.onlyChanges,
-            // For now we always list related object ids.  This can be
-            // improved by only including them if the set of models in
-            // a Store has changes and if the id of a related model
-            // has been changed.
-            forceFields: keys(nestedRelations),
         });
 
         if (data[this.constructor.primaryKey] === null) {
@@ -306,6 +306,8 @@ export default class Model {
                         (pk, i) =>
                             pk === null ? rel.at(i).getNegativeId() : pk
                     ));
+                } else if (options.onlyChanges && !rel.hasUserChanges) {
+                    return;
                 }
 
                 const relBackendData = rel.toBackendAll({
@@ -313,25 +315,14 @@ export default class Model {
                     onlyChanges: options.onlyChanges,
                 });
 
-                // If onlyChanges is true, we should only add the
-                // relation if there are actual changes.  This means
-                // there should be fields other than 'id'.  But if
-                // 'id' is there and negative, we want to save it
-                // still (it can be new but without other attrs!).
-                const includedRelations = options.onlyChanges ?
-                      filter(relBackendData.data, (data) => {
-                          const pk = rel.constructor.primaryKey || rel.Model.primaryKey;
-                          return !(keys(data).length === 1 && keys(data)[0] === pk && data[pk] >= 0);
-                      }) :
-                      relBackendData.data;
 
                 // Sometimes the backend knows the relation by a different name, e.g. the relation is called
                 // `activities`, but the name in the backend is `activity`.
                 // In that case, you can add `static backendResourceName = 'activity';` to that model.
                 const realBackendName = rel.constructor.backendResourceName || relBackendName;
 
-                if (includedRelations.length > 0) {
-                    concatInDict(relations, realBackendName, includedRelations);
+                if (relBackendData.data.length > 0) {
+                    concatInDict(relations, realBackendName, relBackendData.data);
 
                     // De-duplicate relations based on `primaryKey`.
                     // TODO: Avoid serializing recursively multiple times in the first place?

@@ -27,6 +27,8 @@ export default class Store {
     // Holds the fetch parameters
     @observable params = {};
     @observable __pendingRequestCount = 0;
+    // The set of models has changed
+    @observable __setChanged = false;
     @observable
     __state = {
         currentPage: 1,
@@ -167,6 +169,8 @@ export default class Store {
                 models
             )}`
         );
+        // Parse does not mutate __setChanged, as it is used in
+        // fromBackend in the model...
         this.models.replace(models.map(this._newModel.bind(this)));
         this.sort();
 
@@ -198,6 +202,7 @@ export default class Store {
                 !primaryValue || !this.get(primaryValue),
                 `A model with the same primary key value "${primaryValue}" already exists in this store.`
             );
+            this.__setChanged = true;
             this.models.push(modelInstance);
         });
         this.sort();
@@ -211,7 +216,9 @@ export default class Store {
         models = singular ? [models] : models.slice();
 
         models.forEach(model => this.models.remove(model));
-
+        if (models.length > 0) {
+            this.__setChanged = true;
+        }
         return models;
     }
 
@@ -231,6 +238,7 @@ export default class Store {
         models.forEach(model => {
             if (model) {
                 this.models.remove(model);
+                this.__setChanged = true;
             }
         });
 
@@ -240,6 +248,7 @@ export default class Store {
     @action
     clear() {
         this.models.clear();
+        this.__setChanged = true;
     }
 
     buildFetchData(options) {
@@ -355,20 +364,19 @@ export default class Store {
 
     @computed
     get hasUserChanges() {
-        return this.models.some(m => m.hasUserChanges);
+        return this.hasSetChanges || this.models.some(m => m.hasUserChanges);
+    }
+
+    // TODO: Maybe we can keep track of what got added and what got
+    // removed exactly.  For now this should be enough.
+    @computed
+    get hasSetChanges() {
+        return this.__setChanged;
     }
 
     toBackendAll(options = {}) {
-        const nestedRelations = options.nestedRelations || {};
-
-        const modelData = this.models.map((model, i) => {
-            return model.toBackendAll(
-                {
-                    nestedRelations: options.nestedRelations,
-                    onlyChanges: options.onlyChanges,
-                }
-            );
-        });
+        const relevantModels = options.onlyChanges ? this.models.filter(model => model.isNew || model.hasUserChanges) : this.models;
+        const modelData = relevantModels.map(model => model.toBackendAll(options));
 
         let data = [];
         const relations = {};

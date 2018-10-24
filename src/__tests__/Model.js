@@ -1372,7 +1372,6 @@ describe('changes', () => {
                 name: 'Lino',
                 kind: {
                     id: 2,
-                    breed: { name: 'Cat' },
                     owner: { id: 4 },
                 },
                 pastOwners: [{ id: 5, name: 'Henk' }, { id: 6, name: 'Piet' }],
@@ -1381,6 +1380,7 @@ describe('changes', () => {
         );
 
         animal.pastOwners.at(1).setInput('name', 'Jan');
+        animal.kind.breed.setInput('name', 'Cat');
 
         const output = animal.toBackendAll({
             // The `owner` relation is just here to verify that it is not included
@@ -1388,11 +1388,7 @@ describe('changes', () => {
             onlyChanges: true,
         });
         expect(output).toEqual({
-            // TODO: kind and past_owners should not be in data, but
-            // they should occur in relations; they have changes
-            // themselves but the relation in the main model did not
-            // change.
-            data: [{ id: 1, kind: 2, past_owners: [5, 6] }],
+            data: [{ id: 1, }],
             relations: {
                 kind: [
                     {
@@ -1413,6 +1409,62 @@ describe('changes', () => {
                     }
                 ],
             },
+        });
+    });
+
+    test('toBackendAll should detect added models', () => {
+        const animal = new Animal(
+            {
+                id: 1,
+                name: 'Lino',
+                kind: {
+                    id: 2,
+                    owner: { id: 4 },
+                },
+                pastOwners: [{ id: 5, name: 'Henk' }],
+            },
+            { relations: ['kind.breed', 'owner', 'pastOwners'] }
+        );
+
+        animal.pastOwners.add({ id: 6 });
+
+        const output = animal.toBackendAll({
+            // The `kind` and `breed` relations are just here to verify that they are not included
+            nestedRelations: {kind: {breed: {}}, pastOwners: {}},
+            onlyChanges: true,
+        });
+        expect(output).toEqual({
+            data: [{ id: 1, past_owners: [5, 6] }],
+            relations: {},
+        });
+    });
+
+
+
+    test('toBackendAll should detect removed models', () => {
+        const animal = new Animal(
+            {
+                id: 1,
+                name: 'Lino',
+                kind: {
+                    id: 2,
+                    owner: { id: 4 },
+                },
+                pastOwners: [{ id: 5, name: 'Henk' }, { id: 6, name: 'Piet' }],
+            },
+            { relations: ['kind.breed', 'owner', 'pastOwners'] }
+        );
+
+        animal.pastOwners.removeById(6);
+
+        const output = animal.toBackendAll({
+            // The `kind` and `breed` relations are just here to verify that they are not included
+            nestedRelations: {kind: {breed: {}}, pastOwners: {}},
+            onlyChanges: true,
+        });
+        expect(output).toEqual({
+            data: [{ id: 1, past_owners: [5] }],
+            relations: {},
         });
     });
 
