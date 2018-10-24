@@ -16,3 +16,24 @@ export function snakeToCamel(s) {
     }
     return s.replace(/_\w/g, m => m[1].toUpperCase());
 }
+
+// ['kind.breed', 'owner'] => { 'owner': {}, 'kind': {'breed': {}}}
+export function relationsToNestedKeys(relations) {
+    const nestedRelations = {};
+
+    relations.forEach(rel => {
+        let current = nestedRelations;
+        const components = rel.split('.');
+        const len = components.length;
+
+        for (var i = 0; i < len; ++i) {
+            const head = components[i];
+            if (current[head] === undefined) {
+                current[head] = {};
+            }
+            current = current[head];
+        }
+    });
+
+    return nestedRelations;
+}

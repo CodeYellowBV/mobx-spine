@@ -23,13 +23,15 @@ import {
     uniqBy,
     mapKeys,
     result,
+    keys,
 } from 'lodash';
 import Store from './Store';
-import { invariant, snakeToCamel, camelToSnake } from './utils';
+import { invariant, snakeToCamel, camelToSnake, relationsToNestedKeys } from './utils';
 
 function concatInDict(dict, key, value) {
     dict[key] = dict[key] ? dict[key].concat(value) : value;
 }
+
 
 // Find the relation name before the first dot, and include all other relations after it
 // Example: input `animal.kind.breed` output -> `['animal', 'kind.breed']`
@@ -274,73 +276,48 @@ export default class Model {
         return output;
     }
 
-    toBackendAll(newId, options = {}) {
-        // TODO: This implementation is more a proof of concept; it's very shitty coded.
-        const includeRelations = options.relations || [];
-        const firstLevelRelations = uniq(
-            includeRelations.map(rel => {
-                return rel.split('.')[0];
-            })
-        );
+    toBackendAll(options = {}) {
+        const nestedRelations = options.nestedRelations || {};
         const data = this.toBackend({
             onlyChanges: options.onlyChanges,
-            forceFields: firstLevelRelations,
+            forceFields: keys(nestedRelations),
         });
-        const relations = {};
 
-        if (newId) {
-            data[this.constructor.primaryKey] = newId;
-        } else if (data[this.constructor.primaryKey] === null) {
+        if (data[this.constructor.primaryKey] === null) {
             data[this.constructor.primaryKey] = this.getNegativeId();
         }
 
+        const relations = {};
+
         this.__activeCurrentRelations.forEach(currentRel => {
             const rel = this[currentRel];
-            let myNewId = null;
-            const relBackendName = this.constructor.toBackendAttrKey(
-                currentRel
-            );
+            const relBackendName = this.constructor.toBackendAttrKey(currentRel);
+            const subRelations = nestedRelations[currentRel];
 
-            // `includeRelations` can look like `['kind.breed', 'owner']`
-            // Check to see if `currentRel` matches the first part of the relation (`kind` or `owner`)
-            const includeRelationData = includeRelations.filter(rel => {
-                const nestedRels = rel.split('.');
-                return nestedRels.length > 0
-                    ? nestedRels[0] === currentRel
-                    : false;
-            });
-            if (includeRelationData.length > 0) {
+            if (subRelations !== undefined) {
                 if (data[relBackendName] === null) {
-                    myNewId = rel.getNegativeId();
-                    data[relBackendName] = myNewId;
+                    data[relBackendName] = rel.getNegativeId();
                 } else if (isArray(data[relBackendName])) {
-                    myNewId = data[relBackendName].map(
-                        (id, idx) =>
-                            id === null ? rel.at(idx).getNegativeId() : id
-                    );
-                    data[relBackendName] = uniq(myNewId);
+                    data[relBackendName] = uniq(data[relBackendName].map(
+                        (pk, i) =>
+                            pk === null ? rel.at(i).getNegativeId() : pk
+                    ));
                 }
 
-                // We want to pass through nested relations to the next relation, but pop of the first level.
-                const relativeRelations = includeRelationData
-                    .map(rel => {
-                        const nestedRels = rel.split('.');
-                        nestedRels.shift();
-                        return nestedRels.join('.');
-                    })
-                    .filter(rel => !!rel);
-                const relBackendData = rel.toBackendAll(myNewId, {
-                    relations: relativeRelations,
+                const relBackendData = rel.toBackendAll({
+                    nestedRelations: subRelations,
                     onlyChanges: options.onlyChanges,
                 });
+
                 // Sometimes the backend knows the relation by a different name, e.g. the relation is called
                 // `activities`, but the name in the backend is `activity`.
                 // In that case, you can add `static backendResourceName = 'activity';` to that model.
-                const realBackendName =
-                    rel.constructor.backendResourceName || relBackendName;
+                const realBackendName = rel.constructor.backendResourceName || relBackendName;
                 concatInDict(relations, realBackendName, relBackendData.data);
 
                 // De-duplicate relations based on `primaryKey`.
+                // TODO: Avoid serializing recursively multiple times in the first place?
+                // TODO: What if different relations have different "freshness"?
                 relations[realBackendName] = uniqBy(
                     relations[realBackendName],
                     rel.constructor.primaryKey || rel.Model.primaryKey
@@ -616,8 +593,8 @@ export default class Model {
             .saveAllModels({
                 url: result(this, 'urlRoot'),
                 model: this,
-                data: this.toBackendAll(null, {
-                    relations: options.relations,
+                data: this.toBackendAll({
+                    nestedRelations: relationsToNestedKeys(options.relations || []),
                     onlyChanges: options.onlyChanges,
                 }),
                 requestOptions: omit(options, 'relations'),

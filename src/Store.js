@@ -358,12 +358,13 @@ export default class Store {
         return this.models.some(m => m.hasUserChanges);
     }
 
-    toBackendAll(newIds = [], options = {}) {
+    toBackendAll(options = {}) {
+        const nestedRelations = options.nestedRelations || {};
+
         const modelData = this.models.map((model, i) => {
             return model.toBackendAll(
-                newIds && newIds[i] !== undefined ? newIds[i] : null,
                 {
-                    relations: options.relations,
+                    nestedRelations: options.nestedRelations,
                     onlyChanges: options.onlyChanges,
                 }
             );
