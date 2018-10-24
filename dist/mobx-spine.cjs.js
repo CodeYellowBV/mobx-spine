@@ -108,7 +108,7 @@ var _extends = Object.assign || function (target) {
   return target;
 };
 
-var _class, _descriptor, _descriptor2, _descriptor3, _descriptor4, _class2, _temp;
+var _class, _descriptor, _descriptor2, _descriptor3, _descriptor4, _descriptor5, _class2, _temp;
 
 function _initDefineProp(target, property, descriptor, context) {
     if (!descriptor) return;
@@ -154,8 +154,6 @@ var AVAILABLE_CONST_OPTIONS = ['relations', 'limit', 'comparator', 'params', 're
 var Store = (_class = (_temp = _class2 = function () {
     createClass(Store, [{
         key: 'url',
-
-        // Holds the fetch parameters
         value: function url() {
             // Try to auto-generate the URL.
             var bname = this.constructor.backendResourceName;
@@ -164,6 +162,10 @@ var Store = (_class = (_temp = _class2 = function () {
             }
             return null;
         }
+        // The set of models has changed
+
+        // Holds the fetch parameters
+
     }, {
         key: 'initialize',
 
@@ -197,7 +199,9 @@ var Store = (_class = (_temp = _class2 = function () {
 
         _initDefineProp(this, '__pendingRequestCount', _descriptor3, this);
 
-        _initDefineProp(this, '__state', _descriptor4, this);
+        _initDefineProp(this, '__setChanged', _descriptor4, this);
+
+        _initDefineProp(this, '__state', _descriptor5, this);
 
         this.__activeRelations = [];
         this.Model = null;
@@ -291,6 +295,8 @@ var Store = (_class = (_temp = _class2 = function () {
         key: 'parse',
         value: function parse(models) {
             invariant(lodash.isArray(models), 'Parameter supplied to `parse()` is not an array, got: ' + JSON.stringify(models));
+            // Parse does not mutate __setChanged, as it is used in
+            // fromBackend in the model...
             this.models.replace(models.map(this._newModel.bind(this)));
             this.sort();
 
@@ -323,6 +329,7 @@ var Store = (_class = (_temp = _class2 = function () {
             modelInstances.forEach(function (modelInstance) {
                 var primaryValue = modelInstance[_this2.Model.primaryKey];
                 invariant(!primaryValue || !_this2.get(primaryValue), 'A model with the same primary key value "' + primaryValue + '" already exists in this store.');
+                _this2.__setChanged = true;
                 _this2.models.push(modelInstance);
             });
             this.sort();
@@ -340,7 +347,9 @@ var Store = (_class = (_temp = _class2 = function () {
             models.forEach(function (model) {
                 return _this3.models.remove(model);
             });
-
+            if (models.length > 0) {
+                this.__setChanged = true;
+            }
             return models;
         }
     }, {
@@ -359,6 +368,7 @@ var Store = (_class = (_temp = _class2 = function () {
             models.forEach(function (model) {
                 if (model) {
                     _this4.models.remove(model);
+                    _this4.__setChanged = true;
                 }
             });
 
@@ -368,6 +378,7 @@ var Store = (_class = (_temp = _class2 = function () {
         key: 'clear',
         value: function clear() {
             this.models.clear();
+            this.__setChanged = true;
         }
     }, {
         key: 'buildFetchData',
@@ -465,13 +476,11 @@ var Store = (_class = (_temp = _class2 = function () {
 
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-            var nestedRelations = options.nestedRelations || {};
-
-            var modelData = this.models.map(function (model, i) {
-                return model.toBackendAll({
-                    nestedRelations: options.nestedRelations,
-                    onlyChanges: options.onlyChanges
-                });
+            var relevantModels = options.onlyChanges ? this.models.filter(function (model) {
+                return model.isNew || model.hasUserChanges;
+            }) : this.models;
+            var modelData = relevantModels.map(function (model) {
+                return model.toBackendAll(options);
             });
 
             var data = [];
@@ -611,9 +620,18 @@ var Store = (_class = (_temp = _class2 = function () {
     }, {
         key: 'hasUserChanges',
         get: function get$$1() {
-            return this.models.some(function (m) {
+            return this.hasSetChanges || this.models.some(function (m) {
                 return m.hasUserChanges;
             });
+        }
+
+        // TODO: Maybe we can keep track of what got added and what got
+        // removed exactly.  For now this should be enough.
+
+    }, {
+        key: 'hasSetChanges',
+        get: function get$$1() {
+            return this.__setChanged;
         }
     }]);
     return Store;
@@ -632,7 +650,12 @@ var Store = (_class = (_temp = _class2 = function () {
     initializer: function initializer() {
         return 0;
     }
-}), _descriptor4 = _applyDecoratedDescriptor(_class.prototype, '__state', [mobx.observable], {
+}), _descriptor4 = _applyDecoratedDescriptor(_class.prototype, '__setChanged', [mobx.observable], {
+    enumerable: true,
+    initializer: function initializer() {
+        return false;
+    }
+}), _descriptor5 = _applyDecoratedDescriptor(_class.prototype, '__state', [mobx.observable], {
     enumerable: true,
     initializer: function initializer() {
         return {
@@ -641,7 +664,7 @@ var Store = (_class = (_temp = _class2 = function () {
             totalRecords: 0
         };
     }
-}), _applyDecoratedDescriptor(_class.prototype, 'isLoading', [mobx.computed], Object.getOwnPropertyDescriptor(_class.prototype, 'isLoading'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'length', [mobx.computed], Object.getOwnPropertyDescriptor(_class.prototype, 'length'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fromBackend', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'fromBackend'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'sort', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'sort'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'parse', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'parse'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'add', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'add'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'remove', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'remove'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'removeById', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'removeById'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'clear', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'clear'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fetch', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'fetch'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'setLimit', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'setLimit'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'totalPages', [mobx.computed], Object.getOwnPropertyDescriptor(_class.prototype, 'totalPages'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'currentPage', [mobx.computed], Object.getOwnPropertyDescriptor(_class.prototype, 'currentPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'hasNextPage', [mobx.computed], Object.getOwnPropertyDescriptor(_class.prototype, 'hasNextPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'hasPreviousPage', [mobx.computed], Object.getOwnPropertyDescriptor(_class.prototype, 'hasPreviousPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'getNextPage', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'getNextPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'getPreviousPage', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'getPreviousPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'setPage', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'setPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'hasUserChanges', [mobx.computed], Object.getOwnPropertyDescriptor(_class.prototype, 'hasUserChanges'), _class.prototype)), _class);
+}), _applyDecoratedDescriptor(_class.prototype, 'isLoading', [mobx.computed], Object.getOwnPropertyDescriptor(_class.prototype, 'isLoading'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'length', [mobx.computed], Object.getOwnPropertyDescriptor(_class.prototype, 'length'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fromBackend', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'fromBackend'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'sort', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'sort'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'parse', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'parse'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'add', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'add'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'remove', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'remove'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'removeById', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'removeById'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'clear', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'clear'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fetch', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'fetch'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'setLimit', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'setLimit'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'totalPages', [mobx.computed], Object.getOwnPropertyDescriptor(_class.prototype, 'totalPages'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'currentPage', [mobx.computed], Object.getOwnPropertyDescriptor(_class.prototype, 'currentPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'hasNextPage', [mobx.computed], Object.getOwnPropertyDescriptor(_class.prototype, 'hasNextPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'hasPreviousPage', [mobx.computed], Object.getOwnPropertyDescriptor(_class.prototype, 'hasPreviousPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'getNextPage', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'getNextPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'getPreviousPage', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'getPreviousPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'setPage', [mobx.action], Object.getOwnPropertyDescriptor(_class.prototype, 'setPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'hasUserChanges', [mobx.computed], Object.getOwnPropertyDescriptor(_class.prototype, 'hasUserChanges'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'hasSetChanges', [mobx.computed], Object.getOwnPropertyDescriptor(_class.prototype, 'hasSetChanges'), _class.prototype)), _class);
 
 var _class$1, _descriptor$1, _descriptor2$1, _descriptor3$1, _descriptor4$1, _class2$1, _temp$1;
 
@@ -880,7 +903,11 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 }
                 if (!_this3.isNew && options.onlyChanges) {
                     var forceFields = options.forceFields || [];
-                    return forceFields.includes(field) || _this3.__changes.includes(field);
+                    return forceFields.includes(field) || _this3.__changes.includes(field) || _this3[field] instanceof Store && _this3[field].hasSetChanges ||
+                    // isNew is always true for relations that haven't been saved.
+                    // If no property has been tweaked, its id serializes as null.
+                    // So, we need to skip saving the id if new and no changes.
+                    _this3[field] instanceof Model && _this3[field].isNew && _this3[field].hasUserChanges;
                 }
                 return true;
             };
@@ -915,12 +942,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             var nestedRelations = options.nestedRelations || {};
             var data = this.toBackend({
-                onlyChanges: options.onlyChanges,
-                // For now we always list related object ids.  This can be
-                // improved by only including them if the set of models in
-                // a Store has changes and if the id of a related model
-                // has been changed.
-                forceFields: lodash.keys(nestedRelations)
+                onlyChanges: options.onlyChanges
             });
 
             if (data[this.constructor.primaryKey] === null) {
@@ -941,6 +963,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                         data[relBackendName] = lodash.uniq(data[relBackendName].map(function (pk, i) {
                             return pk === null ? rel.at(i).getNegativeId() : pk;
                         }));
+                    } else if (options.onlyChanges && !rel.hasUserChanges) {
+                        return;
                     }
 
                     var relBackendData = rel.toBackendAll({
@@ -948,23 +972,13 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                         onlyChanges: options.onlyChanges
                     });
 
-                    // If onlyChanges is true, we should only add the
-                    // relation if there are actual changes.  This means
-                    // there should be fields other than 'id'.  But if
-                    // 'id' is there and negative, we want to save it
-                    // still (it can be new but without other attrs!).
-                    var includedRelations = options.onlyChanges ? lodash.filter(relBackendData.data, function (data) {
-                        var pk = rel.constructor.primaryKey || rel.Model.primaryKey;
-                        return !(lodash.keys(data).length === 1 && lodash.keys(data)[0] === pk && data[pk] >= 0);
-                    }) : relBackendData.data;
-
                     // Sometimes the backend knows the relation by a different name, e.g. the relation is called
                     // `activities`, but the name in the backend is `activity`.
                     // In that case, you can add `static backendResourceName = 'activity';` to that model.
                     var realBackendName = rel.constructor.backendResourceName || relBackendName;
 
-                    if (includedRelations.length > 0) {
-                        concatInDict(relations, realBackendName, includedRelations);
+                    if (relBackendData.data.length > 0) {
+                        concatInDict(relations, realBackendName, relBackendData.data);
 
                         // De-duplicate relations based on `primaryKey`.
                         // TODO: Avoid serializing recursively multiple times in the first place?
