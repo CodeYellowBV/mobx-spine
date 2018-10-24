@@ -936,7 +936,7 @@ describe('requests', () => {
         return animal.fetch();
     });
 
-    test.only('fetch with custom buildFetchData', () => {
+    test('fetch with custom buildFetchData', () => {
         const model = new class extends Model {
             api = new BinderApi();
             static backendResourceName = 'resource';
