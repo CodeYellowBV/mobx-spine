@@ -1375,17 +1375,24 @@ describe('changes', () => {
                     breed: { name: 'Cat' },
                     owner: { id: 4 },
                 },
-                pastOwners: [{ id: 5, name: 'Henk' }],
+                pastOwners: [{ id: 5, name: 'Henk' }, { id: 6, name: 'Piet' }],
             },
             { relations: ['kind.breed', 'owner', 'pastOwners'] }
         );
+
+        animal.pastOwners.at(1).setInput('name', 'Jan');
+
         const output = animal.toBackendAll({
             // The `owner` relation is just here to verify that it is not included
             nestedRelations: {kind: {breed: {}}, pastOwners: {}},
             onlyChanges: true,
         });
         expect(output).toEqual({
-            data: [{ id: 1, kind: 2, past_owners: [5] }],
+            // TODO: kind and past_owners should not be in data, but
+            // they should occur in relations; they have changes
+            // themselves but the relation in the main model did not
+            // change.
+            data: [{ id: 1, kind: 2, past_owners: [5, 6] }],
             relations: {
                 kind: [
                     {
@@ -1401,9 +1408,59 @@ describe('changes', () => {
                 ],
                 past_owners: [
                     {
-                        id: 5,
+                        id: 6,
+                        name: 'Jan',
+                    }
+                ],
+            },
+        });
+    });
+
+
+    test('toBackendAll without onlyChanges should serialize all relations', () => {
+        const animal = new Animal(
+            {
+                id: 1,
+                name: 'Lino',
+                kind: {
+                    id: 2,
+                    breed: { name: 'Cat' },
+                    owner: { id: 4 },
+                },
+                pastOwners: [{ id: 5, name: 'Henk' }],
+            },
+            { relations: ['kind.breed', 'owner', 'pastOwners'] }
+        );
+        const output = animal.toBackendAll({
+            nestedRelations: {kind: {breed: {}}, pastOwners: {}},
+            onlyChanges: false,
+        });
+        expect(output).toEqual({
+            data: [{
+                id: 1,
+                name: 'Lino',
+                kind: 2,
+                owner: null,
+                past_owners: [5]
+            }],
+            relations: {
+                kind: [
+                    {
+                        id: 2,
+                        breed: -3,
+                        name: '',
                     },
                 ],
+                breed: [
+                    {
+                        id: -3,
+                        name: 'Cat',
+                    },
+                ],
+                past_owners: [{
+                    id: 5,
+                    name: 'Henk'
+                }],
             },
         });
     });

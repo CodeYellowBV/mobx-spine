@@ -280,6 +280,10 @@ export default class Model {
         const nestedRelations = options.nestedRelations || {};
         const data = this.toBackend({
             onlyChanges: options.onlyChanges,
+            // For now we always list related object ids.  This can be
+            // improved by only including them if the set of models in
+            // a Store has changes and if the id of a related model
+            // has been changed.
             forceFields: keys(nestedRelations),
         });
 
@@ -309,20 +313,37 @@ export default class Model {
                     onlyChanges: options.onlyChanges,
                 });
 
+                // If onlyChanges is true, we should only add the
+                // relation if there are actual changes.  This means
+                // there should be fields other than 'id'.  But if
+                // 'id' is there and negative, we want to save it
+                // still (it can be new but without other attrs!).
+                const includedRelations = options.onlyChanges ?
+                      filter(relBackendData.data, (data) => {
+                          const pk = rel.constructor.primaryKey || rel.Model.primaryKey;
+                          return !(keys(data).length === 1 && keys(data)[0] === pk && data[pk] >= 0);
+                      }) :
+                      relBackendData.data;
+
                 // Sometimes the backend knows the relation by a different name, e.g. the relation is called
                 // `activities`, but the name in the backend is `activity`.
                 // In that case, you can add `static backendResourceName = 'activity';` to that model.
                 const realBackendName = rel.constructor.backendResourceName || relBackendName;
-                concatInDict(relations, realBackendName, relBackendData.data);
 
-                // De-duplicate relations based on `primaryKey`.
-                // TODO: Avoid serializing recursively multiple times in the first place?
-                // TODO: What if different relations have different "freshness"?
-                relations[realBackendName] = uniqBy(
-                    relations[realBackendName],
-                    rel.constructor.primaryKey || rel.Model.primaryKey
-                );
+                if (includedRelations.length > 0) {
+                    concatInDict(relations, realBackendName, includedRelations);
 
+                    // De-duplicate relations based on `primaryKey`.
+                    // TODO: Avoid serializing recursively multiple times in the first place?
+                    // TODO: What if different relations have different "freshness"?
+                    relations[realBackendName] = uniqBy(
+                        relations[realBackendName],
+                        rel.constructor.primaryKey || rel.Model.primaryKey
+                    );
+                }
+
+                // There could still be changes in nested relations,
+                // include those anyway!
                 forIn(relBackendData.relations, (relB, key) => {
                     concatInDict(relations, key, relB);
                 });
