@@ -34,6 +34,27 @@ function snakeToCamel(s) {
     });
 }
 
+// ['kind.breed', 'owner'] => { 'owner': {}, 'kind': {'breed': {}}}
+function relationsToNestedKeys(relations) {
+    var nestedRelations = {};
+
+    relations.forEach(function (rel) {
+        var current = nestedRelations;
+        var components = rel.split('.');
+        var len = components.length;
+
+        for (var i = 0; i < len; ++i) {
+            var head = components[i];
+            if (current[head] === undefined) {
+                current[head] = {};
+            }
+            current = current[head];
+        }
+    });
+
+    return nestedRelations;
+}
+
 var classCallCheck = function (instance, Constructor) {
   if (!(instance instanceof Constructor)) {
     throw new TypeError("Cannot call a class as a function");
@@ -442,12 +463,13 @@ var Store = (_class = (_temp = _class2 = function () {
         value: function toBackendAll() {
             var _this6 = this;
 
-            var newIds = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-            var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+            var nestedRelations = options.nestedRelations || {};
 
             var modelData = this.models.map(function (model, i) {
-                return model.toBackendAll(newIds && newIds[i] !== undefined ? newIds[i] : null, {
-                    relations: options.relations,
+                return model.toBackendAll({
+                    nestedRelations: options.nestedRelations,
                     onlyChanges: options.onlyChanges
                 });
             });
@@ -886,71 +908,72 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         }
     }, {
         key: 'toBackendAll',
-        value: function toBackendAll(newId) {
+        value: function toBackendAll() {
             var _this4 = this;
 
-            var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-            // TODO: This implementation is more a proof of concept; it's very shitty coded.
-            var includeRelations = options.relations || [];
-            var firstLevelRelations = lodash.uniq(includeRelations.map(function (rel) {
-                return rel.split('.')[0];
-            }));
+            var nestedRelations = options.nestedRelations || {};
             var data = this.toBackend({
                 onlyChanges: options.onlyChanges,
-                forceFields: firstLevelRelations
+                // For now we always list related object ids.  This can be
+                // improved by only including them if the set of models in
+                // a Store has changes and if the id of a related model
+                // has been changed.
+                forceFields: lodash.keys(nestedRelations)
             });
-            var relations = {};
 
-            if (newId) {
-                data[this.constructor.primaryKey] = newId;
-            } else if (data[this.constructor.primaryKey] === null) {
+            if (data[this.constructor.primaryKey] === null) {
                 data[this.constructor.primaryKey] = this.getNegativeId();
             }
 
+            var relations = {};
+
             this.__activeCurrentRelations.forEach(function (currentRel) {
                 var rel = _this4[currentRel];
-                var myNewId = null;
                 var relBackendName = _this4.constructor.toBackendAttrKey(currentRel);
+                var subRelations = nestedRelations[currentRel];
 
-                // `includeRelations` can look like `['kind.breed', 'owner']`
-                // Check to see if `currentRel` matches the first part of the relation (`kind` or `owner`)
-                var includeRelationData = includeRelations.filter(function (rel) {
-                    var nestedRels = rel.split('.');
-                    return nestedRels.length > 0 ? nestedRels[0] === currentRel : false;
-                });
-                if (includeRelationData.length > 0) {
+                if (subRelations !== undefined) {
                     if (data[relBackendName] === null) {
-                        myNewId = rel.getNegativeId();
-                        data[relBackendName] = myNewId;
+                        data[relBackendName] = rel.getNegativeId();
                     } else if (lodash.isArray(data[relBackendName])) {
-                        myNewId = data[relBackendName].map(function (id, idx) {
-                            return id === null ? rel.at(idx).getNegativeId() : id;
-                        });
-                        data[relBackendName] = lodash.uniq(myNewId);
+                        data[relBackendName] = lodash.uniq(data[relBackendName].map(function (pk, i) {
+                            return pk === null ? rel.at(i).getNegativeId() : pk;
+                        }));
                     }
 
-                    // We want to pass through nested relations to the next relation, but pop of the first level.
-                    var relativeRelations = includeRelationData.map(function (rel) {
-                        var nestedRels = rel.split('.');
-                        nestedRels.shift();
-                        return nestedRels.join('.');
-                    }).filter(function (rel) {
-                        return !!rel;
-                    });
-                    var relBackendData = rel.toBackendAll(myNewId, {
-                        relations: relativeRelations,
+                    var relBackendData = rel.toBackendAll({
+                        nestedRelations: subRelations,
                         onlyChanges: options.onlyChanges
                     });
+
+                    // If onlyChanges is true, we should only add the
+                    // relation if there are actual changes.  This means
+                    // there should be fields other than 'id'.  But if
+                    // 'id' is there and negative, we want to save it
+                    // still (it can be new but without other attrs!).
+                    var includedRelations = options.onlyChanges ? lodash.filter(relBackendData.data, function (data) {
+                        var pk = rel.constructor.primaryKey || rel.Model.primaryKey;
+                        return !(lodash.keys(data).length === 1 && lodash.keys(data)[0] === pk && data[pk] >= 0);
+                    }) : relBackendData.data;
+
                     // Sometimes the backend knows the relation by a different name, e.g. the relation is called
                     // `activities`, but the name in the backend is `activity`.
                     // In that case, you can add `static backendResourceName = 'activity';` to that model.
                     var realBackendName = rel.constructor.backendResourceName || relBackendName;
-                    concatInDict(relations, realBackendName, relBackendData.data);
 
-                    // De-duplicate relations based on `primaryKey`.
-                    relations[realBackendName] = lodash.uniqBy(relations[realBackendName], rel.constructor.primaryKey || rel.Model.primaryKey);
+                    if (includedRelations.length > 0) {
+                        concatInDict(relations, realBackendName, includedRelations);
 
+                        // De-duplicate relations based on `primaryKey`.
+                        // TODO: Avoid serializing recursively multiple times in the first place?
+                        // TODO: What if different relations have different "freshness"?
+                        relations[realBackendName] = lodash.uniqBy(relations[realBackendName], rel.constructor.primaryKey || rel.Model.primaryKey);
+                    }
+
+                    // There could still be changes in nested relations,
+                    // include those anyway!
                     lodash.forIn(relBackendData.relations, function (relB, key) {
                         concatInDict(relations, key, relB);
                     });
@@ -1242,8 +1265,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             return this.__getApi().saveAllModels({
                 url: lodash.result(this, 'urlRoot'),
                 model: this,
-                data: this.toBackendAll(null, {
-                    relations: options.relations,
+                data: this.toBackendAll({
+                    nestedRelations: relationsToNestedKeys(options.relations || []),
                     onlyChanges: options.onlyChanges
                 }),
                 requestOptions: lodash.omit(options, 'relations')
