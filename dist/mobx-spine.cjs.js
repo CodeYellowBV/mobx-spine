@@ -55,6 +55,29 @@ function relationsToNestedKeys(relations) {
     return nestedRelations;
 }
 
+// Use output of relationsToNestedKeys to iterate each relation, fn is called on each model and store.
+function forNestedRelations(model, nestedRelations, fn) {
+    Object.keys(nestedRelations).forEach(function (key) {
+        if (Object.keys(nestedRelations[key]).length > 0) {
+            if (model[key].forEach) {
+                model[key].forEach(function (m) {
+                    forNestedRelations(m, nestedRelations[key], fn);
+                });
+
+                fn(model);
+            } else {
+                forNestedRelations(model[key], nestedRelations[key], fn);
+            }
+        }
+
+        if (model[key].forEach) {
+            model[key].forEach(fn);
+        }
+
+        fn(model[key]);
+    });
+}
+
 var classCallCheck = function (instance, Constructor) {
   if (!(instance instanceof Constructor)) {
     throw new TypeError("Cannot call a class as a function");
@@ -468,6 +491,11 @@ var Store = (_class = (_temp = _class2 = function () {
             }
             invariant(page <= this.totalPages, 'Page should be between 1 and ' + this.totalPages + '.');
             return Promise.resolve();
+        }
+    }, {
+        key: 'clearSetChanges',
+        value: function clearSetChanges() {
+            this.__setChanged = false;
         }
     }, {
         key: 'toBackendAll',
@@ -889,6 +917,11 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         // Many backends use snake_case for attribute names, so we convert to snake_case by default.
 
     }, {
+        key: 'clearUserChanges',
+        value: function clearUserChanges() {
+            this.__changes.clear();
+        }
+    }, {
         key: 'toBackend',
         value: function toBackend() {
             var _this3 = this;
@@ -1234,6 +1267,9 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             }).then(mobx.action(function (res) {
                 _this9.__pendingRequestCount -= 1;
                 _this9.saveFromBackend(res);
+                _this9.clearUserChanges();
+
+                return res;
             })).catch(mobx.action(function (err) {
                 _this9.__pendingRequestCount -= 1;
                 if (err.valErrors) {
@@ -1287,6 +1323,15 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             }).then(mobx.action(function (res) {
                 _this10.__pendingRequestCount -= 1;
                 _this10.saveFromBackend(res);
+                _this10.clearUserChanges();
+
+                forNestedRelations(_this10, relationsToNestedKeys(options.relations || []), function (relation) {
+                    if (relation instanceof Model) {
+                        relation.clearUserChanges();
+                    } else {
+                        relation.clearSetChanges();
+                    }
+                });
 
                 return res;
             })).catch(mobx.action(function (err) {
