@@ -23,15 +23,13 @@ import {
     uniqBy,
     mapKeys,
     result,
-    keys,
 } from 'lodash';
 import Store from './Store';
-import { invariant, snakeToCamel, camelToSnake, relationsToNestedKeys } from './utils';
+import { invariant, snakeToCamel, camelToSnake, relationsToNestedKeys, forNestedRelations } from './utils';
 
 function concatInDict(dict, key, value) {
     dict[key] = dict[key] ? dict[key].concat(value) : value;
 }
-
 
 // Find the relation name before the first dot, and include all other relations after it
 // Example: input `animal.kind.breed` output -> `['animal', 'kind.breed']`
@@ -229,6 +227,10 @@ export default class Model {
         return this.__activeCurrentRelations.some(rel => {
             return this[rel].hasUserChanges;
         });
+    }
+
+    clearUserChanges() {
+        this.__changes.clear();
     }
 
     toBackend(options = {}) {
@@ -554,6 +556,9 @@ export default class Model {
                 action(res => {
                     this.__pendingRequestCount -= 1;
                     this.saveFromBackend(res);
+                    this.clearUserChanges();
+
+                    return res;
                 })
             )
             .catch(
@@ -615,6 +620,15 @@ export default class Model {
                 action(res => {
                     this.__pendingRequestCount -= 1;
                     this.saveFromBackend(res);
+                    this.clearUserChanges();
+
+                    forNestedRelations(this, relationsToNestedKeys(options.relations || []), relation => {
+                        if (relation instanceof Model) {
+                            relation.clearUserChanges();
+                        } else {
+                            relation.clearSetChanges();
+                        }
+                    });
 
                     return res;
                 })

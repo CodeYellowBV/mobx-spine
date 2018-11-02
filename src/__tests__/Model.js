@@ -1330,6 +1330,122 @@ describe('requests', () => {
             expect(animal.isLoading).toBe(false);
         });
     });
+
+    test('hasUserChanges should clear changes in current fields after save', () => {
+        const animal = new Animal({ id: 1 });
+
+        animal.setInput('name', 'Felix');
+
+        mock.onAny().replyOnce(() => {
+            // Server returns another name, shouldn't be seen as a change.
+            return [200, { id: 1, name: 'Garfield' }];
+        });
+
+        return animal.save().then(() => {
+            expect(animal.hasUserChanges).toBe(false);
+        });
+    });
+
+    test('hasUserChanges should not clear changes in model relations when not saved', () => {
+        const animal = new Animal({ id: 1 }, { relations: ['kind.breed'] });
+
+        animal.kind.breed.setInput('name', 'Katachtige');
+
+        mock.onAny().replyOnce(() => {
+            return [200, {}];
+        });
+
+        return animal.save().then(() => {
+            // Because we didn't save the relation, it should return true.
+            expect(animal.hasUserChanges).toBe(true);
+            expect(animal.kind.hasUserChanges).toBe(true);
+            expect(animal.kind.breed.hasUserChanges).toBe(true);
+        });
+    });
+
+    test('hasUserChanges should clear changes in saved model relations', () => {
+        const animal = new Animal({ id: 1 }, { relations: ['kind.breed'] });
+
+        animal.kind.breed.setInput('name', 'Katachtige');
+
+        mock.onAny().replyOnce(() => {
+            return [200, {}];
+        });
+
+        return animal.saveAll({ relations: ['kind.breed'] }).then(() => {
+            expect(animal.hasUserChanges).toBe(false);
+        });
+    });
+
+    test('hasUserChanges should not clear changes in non-saved models relations', () => {
+        const animal = new Animal(
+            { id: 1, pastOwners: [
+                { id: 2 },
+                { id: 3 },
+            ] },
+            { relations: ['pastOwners', 'kind.breed'] }
+        );
+
+        animal.kind.breed.setInput('name', 'Katachtige');
+        animal.pastOwners.get(2).setInput('name', 'Zaico');
+
+        mock.onAny().replyOnce(() => {
+            return [200, {}];
+        });
+
+        return animal.saveAll({ relations: ['kind.breed'] }).then(() => {
+            expect(animal.hasUserChanges).toBe(true);
+            expect(animal.pastOwners.hasUserChanges).toBe(true);
+            expect(animal.pastOwners.get(2).hasUserChanges).toBe(true);
+            expect(animal.pastOwners.get(3).hasUserChanges).toBe(false);
+        });
+    });
+
+    test('hasUserChanges should clear set changes in saved relations', () => {
+        const animal = new Animal(
+            { id: 1, pastOwners: [
+                { id: 2 },
+                { id: 3 },
+            ] },
+            { relations: ['pastOwners', 'kind.breed'] }
+        );
+
+        animal.pastOwners.add({});
+        expect(animal.hasUserChanges).toBe(true);
+        expect(animal.pastOwners.hasUserChanges).toBe(true);
+
+        mock.onAny().replyOnce(() => {
+            return [200, {}];
+        });
+
+        return animal.saveAll({ relations: ['pastOwners'] }).then(() => {
+            expect(animal.pastOwners.hasUserChanges).toBe(false);
+            expect(animal.hasUserChanges).toBe(false);
+        });
+    });
+
+    test('hasUserChanges should not clear set changes in non-saved relations', () => {
+        const animal = new Animal(
+            { id: 1, pastOwners: [
+                { id: 2 },
+                { id: 3 },
+            ] },
+            { relations: ['pastOwners', 'kind.breed'] }
+        );
+
+        animal.pastOwners.add({});
+        expect(animal.hasUserChanges).toBe(true);
+        expect(animal.pastOwners.hasUserChanges).toBe(true);
+
+        mock.onAny().replyOnce(() => {
+            return [200, {}];
+        });
+
+        return animal.saveAll().then(() => {
+            expect(animal.pastOwners.hasUserChanges).toBe(true);
+            expect(animal.hasUserChanges).toBe(true);
+        });
+    });
 });
 
 describe('changes', () => {

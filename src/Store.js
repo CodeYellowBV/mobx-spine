@@ -374,6 +374,10 @@ export default class Store {
         return this.__setChanged;
     }
 
+    clearSetChanges() {
+        this.__setChanged = false;
+    }
+
     toBackendAll(options = {}) {
         const relevantModels = options.onlyChanges ? this.models.filter(model => model.isNew || model.hasUserChanges) : this.models;
         const modelData = relevantModels.map(model => model.toBackendAll(options));
