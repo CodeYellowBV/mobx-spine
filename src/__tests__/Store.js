@@ -79,12 +79,6 @@ test('initialize() method should be called', () => {
     expect(initMock.mock.calls.length).toBe(1);
 });
 
-// TODO; see https://github.com/CodeYellowBV/mobx-spine/issues/6
-xtest('Initialize store in constructor', () => {
-    const animalStore = new AnimalStore(simpleData);
-    expect(animalStore.length).toBe(3);
-});
-
 test('at model', () => {
     const animalStore = new AnimalStore();
     animalStore.parse(simpleData);
