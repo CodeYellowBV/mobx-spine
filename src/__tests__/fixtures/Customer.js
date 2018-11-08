@@ -21,6 +21,8 @@ export class Restaurant extends Model {
     relations() {
         return {
             chef: Cook,
+            customers: CustomerStore,
+            favouriteCustomers: CustomerStore,
         };
     }
 }
@@ -53,6 +55,7 @@ export class Customer extends Model {
         return {
             town: Location,
             oldTowns: LocationStore,
+            favouriteRestaurant: Restaurant,
         };
     }
 }

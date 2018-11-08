@@ -409,11 +409,11 @@ export default class Model {
             return null;
         }
 
-        forIn(mapping, (repoName, relName) => {
+        forIn(mapping, (repoName, backendRelName) => {
             const repository = repos[repoName];
             // For backwards compatibility, reverseMapping is optional (for now)
-            const reverseRelName = reverseMapping ? reverseMapping[relName] : null;
-            relName = this.constructor.fromBackendAttrKey(relName);
+            const reverseRelName = reverseMapping ? reverseMapping[backendRelName] : null;
+            const relName = this.constructor.fromBackendAttrKey(backendRelName);
 
             if (targetRelName === relName) {
                 const relKey = data[this.constructor.toBackendAttrKey(relName)];
@@ -432,11 +432,11 @@ export default class Model {
                 // If we have town.restaurants and the targetRel = town
                 // we need "restaurants" in the repository
                 relevant = true;
-                const relNames = relName.match(RE_SPLIT_FIRST_RELATION);
-                const scopedRelName = relNames[2];
+                const backendRelNames = backendRelName.match(RE_SPLIT_FIRST_RELATION);
+                const scopedBackendRelName = backendRelNames[2];
                 scopedRepos[repoName] = repository;
-                scopedRelMapping[scopedRelName] = repoName;
-                scopedReverseRelMapping[scopedRelName] = repoName;
+                scopedRelMapping[scopedBackendRelName] = repoName;
+                scopedReverseRelMapping[scopedBackendRelName] = reverseMapping ? reverseMapping[backendRelName] : null;
             }
         });
 

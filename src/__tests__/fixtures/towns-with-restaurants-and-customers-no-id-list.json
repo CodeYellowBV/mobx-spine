@@ -1,0 +1,83 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Hardinxveld"
+    },
+    {
+      "id": 2,
+      "name": "Eindhoven"
+    },
+    {
+      "id": 3,
+      "name": "Best"
+    }
+  ],
+  "with": {
+    "human": [
+      {
+        "id": 1,
+        "name": "Henk",
+        "town": 1,
+        "favourite_restaurant": 2
+      },
+      {
+        "id": 2,
+        "name": "Piet",
+        "town": 1,
+        "favourite_restaurant": 1
+      },
+      {
+        "id": 3,
+        "name": "Ingrid",
+        "town": 1,
+        "favourite_restaurant": 1
+      },
+      {
+        "id": 4,
+        "name": "Jos",
+        "town": 2,
+        "favourite_restaurant": 4
+      },
+      {
+        "id": 5,
+        "name": "Sandra",
+        "town": 2,
+        "favourite_restaurant": 4
+      }
+    ],
+    "restaurant": [
+      {
+        "id": 1,
+        "name": "Fastfood",
+        "town": 1
+      },
+      {
+        "id": 2,
+        "name": "Seafood",
+        "town": 1
+      },
+      {
+        "id": 3,
+        "name": "Taco Bell",
+        "town": 2
+      },
+      {
+        "id": 4,
+        "name": "Five Guys",
+        "town": 2
+      }
+    ]
+  },
+  "meta": {
+    "total_records": 1
+  },
+  "with_mapping": {
+    "restaurants": "restaurant",
+    "restaurants.favourite_customers": "human"
+  },
+  "with_related_name_mapping": {
+    "restaurants": "town",
+    "restaurants.favourite_customers": "favourite_restaurant"
+  }
+}

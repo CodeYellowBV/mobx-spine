@@ -11,12 +11,17 @@ import {
     PersonStore,
     PersonStoreResourceName,
 } from './fixtures/Animal';
-import { CustomerStore } from './fixtures/Customer';
+import {
+    CustomerStore,
+    LocationStore,
+    RestaurantStore,
+} from './fixtures/Customer';
 import animalsWithPastOwnersData from './fixtures/animals-with-past-owners.json';
 import animalsWithKindBreedData from './fixtures/animals-with-kind-breed.json';
 import personsWithPetsNoIdListData from './fixtures/persons-with-pets-no-id-list.json';
 import customersWithTownRestaurants from './fixtures/customers-with-town-restaurants.json';
 import customersWithTownRestaurantsUnbalanced from './fixtures/customers-with-town-restaurants-unbalanced.json';
+import townsWithRestaurantsAndCustomersNoIdList from './fixtures/towns-with-restaurants-and-customers-no-id-list.json';
 import customersWithOldTowns from './fixtures/customers-with-old-towns.json';
 import animalsData from './fixtures/animals.json';
 import pagination1Data from './fixtures/pagination/1.json';
@@ -431,6 +436,40 @@ test('One-level store relation without id list (using reverse mapping)', () => {
     expect(personStore.get(1).pets.map('id')).toEqual([3, 4]);  // Garfield and Odie
     expect(personStore.get(2).pets.map('id')).toEqual([]); // Bobbie has no pets
     expect(personStore.get(3).pets.map('id')).toEqual([2]); // Oessein's pet: "Cat"
+});
+
+test('Two-level store relation without id list (using reverse mapping)', () => {
+    const locationStore = new LocationStore({
+        relations: ['restaurants', 'restaurants.favouriteCustomers'],
+    });
+
+    locationStore.fromBackend({
+        data: townsWithRestaurantsAndCustomersNoIdList.data,
+        repos: townsWithRestaurantsAndCustomersNoIdList.with,
+        relMapping: townsWithRestaurantsAndCustomersNoIdList.with_mapping,
+        reverseRelMapping: townsWithRestaurantsAndCustomersNoIdList.with_related_name_mapping,
+    });
+
+    expect(locationStore.at(0).restaurants).toBeInstanceOf(RestaurantStore); // Restaurants in Hardinxveld
+    expect(locationStore.get(1).restaurants.map('id')).toEqual([1, 2]);  // Fastfood and Seafood
+    expect(locationStore.get(2).restaurants.map('id')).toEqual([3, 4]); // Taco Bell and Five Guys
+    expect(locationStore.get(3).restaurants.map('id')).toEqual([]); // Best has no Restaurants
+
+    const fastfood = locationStore.get(1).restaurants.get(1);
+    const seafood = locationStore.get(1).restaurants.get(2);
+    const tacoBell = locationStore.get(2).restaurants.get(3);
+    const fiveGuys = locationStore.get(2).restaurants.get(4);
+    expect(fastfood.favouriteCustomers).toBeInstanceOf(CustomerStore);
+    expect(fastfood.favouriteCustomers.map('id')).toEqual([2, 3]);  // Piet and Ingrid
+
+    expect(seafood.favouriteCustomers).toBeInstanceOf(CustomerStore);
+    expect(seafood.favouriteCustomers.map('id')).toEqual([1]);  // Henk
+
+    expect(tacoBell.favouriteCustomers).toBeInstanceOf(CustomerStore);
+    expect(tacoBell.favouriteCustomers.map('id')).toEqual([]);  // Nobody likes to eat at Taco Bell
+
+    expect(fiveGuys.favouriteCustomers).toBeInstanceOf(CustomerStore);
+    expect(fiveGuys.favouriteCustomers.map('id')).toEqual([4, 5]);  // Jos and Sandra
 });
 
 test('toJS', () => {
