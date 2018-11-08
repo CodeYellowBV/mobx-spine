@@ -1107,11 +1107,11 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 return null;
             }
 
-            forIn(mapping, function (repoName, relName) {
+            forIn(mapping, function (repoName, backendRelName) {
                 var repository = repos[repoName];
                 // For backwards compatibility, reverseMapping is optional (for now)
-                var reverseRelName = reverseMapping ? reverseMapping[relName] : null;
-                relName = _this6.constructor.fromBackendAttrKey(relName);
+                var reverseRelName = reverseMapping ? reverseMapping[backendRelName] : null;
+                var relName = _this6.constructor.fromBackendAttrKey(backendRelName);
 
                 if (targetRelName === relName) {
                     var relKey = data[_this6.constructor.toBackendAttrKey(relName)];
@@ -1130,11 +1130,11 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     // If we have town.restaurants and the targetRel = town
                     // we need "restaurants" in the repository
                     relevant = true;
-                    var relNames = relName.match(RE_SPLIT_FIRST_RELATION);
-                    var scopedRelName = relNames[2];
+                    var backendRelNames = backendRelName.match(RE_SPLIT_FIRST_RELATION);
+                    var scopedBackendRelName = backendRelNames[2];
                     scopedRepos[repoName] = repository;
-                    scopedRelMapping[scopedRelName] = repoName;
-                    scopedReverseRelMapping[scopedRelName] = repoName;
+                    scopedRelMapping[scopedBackendRelName] = repoName;
+                    scopedReverseRelMapping[scopedBackendRelName] = reverseMapping ? reverseMapping[backendRelName] : null;
                 }
             });
 
