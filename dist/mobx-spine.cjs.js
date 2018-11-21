@@ -1754,9 +1754,10 @@ var BinderApi = function () {
         key: 'buildFetchStoreParams',
         value: function buildFetchStoreParams(store) {
             var offset = store.getPageOffset();
+            var limit = store.__state.limit;
             return {
                 with: store.__activeRelations.map(store.Model.toBackendAttrKey).join(',') || null,
-                limit: store.__state.limit,
+                limit: limit === null ? 'none' : limit,
                 // Hide offset if zero so the request looks cleaner in DevTools.
                 offset: offset || null
             };
