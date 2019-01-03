@@ -562,6 +562,14 @@ test('allow options.params to be set', () => {
     expect(animalStore.params).toEqual({ foo: 'bar' });
 });
 
+test('clearing an empty store should not register a change', () => {
+    const animalStore = new AnimalStore({ params: { foo: 'bar' } });
+
+    expect(animalStore.hasSetChanges).toEqual(false);
+    animalStore.clear();
+    expect(animalStore.hasSetChanges).toEqual(false);
+});
+
 describe('requests', () => {
     let mock;
     beforeEach(() => {

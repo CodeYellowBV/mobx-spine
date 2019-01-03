@@ -247,8 +247,12 @@ export default class Store {
 
     @action
     clear() {
+        const length = this.models.length;
         this.models.clear();
-        this.__setChanged = true;
+
+        if (length > 0) {
+            this.__setChanged = true;
+        }
     }
 
     buildFetchData(options) {
