@@ -394,8 +394,12 @@ var Store = (_class = (_temp = _class2 = function () {
     }, {
         key: 'clear',
         value: function clear() {
+            var length = this.models.length;
             this.models.clear();
-            this.__setChanged = true;
+
+            if (length > 0) {
+                this.__setChanged = true;
+            }
         }
     }, {
         key: 'buildFetchData',
