@@ -493,7 +493,9 @@ var Store = (_class = (_temp = _class2 = function () {
             if (options.fetch === undefined || options.fetch) {
                 return this.fetch();
             }
-            invariant(page <= this.totalPages, 'Page should be between 1 and ' + this.totalPages + '.');
+            invariant(
+            // Always allow to go to page 1.
+            page <= (this.totalPages || 1), 'Page should be between 1 and ' + this.totalPages + '.');
             return Promise.resolve();
         }
     }, {
