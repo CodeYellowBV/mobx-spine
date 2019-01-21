@@ -360,7 +360,8 @@ export default class Store {
             return this.fetch();
         }
         invariant(
-            page <= this.totalPages,
+            // Always allow to go to page 1.
+            page <= (this.totalPages || 1),
             `Page should be between 1 and ${this.totalPages}.`
         );
         return Promise.resolve();

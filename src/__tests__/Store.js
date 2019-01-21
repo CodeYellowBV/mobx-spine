@@ -24,6 +24,7 @@ import customersWithTownRestaurantsUnbalanced from './fixtures/customers-with-to
 import townsWithRestaurantsAndCustomersNoIdList from './fixtures/towns-with-restaurants-and-customers-no-id-list.json';
 import customersWithOldTowns from './fixtures/customers-with-old-towns.json';
 import animalsData from './fixtures/animals.json';
+import pagination0Data from './fixtures/pagination/0.json';
 import pagination1Data from './fixtures/pagination/1.json';
 import pagination2Data from './fixtures/pagination/2.json';
 import pagination3Data from './fixtures/pagination/3.json';
@@ -973,6 +974,20 @@ describe('Pagination', () => {
             expect(() => animalStore.setPage(5, { fetch: false })).toThrow(
                 'Page should be between 1 and 4.'
             );
+        });
+    });
+
+    test('setPage to 1 with no results', () => {
+        mock.onAny().replyOnce(() => {
+            return [200, pagination0Data];
+        });
+
+        const animalStore = new AnimalStore();
+
+        return animalStore.fetch().then(() => {
+            expect(animalStore.length).toBe(0);
+            animalStore.setPage(1, { fetch: false });
+            expect(animalStore.currentPage).toBe(1);
         });
     });
 
