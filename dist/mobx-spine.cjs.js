@@ -310,7 +310,7 @@ var Store = (_class = (_temp = _class2 = function () {
             if (typeof this.comparator === 'string') {
                 this.models.replace(this.sortBy(this.comparator));
             } else {
-                this.models.replace(this.models.sort(this.comparator));
+                this.models.replace(this.models.slice().sort(this.comparator));
             }
             return this;
         }
