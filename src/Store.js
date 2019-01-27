@@ -156,7 +156,7 @@ export default class Store {
         if (typeof this.comparator === 'string') {
             this.models.replace(this.sortBy(this.comparator));
         } else {
-            this.models.replace(this.models.sort(this.comparator));
+            this.models.replace(this.models.slice().sort(this.comparator));
         }
         return this;
     }
