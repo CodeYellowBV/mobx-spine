@@ -1343,6 +1343,7 @@ describe('requests', () => {
 
         return animal.save().then(() => {
             expect(animal.hasUserChanges).toBe(false);
+            expect(animal.name).toBe('Garfield');
         });
     });
 
