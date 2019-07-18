@@ -80,6 +80,25 @@ export default class Model {
     // Holds fields (attrs+relations) that have been changed via setInput()
     @observable __changes = [];
 
+    // File state
+    @observable __fileChanges = {};
+    @observable __fileDeletions = {};
+    @observable __fileExists = {};
+
+    wrapPendingRequestCount(promise) {
+        this.__pendingRequestCount++;
+
+        return promise
+            .then((res) => {
+                this.__pendingRequestCount--;
+                return res;
+            })
+            .catch((err) => {
+                this.__pendingRequestCount--;
+                throw err;
+            });
+    }
+
     // Useful to reference to this model in a relation - that is not yet saved to the backend.
     getNegativeId() {
         return -parseInt(this.cid.replace('m', ''));
@@ -126,6 +145,10 @@ export default class Model {
         return {};
     }
 
+    fileFields() {
+        return [];
+    }
+
     // Empty function, but can be overridden if you want to do something after initializing the model.
     initialize() {}
 
@@ -158,6 +181,8 @@ export default class Model {
             this.parse(data);
         }
         this.initialize();
+
+        this.saveFile = this.saveFile.bind(this);
     }
 
     @action
@@ -231,6 +256,9 @@ export default class Model {
 
     clearUserChanges() {
         this.__changes.clear();
+        this.__fileChanges = {};
+        this.__fileDeletions = {};
+        this.__fileExists = {};
     }
 
     toBackend(options = {}) {
@@ -538,11 +566,51 @@ export default class Model {
         return value;
     }
 
+    saveFile(name) {
+        if (this.__fileChanges[name]) {
+            const file = this.__fileChanges[name];
+
+            const data = new FormData();
+            data.append(name, file, file.name);
+
+            return (
+                this.api.post(
+                    `${this.url}${camelToSnake(name)}/`,
+                    data,
+                    { headers: { 'Content-Type': 'multipart/form-data' } },
+                )
+                .then(action((res) => {
+                    this.parse(res.data);
+                    this.__fileExists[name] = true;
+                    delete this.__fileChanges[name];
+                }))
+            );
+        } else if (this.__fileDeletions[name]) {
+            if (this.__fileExists[name]) {
+                return (
+                    this.api.delete(`${this.url}${camelToSnake(name)}/`)
+                    .then(() => {
+                        this.__fileExists[name] = false;
+                        delete this.__fileDeletions[name];
+                    })
+                );
+            } else {
+                delete this.__fileDeletions[name];
+            }
+        } else {
+            return Promise.resolve();
+        }
+    }
+
+    saveFiles() {
+        return Promise.all(this.fileFields().map(this.saveFile));
+    }
+
     @action
     save(options = {}) {
         this.clearValidationErrors();
-        this.__pendingRequestCount += 1;
-        return this.__getApi()
+        return this.wrapPendingRequestCount(
+            this.__getApi()
             .saveModel({
                 url: options.url || this.url,
                 data: this.toBackend({
@@ -552,24 +620,21 @@ export default class Model {
                 isNew: this.isNew,
                 requestOptions: omit(options, 'url'),
             })
-            .then(
-                action(res => {
-                    this.__pendingRequestCount -= 1;
-                    this.saveFromBackend(res);
-                    this.clearUserChanges();
+            .then(action(res => {
+                this.saveFromBackend(res);
+                this.clearUserChanges();
 
-                    return res;
-                })
-            )
+                return this.saveFiles().then(() => Promise.resolve(res));
+            }))
             .catch(
                 action(err => {
-                    this.__pendingRequestCount -= 1;
                     if (err.valErrors) {
                         this.parseValidationErrors(err.valErrors);
                     }
                     throw err;
                 })
-            );
+            )
+        );
     }
 
     @action
@@ -579,6 +644,24 @@ export default class Model {
                 this.__activeCurrentRelations.includes(name),
             `Field \`${name}\` does not exist on the model.`
         );
+        if (this.fileFields().includes(name)) {
+            if (this.__fileExists[name] === undefined) {
+                this.__fileExists[name] = this[name] !== null;
+            }
+            if (value) {
+                this.__fileChanges[name] = value;
+                delete this.__fileDeletions[name];
+
+                value = `${value.preview}?content_type=${value.type}`;
+            } else {
+                if (!this.__fileChanges[name] || this.__fileChanges[name].existed) {
+                    this.__fileDeletions[name] = true;
+                }
+                delete this.__fileChanges[name];
+
+                value = null;
+            }
+        }
         if (!this.__changes.includes(name)) {
             this.__changes.push(name);
         }
@@ -602,11 +685,19 @@ export default class Model {
         }
     }
 
+    saveAllFiles(relations = {}) {
+        const promises = [this.saveFiles()];
+        for (const rel of Object.keys(relations)) {
+            promises.push(this[rel].saveAllFiles(relations[rel]));
+        }
+        return Promise.all(promises);
+    }
+
     @action
     saveAll(options = {}) {
         this.clearValidationErrors();
-        this.__pendingRequestCount += 1;
-        return this.__getApi()
+        return this.wrapPendingRequestCount(
+            this.__getApi()
             .saveAllModels({
                 url: result(this, 'urlRoot'),
                 model: this,
@@ -618,30 +709,31 @@ export default class Model {
             })
             .then(
                 action(res => {
-                    this.__pendingRequestCount -= 1;
                     this.saveFromBackend(res);
                     this.clearUserChanges();
 
-                    forNestedRelations(this, relationsToNestedKeys(options.relations || []), relation => {
-                        if (relation instanceof Model) {
-                            relation.clearUserChanges();
-                        } else {
-                            relation.clearSetChanges();
-                        }
-                    });
+                    return this.saveAllFiles(relationsToNestedKeys(options.relations || [])).then(() => {
+                        forNestedRelations(this, relationsToNestedKeys(options.relations || []), relation => {
+                            if (relation instanceof Model) {
+                                relation.clearUserChanges();
+                            } else {
+                                relation.clearSetChanges();
+                            }
+                        });
 
-                    return res;
+                        return res;
+                    });
                 })
             )
             .catch(
                 action(err => {
-                    this.__pendingRequestCount -= 1;
                     if (err.valErrors) {
                         this.parseValidationErrors(err.valErrors);
                     }
                     throw err;
                 })
-            );
+            )
+        );
     }
 
     // After saving a model, we should get back an ID mapping from the backend which looks like:
@@ -725,20 +817,20 @@ export default class Model {
             return Promise.resolve();
         }
 
-        this.__pendingRequestCount += 1;
-        return this.__getApi()
+        return this.wrapPendingRequestCount(
+            this.__getApi()
             .deleteModel({
                 url: options.url || this.url,
                 requestOptions: omit(options, ['immediate', 'url']),
             })
             .then(
                 action(() => {
-                    this.__pendingRequestCount -= 1;
                     if (!options.immediate) {
                         removeFromStore();
                     }
                 })
-            );
+            )
+        );
     }
 
     buildFetchData(options) {
@@ -752,10 +844,10 @@ export default class Model {
     @action
     fetch(options = {}) {
         invariant(!this.isNew, 'Trying to fetch model without id!');
-        this.__pendingRequestCount += 1;
 
         const data = this.buildFetchData(options);
-        const promise = this.__getApi()
+        const promise = this.wrapPendingRequestCount(
+            this.__getApi()
             .fetchModel({
                 url: options.url || this.url,
                 data,
@@ -763,12 +855,8 @@ export default class Model {
             })
             .then(action(res => {
                 this.fromBackend(res);
-                this.__pendingRequestCount -= 1;
-            }));
-
-        promise.catch(() => {
-            this.__pendingRequestCount -= 1;
-        });
+            }))
+        );
 
         return promise;
     }

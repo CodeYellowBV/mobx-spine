@@ -12,7 +12,6 @@ import {
     uniqBy,
 } from 'lodash';
 import { invariant } from './utils';
-
 const AVAILABLE_CONST_OPTIONS = [
     'relations',
     'limit',
@@ -265,26 +264,22 @@ export default class Store {
 
     @action
     fetch(options = {}) {
-        this.__pendingRequestCount += 1;
 
         const data = this.buildFetchData(options);
-        const promise = this.__getApi()
+        const promise = this.wrapPendingRequestCount(
+            this.__getApi()
             .fetchStore({
                 url: options.url || result(this, 'url'),
                 data,
                 requestOptions: omit(options, 'data'),
             })
             .then(action(res => {
-                this.__pendingRequestCount -= 1;
                 this.__state.totalRecords = res.totalRecords;
                 this.fromBackend(res);
 
                 return res.response;
-            }));
-
-        promise.catch(() => {
-            this.__pendingRequestCount -= 1;
-        });
+            }))
+        );
 
         return promise;
     }
@@ -482,5 +477,27 @@ export default class Store {
             index += this.length;
         }
         return this.models[index];
+    }
+
+    wrapPendingRequestCount(promise) {
+        this.__pendingRequestCount++;
+
+        return promise
+            .then((res) => {
+                this.__pendingRequestCount--;
+                return res;
+            })
+            .catch((err) => {
+                this.__pendingRequestCount--;
+                throw err;
+            });
+    }
+
+    saveAllFiles(relations = {}) {
+        const promises = [];
+        for (const model of this.models) {
+            promises.push(model.saveAllFiles(relations));
+        }
+        return Promise.all(promises);
     }
 }
