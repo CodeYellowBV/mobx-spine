@@ -37,7 +37,7 @@ export default {
                 return null;
             }
             checkMomentInstance(attr, value);
-            return value.format();
+            return value.toJSON(); // Use ISO8601 notation, adjusted to UTC
         },
     },
     enum: expectedValues => {
