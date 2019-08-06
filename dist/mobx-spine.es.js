@@ -1981,7 +1981,7 @@ var Casts = {
                 return null;
             }
             checkMomentInstance(attr, value);
-            return value.format();
+            return value.toJSON(); // Use ISO8601 notation, adjusted to UTC
         }
     },
     enum: function _enum(expectedValues) {
