@@ -254,11 +254,19 @@ export default class Model {
         });
     }
 
-    clearUserChanges() {
+    clearUserFieldChanges() {
         this.__changes.clear();
+    }
+
+    clearUserFileChanges() {
         this.__fileChanges = {};
         this.__fileDeletions = {};
         this.__fileExists = {};
+    }
+
+    clearUserChanges() {
+        this.clearUserFieldChanges();
+        this.clearUserFileChanges();
     }
 
     toBackend(options = {}) {
@@ -622,9 +630,11 @@ export default class Model {
             })
             .then(action(res => {
                 this.saveFromBackend(res);
-                this.clearUserChanges();
-
-                return this.saveFiles().then(() => Promise.resolve(res));
+                this.clearUserFieldChanges();
+                return this.saveFiles().then(() => {
+                    this.clearUserFileChanges();
+                    Promise.resolve(res)
+                });
             }))
             .catch(
                 action(err => {
@@ -707,24 +717,30 @@ export default class Model {
                 }),
                 requestOptions: omit(options, 'relations'),
             })
-            .then(
-                action(res => {
-                    this.saveFromBackend(res);
-                    this.clearUserChanges();
+            .then(action(res => {
+                this.saveFromBackend(res);
+                this.clearUserFieldChanges();
 
-                    return this.saveAllFiles(relationsToNestedKeys(options.relations || [])).then(() => {
-                        forNestedRelations(this, relationsToNestedKeys(options.relations || []), relation => {
-                            if (relation instanceof Model) {
-                                relation.clearUserChanges();
-                            } else {
-                                relation.clearSetChanges();
-                            }
-                        });
+                forNestedRelations(this, relationsToNestedKeys(options.relations || []), relation => {
+                    if (relation instanceof Model) {
+                        relation.clearUserFieldChanges();
+                    } else {
+                        relation.clearSetChanges();
+                    }
+                });
 
-                        return res;
+                return this.saveAllFiles(relationsToNestedKeys(options.relations || [])).then(() => {
+                    this.clearUserFileChanges();
+
+                    forNestedRelations(this, relationsToNestedKeys(options.relations || []), relation => {
+                        if (relation instanceof Model) {
+                            relation.clearUserFileChanges();
+                        }
                     });
-                })
-            )
+
+                    return res;
+                });
+            }))
             .catch(
                 action(err => {
                     if (err.valErrors) {
