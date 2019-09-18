@@ -575,6 +575,8 @@ export default class Model {
     }
 
     saveFile(name) {
+        const snakeName = camelToSnake(name);
+
         if (this.__fileChanges[name]) {
             const file = this.__fileChanges[name];
 
@@ -583,24 +585,27 @@ export default class Model {
 
             return (
                 this.api.post(
-                    `${this.url}${camelToSnake(name)}/`,
+                    `${this.url}${snakeName}/`,
                     data,
                     { headers: { 'Content-Type': 'multipart/form-data' } },
                 )
                 .then(action((res) => {
-                    this.parse(res.data);
                     this.__fileExists[name] = true;
                     delete this.__fileChanges[name];
+                    this.saveFromBackend(res);
                 }))
             );
         } else if (this.__fileDeletions[name]) {
             if (this.__fileExists[name]) {
                 return (
-                    this.api.delete(`${this.url}${camelToSnake(name)}/`)
-                    .then(() => {
+                    this.api.delete(`${this.url}${snakeName}/`)
+                    .then(action(() => {
                         this.__fileExists[name] = false;
                         delete this.__fileDeletions[name];
-                    })
+                        this.saveFromBackend({ data: {
+                            [snakeName]: null,
+                        } });
+                    }))
                 );
             } else {
                 delete this.__fileDeletions[name];
@@ -629,7 +634,10 @@ export default class Model {
                 requestOptions: omit(options, 'url'),
             })
             .then(action(res => {
-                this.saveFromBackend(res);
+                this.saveFromBackend({
+                    ...res,
+                    data: omit(res.data, this.fileFields().map(camelToSnake)),
+                });
                 this.clearUserFieldChanges();
                 return this.saveFiles().then(() => {
                     this.clearUserFileChanges();
