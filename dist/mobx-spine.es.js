@@ -1337,23 +1337,26 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function saveFile(name) {
             var _this10 = this;
 
+            var snakeName = camelToSnake(name);
+
             if (this.__fileChanges[name]) {
                 var file = this.__fileChanges[name];
 
                 var data = new FormData();
                 data.append(name, file, file.name);
 
-                return this.api.post('' + this.url + camelToSnake(name) + '/', data, { headers: { 'Content-Type': 'multipart/form-data' } }).then(action(function (res) {
-                    _this10.parse(res.data);
+                return this.api.post('' + this.url + snakeName + '/', data, { headers: { 'Content-Type': 'multipart/form-data' } }).then(action(function (res) {
                     _this10.__fileExists[name] = true;
                     delete _this10.__fileChanges[name];
+                    _this10.saveFromBackend(res);
                 }));
             } else if (this.__fileDeletions[name]) {
                 if (this.__fileExists[name]) {
-                    return this.api.delete('' + this.url + camelToSnake(name) + '/').then(function () {
+                    return this.api.delete('' + this.url + snakeName + '/').then(action(function () {
                         _this10.__fileExists[name] = false;
                         delete _this10.__fileDeletions[name];
-                    });
+                        _this10.saveFromBackend({ data: defineProperty({}, snakeName, null) });
+                    }));
                 } else {
                     delete this.__fileDeletions[name];
                 }
@@ -1383,7 +1386,9 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 isNew: this.isNew,
                 requestOptions: omit(options, 'url')
             }).then(action(function (res) {
-                _this11.saveFromBackend(res);
+                _this11.saveFromBackend(_extends({}, res, {
+                    data: omit(res.data, _this11.fileFields().map(camelToSnake))
+                }));
                 _this11.clearUserFieldChanges();
                 return _this11.saveFiles().then(function () {
                     _this11.clearUserFileChanges();
