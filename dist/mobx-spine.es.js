@@ -989,12 +989,22 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         // Many backends use snake_case for attribute names, so we convert to snake_case by default.
 
     }, {
-        key: 'clearUserChanges',
-        value: function clearUserChanges() {
+        key: 'clearUserFieldChanges',
+        value: function clearUserFieldChanges() {
             this.__changes.clear();
+        }
+    }, {
+        key: 'clearUserFileChanges',
+        value: function clearUserFileChanges() {
             this.__fileChanges = {};
             this.__fileDeletions = {};
             this.__fileExists = {};
+        }
+    }, {
+        key: 'clearUserChanges',
+        value: function clearUserChanges() {
+            this.clearUserFieldChanges();
+            this.clearUserFileChanges();
         }
     }, {
         key: 'toBackend',
@@ -1374,10 +1384,9 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 requestOptions: omit(options, 'url')
             }).then(action(function (res) {
                 _this11.saveFromBackend(res);
-                _this11.clearUserChanges();
-
+                _this11.clearUserFieldChanges();
                 return _this11.saveFiles().then(function () {
-                    return Promise.resolve(res);
+                    _this11.clearUserFileChanges();
                 });
             })).catch(action(function (err) {
                 if (err.valErrors) {
@@ -1398,7 +1407,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     this.__fileChanges[name] = value;
                     delete this.__fileDeletions[name];
 
-                    value = value.preview + '?content_type=' + value.type;
+                    value = URL.createObjectURL(value) + '?content_type=' + value.type;
                 } else {
                     if (!this.__fileChanges[name] || this.__fileChanges[name].existed) {
                         this.__fileDeletions[name] = true;
@@ -1480,14 +1489,22 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 requestOptions: omit(options, 'relations')
             }).then(action(function (res) {
                 _this12.saveFromBackend(res);
-                _this12.clearUserChanges();
+                _this12.clearUserFieldChanges();
+
+                forNestedRelations(_this12, relationsToNestedKeys(options.relations || []), function (relation) {
+                    if (relation instanceof Model) {
+                        relation.clearUserFieldChanges();
+                    } else {
+                        relation.clearSetChanges();
+                    }
+                });
 
                 return _this12.saveAllFiles(relationsToNestedKeys(options.relations || [])).then(function () {
+                    _this12.clearUserFileChanges();
+
                     forNestedRelations(_this12, relationsToNestedKeys(options.relations || []), function (relation) {
                         if (relation instanceof Model) {
-                            relation.clearUserChanges();
-                        } else {
-                            relation.clearSetChanges();
+                            relation.clearUserFileChanges();
                         }
                     });
 
