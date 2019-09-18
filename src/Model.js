@@ -662,7 +662,7 @@ export default class Model {
                 this.__fileChanges[name] = value;
                 delete this.__fileDeletions[name];
 
-                value = `${value.preview}?content_type=${value.type}`;
+                value = `${URL.createObjectURL(value)}?content_type=${value.type}`;
             } else {
                 if (!this.__fileChanges[name] || this.__fileChanges[name].existed) {
                     this.__fileDeletions[name] = true;
