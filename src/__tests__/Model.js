@@ -1068,6 +1068,36 @@ describe('requests', () => {
         return animal.save({ params: { branch_id: 1 } });
     });
 
+    test('save with custom data', () => {
+        const animal = new Animal();
+        mock.onAny().replyOnce(config => {
+            expect(JSON.parse(config.data)).toEqual({ id: null, name: '', extra_data: 'can be saved' });
+            return [201, {}];
+        });
+
+        return animal.save({ data: { extra_data: 'can be saved' } });
+    });
+
+    test('save with mapped data', () => {
+        const animal = new Animal();
+        mock.onAny().replyOnce(config => {
+            expect(JSON.parse(config.data)).toEqual({ id: 'overwritten', name: '' });
+            return [201, {}];
+        });
+
+        return animal.save({ mapData: data => ({ ...data, id: 'overwritten' }) });
+    });
+
+    test('save with custom and mapped data', () => {
+        const animal = new Animal();
+        mock.onAny().replyOnce(config => {
+            expect(JSON.parse(config.data)).toEqual({ id: 'overwritten', name: '', extra_data: 'can be saved' });
+            return [201, {}];
+        });
+
+        return animal.save({ data: { extra_data: 'can be saved' }, mapData: data => ({ ...data, id: 'overwritten' }) });
+    });
+
     test('save all with relations', () => {
         const animal = new Animal(
             {

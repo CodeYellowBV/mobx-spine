@@ -620,15 +620,18 @@ export default class Model {
     }
 
     @action
-    save(options = {}) {
+    save({ data = {}, mapData = (x) => x, ...options } = {}) {
         this.clearValidationErrors();
         return this.wrapPendingRequestCount(
             this.__getApi()
             .saveModel({
                 url: options.url || this.url,
-                data: this.toBackend({
-                    fields: options.fields,
-                    onlyChanges: options.onlyChanges,
+                data: mapData({
+                    ...this.toBackend({
+                        fields: options.fields,
+                        onlyChanges: options.onlyChanges,
+                    }),
+                    ...data,
                 }),
                 isNew: this.isNew,
                 requestOptions: omit(options, 'url'),
