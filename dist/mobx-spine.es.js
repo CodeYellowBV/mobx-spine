@@ -125,6 +125,18 @@ var _extends = Object.assign || function (target) {
   return target;
 };
 
+var objectWithoutProperties = function (obj, keys) {
+  var target = {};
+
+  for (var i in obj) {
+    if (keys.indexOf(i) >= 0) continue;
+    if (!Object.prototype.hasOwnProperty.call(obj, i)) continue;
+    target[i] = obj[i];
+  }
+
+  return target;
+};
+
 var _class, _descriptor, _descriptor2, _descriptor3, _descriptor4, _descriptor5, _class2, _temp;
 
 function _initDefineProp(target, property, descriptor, context) {
@@ -1374,15 +1386,23 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function save() {
             var _this11 = this;
 
-            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+            var _ref3 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+            var _ref3$data = _ref3.data,
+                data = _ref3$data === undefined ? {} : _ref3$data,
+                _ref3$mapData = _ref3.mapData,
+                mapData = _ref3$mapData === undefined ? function (x) {
+                return x;
+            } : _ref3$mapData,
+                options = objectWithoutProperties(_ref3, ['data', 'mapData']);
 
             this.clearValidationErrors();
             return this.wrapPendingRequestCount(this.__getApi().saveModel({
                 url: options.url || this.url,
-                data: this.toBackend({
+                data: mapData(_extends({}, this.toBackend({
                     fields: options.fields,
                     onlyChanges: options.onlyChanges
-                }),
+                }), data)),
                 isNew: this.isNew,
                 requestOptions: omit(options, 'url')
             }).then(action(function (res) {
