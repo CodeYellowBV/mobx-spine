@@ -460,7 +460,7 @@ export default class Model {
                     const pk = data[this.constructor.primaryKey];
                     relevant = true;
                     scopedData = this.__parseReverseRepositoryToData(reverseRelName, pk, repository);
-                    if (this.relations(relName) instanceof Model) {
+                    if (this.relations(relName).prototype instanceof Model) {
                         if (scopedData.length === 0) {
                             scopedData = null;
                         } else if (scopedData.length === 1) {
