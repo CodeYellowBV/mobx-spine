@@ -460,6 +460,15 @@ export default class Model {
                     const pk = data[this.constructor.primaryKey];
                     relevant = true;
                     scopedData = this.__parseReverseRepositoryToData(reverseRelName, pk, repository);
+                    if (this.relations(relName) instanceof Model) {
+                        if (scopedData.length === 0) {
+                            scopedData = null;
+                        } else if (scopedData.length === 1) {
+                            scopedData = scopedData[0];
+                        } else {
+                            throw new Error('multiple models found for related model');
+                        }
+                    }
                 }
                 return;
             }

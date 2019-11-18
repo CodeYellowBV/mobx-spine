@@ -1225,6 +1225,15 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                         var pk = data[_this7.constructor.primaryKey];
                         relevant = true;
                         scopedData = _this7.__parseReverseRepositoryToData(reverseRelName, pk, repository);
+                        if (_this7.relations(relName) instanceof Model) {
+                            if (scopedData.length === 0) {
+                                scopedData = null;
+                            } else if (scopedData.length === 1) {
+                                scopedData = scopedData[0];
+                            } else {
+                                throw new Error('multiple models found for related model');
+                            }
+                        }
                     }
                     return;
                 }
