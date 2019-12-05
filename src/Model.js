@@ -269,7 +269,7 @@ export default class Model {
         this.clearUserFileChanges();
     }
 
-    toBackend(options = {}) {
+    toBackend({ data = {}, mapData = (x) => x, ...options } = {}) {
         const output = {};
         // By default we'll include all fields (attributes+relations), but sometimes you might want to specify the fields to be included.
         const fieldFilter = field => {
@@ -316,12 +316,16 @@ export default class Model {
                     output[relBackendName] = rel.mapByPrimaryKey();
                 }
             });
-        return output;
+
+        Object.assign(output, data);
+        return mapData(output);
     }
 
     toBackendAll(options = {}) {
         const nestedRelations = options.nestedRelations || {};
         const data = this.toBackend({
+            data: options.data,
+            mapData: options.mapData,
             onlyChanges: options.onlyChanges,
         });
 
@@ -629,21 +633,20 @@ export default class Model {
     }
 
     @action
-    save({ data = {}, mapData = (x) => x, ...options } = {}) {
+    save(options = {}) {
         this.clearValidationErrors();
         return this.wrapPendingRequestCount(
             this.__getApi()
             .saveModel({
                 url: options.url || this.url,
-                data: mapData({
-                    ...this.toBackend({
+                data: this.toBackend({
+                        data: options.data,
+                        mapData: options.mapData,
                         fields: options.fields,
                         onlyChanges: options.onlyChanges,
                     }),
-                    ...data,
-                }),
                 isNew: this.isNew,
-                requestOptions: omit(options, 'url'),
+                requestOptions: omit(options, 'url', 'data', 'mapData')
             })
             .then(action(res => {
                 this.saveFromBackend({
@@ -732,10 +735,12 @@ export default class Model {
                 url: result(this, 'urlRoot'),
                 model: this,
                 data: this.toBackendAll({
+                    data: options.data,
+                    mapData: options.mapData,
                     nestedRelations: relationsToNestedKeys(options.relations || []),
                     onlyChanges: options.onlyChanges,
                 }),
-                requestOptions: omit(options, 'relations'),
+                requestOptions: omit(options, 'relations', 'data', 'mapData'),
             })
             .then(action(res => {
                 this.saveFromBackend(res);
