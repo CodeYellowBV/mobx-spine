@@ -1023,7 +1023,15 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function toBackend() {
             var _this4 = this;
 
-            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+            var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+            var _ref$data = _ref.data,
+                data = _ref$data === undefined ? {} : _ref$data,
+                _ref$mapData = _ref.mapData,
+                mapData = _ref$mapData === undefined ? function (x) {
+                return x;
+            } : _ref$mapData,
+                options = objectWithoutProperties(_ref, ['data', 'mapData']);
 
             var output = {};
             // By default we'll include all fields (attributes+relations), but sometimes you might want to specify the fields to be included.
@@ -1061,7 +1069,9 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     output[relBackendName] = rel.mapByPrimaryKey();
                 }
             });
-            return output;
+
+            Object.assign(output, data);
+            return mapData(output);
         }
     }, {
         key: 'toBackendAll',
@@ -1072,6 +1082,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             var nestedRelations = options.nestedRelations || {};
             var data = this.toBackend({
+                data: options.data,
+                mapData: options.mapData,
                 onlyChanges: options.onlyChanges
             });
 
@@ -1191,14 +1203,14 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
     }, {
         key: '__scopeBackendResponse',
-        value: function __scopeBackendResponse(_ref) {
+        value: function __scopeBackendResponse(_ref2) {
             var _this7 = this;
 
-            var data = _ref.data,
-                targetRelName = _ref.targetRelName,
-                repos = _ref.repos,
-                mapping = _ref.mapping,
-                reverseMapping = _ref.reverseMapping;
+            var data = _ref2.data,
+                targetRelName = _ref2.targetRelName,
+                repos = _ref2.repos,
+                mapping = _ref2.mapping,
+                reverseMapping = _ref2.reverseMapping;
 
             var scopedData = null;
             var relevant = false;
@@ -1264,13 +1276,13 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
     }, {
         key: 'fromBackend',
-        value: function fromBackend(_ref2) {
+        value: function fromBackend(_ref3) {
             var _this8 = this;
 
-            var data = _ref2.data,
-                repos = _ref2.repos,
-                relMapping = _ref2.relMapping,
-                reverseRelMapping = _ref2.reverseRelMapping;
+            var data = _ref3.data,
+                repos = _ref3.repos,
+                relMapping = _ref3.relMapping,
+                reverseRelMapping = _ref3.reverseRelMapping;
 
             // We handle the fromBackend recursively. On each relation of the source model
             // fromBackend gets called as well, but with data scoped for itself
@@ -1395,25 +1407,19 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function save() {
             var _this11 = this;
 
-            var _ref3 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-            var _ref3$data = _ref3.data,
-                data = _ref3$data === undefined ? {} : _ref3$data,
-                _ref3$mapData = _ref3.mapData,
-                mapData = _ref3$mapData === undefined ? function (x) {
-                return x;
-            } : _ref3$mapData,
-                options = objectWithoutProperties(_ref3, ['data', 'mapData']);
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
             this.clearValidationErrors();
             return this.wrapPendingRequestCount(this.__getApi().saveModel({
                 url: options.url || this.url,
-                data: mapData(_extends({}, this.toBackend({
+                data: this.toBackend({
+                    data: options.data,
+                    mapData: options.mapData,
                     fields: options.fields,
                     onlyChanges: options.onlyChanges
-                }), data)),
+                }),
                 isNew: this.isNew,
-                requestOptions: omit(options, 'url')
+                requestOptions: omit(options, 'url', 'data', 'mapData')
             }).then(action(function (res) {
                 _this11.saveFromBackend(_extends({}, res, {
                     data: omit(res.data, _this11.fileFields().map(camelToSnake))
@@ -1517,10 +1523,12 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 url: result(this, 'urlRoot'),
                 model: this,
                 data: this.toBackendAll({
+                    data: options.data,
+                    mapData: options.mapData,
                     nestedRelations: relationsToNestedKeys(options.relations || []),
                     onlyChanges: options.onlyChanges
                 }),
-                requestOptions: omit(options, 'relations')
+                requestOptions: omit(options, 'relations', 'data', 'mapData')
             }).then(action(function (res) {
                 _this12.saveFromBackend(res);
                 _this12.clearUserFieldChanges();
