@@ -656,7 +656,7 @@ export default class Model {
                 this.clearUserFieldChanges();
                 return this.saveFiles().then(() => {
                     this.clearUserFileChanges();
-                    Promise.resolve(res)
+                    return Promise.resolve(res);
                 });
             }))
             .catch(
