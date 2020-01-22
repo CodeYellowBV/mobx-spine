@@ -101,15 +101,24 @@ test('POST request', () => {
 
 test('POST request to custom endpoint (#78)', () => {
     mock.onAny().replyOnce(config => {
-        expect(config.url).toBe('/api/foo/asdf/'); // No double leading slash
+        expect(config.url).toBe('example.com/foo/bar/asdf/'); // No double leading slash
         expect(config.method).toBe('post');
         expect(config.params).toEqual(undefined);
         return [200, { }];
     });
 
     const api = new BinderApi();
-    api.baseUrl = '/api/foo/';
+    //the domain name and top-level domain which receives the api request
+    const apiPart = 'example.com';
+    // The current configuration of general api path for all devices, which worked before the update
+    const fooPart = '/foo/bar';
 
+    // This construction of api.baseUrl used to work in a react-native application, even though one would expect the /
+    // before this.fooPart followed by the starting / in fooPart itself would degenerate a double //.
+    // It did not cause any issues until a recent update of a backend, in which the react-native app was completely unchanged.
+    api.baseUrl = `${apiPart}/${fooPart}`;
+
+    //Sending a post request like this used to generate a valid post request without // between example.com//foo/bar/asdf
     return api.post('/asdf/').then(res => {
         expect(res).toEqual({ });
     });
