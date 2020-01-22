@@ -1433,6 +1433,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 _this11.clearUserFieldChanges();
                 return _this11.saveFiles().then(function () {
                     _this11.clearUserFileChanges();
+                    return Promise.resolve(res);
                 });
             })).catch(mobx.action(function (err) {
                 if (err.valErrors) {
