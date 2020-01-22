@@ -99,6 +99,22 @@ test('POST request', () => {
     });
 });
 
+test('POST request to custom endpoint (#78)', () => {
+    mock.onAny().replyOnce(config => {
+        expect(config.url).toBe('/api/foo/asdf/'); // No double leading slash
+        expect(config.method).toBe('post');
+        expect(config.params).toEqual(undefined);
+        return [200, { }];
+    });
+
+    const api = new BinderApi();
+    api.baseUrl = '/api/foo/';
+
+    return api.post('/asdf/').then(res => {
+        expect(res).toEqual({ });
+    });
+});
+
 test('POST request with data', () => {
     mock.onAny().replyOnce(config => {
         expect(config.params).toEqual(undefined);
