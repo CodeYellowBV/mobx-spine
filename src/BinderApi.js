@@ -184,8 +184,7 @@ export default class BinderApi {
                 }
                 return res;
             })
-            .catch(err => {
-            });
+            .catch(this.handleValidationErrors);
     }
 
     deleteModel({ url, requestOptions }) {
