@@ -16,6 +16,8 @@ export default class BinderApi {
 
     constructor() {
         this.__initializeCsrfHandling();
+
+        this.handleValidationErrors = this.handleValidationErrors.bind(this);
     }
 
     __initializeCsrfHandling() {
@@ -149,20 +151,22 @@ export default class BinderApi {
         });
     }
 
+    handleValidationErrors(err) {
+        if (err.response) {
+            err.valErrors = this.parseBackendValidationErrors(err.response);
+        }
+        throw err;
+    }
+
     saveModel({ url, data, isNew, requestOptions }) {
         const method = isNew ? 'post' : 'patch';
-        return this[method](url, data, requestOptions)
+        return (
+            this[method](url, data, requestOptions)
             .then(newData => {
                 return { data: newData };
             })
-            .catch(err => {
-                if (err.response) {
-                    err.valErrors = this.parseBackendValidationErrors(
-                        err.response
-                    );
-                }
-                throw err;
-            });
+            .catch(this.handleValidationErrors)
+        );
     }
 
     saveAllModels({ url, data, model, requestOptions }) {
@@ -181,12 +185,6 @@ export default class BinderApi {
                 return res;
             })
             .catch(err => {
-                if (err.response) {
-                    err.valErrors = this.parseBackendValidationErrors(
-                        err.response
-                    );
-                }
-                throw err;
             });
     }
 
@@ -220,5 +218,28 @@ export default class BinderApi {
                 totalRecords: res.meta.total_records,
             };
         });
+    }
+
+    saveModelFile({ url, name, file, requestOptions }) {
+        const data = new FormData();
+        data.append(name, file, file.name);
+
+        return (
+            this.api.post(url, data, {
+                ...requestOptions,
+                headers: {
+                    ...(requestOptions.headers || {}),
+                    'Content-Type': 'multipart/form-data',
+                },
+            })
+            .catch(this.handleValidationErrors)
+        );
+    }
+
+    deleteModelFile({ url, name, requestOptions }) {
+        return (
+            this.api.delete(url, {}, requestOptions)
+            .catch(this.handleValidationErrors)
+        );
     }
 }

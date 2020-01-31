@@ -176,9 +176,9 @@ export default class Store {
         return this;
     }
 
-    parseValidationErrors(valErrors) {
+    parseValidationErrors(valErrors, append = false) {
         this.each(model => {
-            model.parseValidationErrors(valErrors);
+            model.parseValidationErrors(valErrors, append);
         });
     }
 
