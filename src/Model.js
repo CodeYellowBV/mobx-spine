@@ -155,11 +155,11 @@ export default class Model {
     }
 
     pickFields() {
-        return this.constructor.shownFields;
+        return this.constructor.pickFields;
     }
 
     omitFields() {
-        return this.constructor.hiddenFields;
+        return this.constructor.omitFields;
     }
 
     // Empty function, but can be overridden if you want to do something after initializing the model.
