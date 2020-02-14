@@ -105,7 +105,7 @@ animal.save(); // Performs a request: POST api/animal
 
 ## Pick fields
 
-You can pick fields by either defining a static pickFields or as a function. Keep in mind that `id` is mandatory, so it will always be included.
+You can pick fields by either defining a static `pickFields` variable or a `pickFields` function. Keep in mind that `id` is mandatory, so it will always be included.
 
 ### As a static field
 ```js
@@ -139,7 +139,7 @@ animal.toBackend(); // { id: 1, name: 'King' }
 
 ## Omit fields
 
-You can omit fields by either defining a static pickFields or as a function. Keep in mind that `id` is mandatory, so it will always be included.
+You can omit fields by either defining a static `omitFields` variable or a `omitFields` function. Keep in mind that `id` is mandatory, so it will always be included.
 
 ### As a static field
 ```js
