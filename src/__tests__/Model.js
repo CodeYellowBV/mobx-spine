@@ -444,11 +444,11 @@ test('toBackend with pick fields', () => {
         @observable name = 'Joe';
         @observable color = 'red';
     }();
-    
+
     // The id field seems to be required i.e cannot be
     // picked away
     model.pickFields = () => {
-        return ['color'] 
+        return ['color']
     }
 
     const serialized = model.toBackend();
@@ -463,13 +463,13 @@ test('toBackend with pick fields as static attribute', () => {
     const model = new class extends Model {
         api = new BinderApi();
         static backendResourceName = 'resource';
-        static pickFields = ['color']; 
-    
+        static pickFields = ['color'];
+
         @observable id = 1;
         @observable name = 'Joe';
         @observable color = 'red';
     }();
-    
+
     const serialized = model.toBackend();
 
     expect(serialized).toEqual({
@@ -509,9 +509,9 @@ test('toBackend with omit fields', () => {
         @observable weight = 76;
         @observable height = 196;
     }();
-    
+
     model.omitFields = () => {
-        return ['weight', 'height', 'name'] 
+        return ['weight', 'height', 'name']
     }
 
     const serialized = model.toBackend();
@@ -529,8 +529,8 @@ test('toBackend with omit fields as static attribute', () => {
     const model = new class extends Model {
         api = new BinderApi();
         static backendResourceName = 'resource';
-        static omitFields = ['weight', 'height', 'name']; 
-        
+        static omitFields = ['weight', 'height', 'name'];
+
         @observable id = 1;
         @observable name = 'Joe';
         @observable color = 'red';
@@ -540,9 +540,6 @@ test('toBackend with omit fields as static attribute', () => {
 
     const serialized = model.toBackend();
 
-    const expected = {
-        weight: 32
-    }
     expect(serialized).toEqual({
         color: 'red',
         id: 1
@@ -564,9 +561,6 @@ test('toBackend with omit fields as arrow function', () => {
 
     const serialized = model.toBackend();
 
-    const expected = {
-        weight: 32
-    }
     expect(serialized).toEqual({
         color: 'red',
         id: 1
