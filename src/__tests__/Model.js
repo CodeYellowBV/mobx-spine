@@ -435,6 +435,138 @@ test('toBackend with relations', () => {
     });
 });
 
+test('toBackend with pick fields', () => {
+    const model = new class extends Model {
+        api = new BinderApi();
+        static backendResourceName = 'resource';
+
+        @observable id = 1;
+        @observable name = 'Joe';
+        @observable color = 'red';
+    }();
+
+    // The id field seems to be required i.e cannot be
+    // picked away
+    model.pickFields = () => {
+        return ['color']
+    }
+
+    const serialized = model.toBackend();
+
+    expect(serialized).toEqual({
+        color: 'red',
+        id: 1
+    });
+});
+
+test('toBackend with pick fields as static attribute', () => {
+    const model = new class extends Model {
+        api = new BinderApi();
+        static backendResourceName = 'resource';
+        static pickFields = ['color'];
+
+        @observable id = 1;
+        @observable name = 'Joe';
+        @observable color = 'red';
+    }();
+
+    const serialized = model.toBackend();
+
+    expect(serialized).toEqual({
+        color: 'red',
+        id: 1
+    });
+});
+
+test('toBackend with pick fields arrow function', () => {
+    const model = new class extends Model {
+        api = new BinderApi();
+        static backendResourceName = 'resource';
+        pickFields = () => ['color'];
+
+        @observable id = 1;
+        @observable name = 'Joe';
+        @observable color = 'red';
+    }();
+
+    const serialized = model.toBackend();
+
+    expect(serialized).toEqual({
+        color: 'red',
+        id: 1
+    });
+});
+
+
+test('toBackend with omit fields', () => {
+    const model = new class extends Model {
+        api = new BinderApi();
+        static backendResourceName = 'resource';
+
+        @observable id = 1;
+        @observable name = 'Joe';
+        @observable color = 'red';
+        @observable weight = 76;
+        @observable height = 196;
+    }();
+
+    model.omitFields = () => {
+        return ['weight', 'height', 'name']
+    }
+
+    const serialized = model.toBackend();
+
+    const expected = {
+        weight: 32
+    }
+    expect(serialized).toEqual({
+        color: 'red',
+        id: 1
+    });
+});
+
+test('toBackend with omit fields as static attribute', () => {
+    const model = new class extends Model {
+        api = new BinderApi();
+        static backendResourceName = 'resource';
+        static omitFields = ['weight', 'height', 'name'];
+
+        @observable id = 1;
+        @observable name = 'Joe';
+        @observable color = 'red';
+        @observable weight = 76;
+        @observable height = 196;
+    }();
+
+    const serialized = model.toBackend();
+
+    expect(serialized).toEqual({
+        color: 'red',
+        id: 1
+    });
+});
+
+test('toBackend with omit fields as arrow function', () => {
+    const model = new class extends Model {
+        api = new BinderApi();
+        static backendResourceName = 'resource';
+        omitFields = () => ['weight', 'height', 'name'];
+
+        @observable id = 1;
+        @observable name = 'Joe';
+        @observable color = 'red';
+        @observable weight = 76;
+        @observable height = 196;
+    }();
+
+    const serialized = model.toBackend();
+
+    expect(serialized).toEqual({
+        color: 'red',
+        id: 1
+    });
+});
+
 test('toBackend with specified attributes & relations', () => {
     const animal = new Animal(
         {

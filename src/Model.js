@@ -23,6 +23,7 @@ import {
     uniqBy,
     mapKeys,
     result,
+    pick,
 } from 'lodash';
 import Store from './Store';
 import { invariant, snakeToCamel, camelToSnake, relationsToNestedKeys, forNestedRelations } from './utils';
@@ -51,6 +52,10 @@ export default class Model {
     static primaryKey = 'id';
     // How the model is known at the backend. This is useful when the model is in a relation that has a different name.
     static backendResourceName = '';
+
+    static fileFields = [];
+    static pickFields = undefined;
+    static omitFields = [];
 
     urlRoot() {
         // Try to auto-generate the URL.
@@ -146,7 +151,15 @@ export default class Model {
     }
 
     fileFields() {
-        return [];
+        return this.constructor.fileFields;
+    }
+
+    pickFields() {
+        return this.constructor.pickFields;
+    }
+
+    omitFields() {
+        return this.constructor.omitFields;
     }
 
     // Empty function, but can be overridden if you want to do something after initializing the model.
@@ -269,10 +282,23 @@ export default class Model {
         this.clearUserFileChanges();
     }
 
+    @computed get fieldFilter() {
+        const pickFields = this.pickFields();
+        const omitFields = this.omitFields();
+
+        return (name) => (
+            (!pickFields || pickFields.includes(name)) &&
+            !omitFields.includes(name)
+        );
+    }
+
     toBackend({ data = {}, mapData = (x) => x, ...options } = {}) {
         const output = {};
         // By default we'll include all fields (attributes+relations), but sometimes you might want to specify the fields to be included.
         const fieldFilter = field => {
+            if (!this.fieldFilter(field)) {
+                return false;
+            }
             if (options.fields) {
                 return options.fields.includes(field);
             }
@@ -629,7 +655,11 @@ export default class Model {
     }
 
     saveFiles() {
-        return Promise.all(this.fileFields().map(this.saveFile));
+        return Promise.all(
+            this.fileFields()
+            .filter(this.fieldFilter)
+            .map(this.saveFile)
+        );
     }
 
     @action
