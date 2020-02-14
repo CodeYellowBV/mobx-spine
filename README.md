@@ -101,3 +101,72 @@ animal.save(); // Performs a request: POST api/animal
 // Note that the `_errors` prop will not be included in the request;
 // props starting with an underscore are frontend-only.
 ```
+
+
+## Pick fields
+
+You can pick fields by either defining a static pickFields or as a function. Keep in mind that `id` is mandatory, so it will always be included.
+
+### As a static field
+```js
+class Animal extends Model {
+    static pickFields = ['name'];
+
+    @observable id = null;
+    @observable name = '';
+    @observable color = '';
+}
+
+const animal = new Animal({ id: 1, name: 'King', color: 'orange' });
+animal.toBackend(); // { id: 1, name: 'King' }
+```
+
+### As a function
+```js
+class Animal extends Model {
+    pickFields() {
+        return ['name];
+    }
+
+    @observable id = null;
+    @observable name = '';
+    @observable color = '';
+}
+
+const animal = new Animal({ id: 1, name: 'King', color: 'orange' });
+animal.toBackend(); // { id: 1, name: 'King' }
+```
+
+## Omit fields
+
+You can omit fields by either defining a static pickFields or as a function. Keep in mind that `id` is mandatory, so it will always be included.
+
+### As a static field
+```js
+class Animal extends Model {
+    static omitFields = ['color'];
+
+    @observable id = null;
+    @observable name = '';
+    @observable color = '';
+}
+
+const animal = new Animal({ id: 1, name: 'King', color: 'orange' });
+animal.toBackend(); // { id: 1, name: 'King' }
+```
+
+### As a function
+```js
+class Animal extends Model {
+    pickFields() {
+        return ['color];
+    }
+
+    @observable id = null;
+    @observable name = '';
+    @observable color = '';
+}
+
+const animal = new Animal({ id: 1, name: 'King', color: 'orange' });
+animal.toBackend(); // { id: 1, name: 'King' }
+```
