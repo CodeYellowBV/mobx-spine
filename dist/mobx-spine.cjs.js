@@ -808,6 +808,8 @@ var FORBIDDEN_ATTRS = ['url', 'urlRoot', 'api', 'isNew', 'isLoading', 'parse', '
 var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     createClass(Model, [{
         key: 'urlRoot',
+
+        // How the model is known at the backend. This is useful when the model is in a relation that has a different name.
         value: function urlRoot() {
             // Try to auto-generate the URL.
             var bname = this.constructor.backendResourceName;
@@ -816,8 +818,6 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             }
             return null;
         }
-        // How the model is known at the backend. This is useful when the model is in a relation that has a different name.
-
         // Holds original attributes with values, so `clear()` knows what to reset to (quite ugly).
 
         // Holds activated - nested - relations (e.g. `['animal', 'animal.breed']`)
@@ -872,7 +872,17 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'fileFields',
         value: function fileFields() {
-            return [];
+            return this.constructor.fileFields;
+        }
+    }, {
+        key: 'pickFields',
+        value: function pickFields() {
+            return this.constructor.pickFields;
+        }
+    }, {
+        key: 'omitFields',
+        value: function omitFields() {
+            return this.constructor.omitFields;
         }
 
         // Empty function, but can be overridden if you want to do something after initializing the model.
@@ -1042,6 +1052,9 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             var output = {};
             // By default we'll include all fields (attributes+relations), but sometimes you might want to specify the fields to be included.
             var fieldFilter = function fieldFilter(field) {
+                if (!_this4.fieldFilter(field)) {
+                    return false;
+                }
                 if (options.fields) {
                     return options.fields.includes(field);
                 }
@@ -1406,7 +1419,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'saveFiles',
         value: function saveFiles() {
-            return Promise.all(this.fileFields().map(this.saveFile));
+            return Promise.all(this.fileFields().filter(this.fieldFilter).map(this.saveFile));
         }
     }, {
         key: 'save',
@@ -1719,6 +1732,16 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             });
         }
     }, {
+        key: 'fieldFilter',
+        get: function get$$1() {
+            var pickFields = this.pickFields();
+            var omitFields = this.omitFields();
+
+            return function (name) {
+                return (!pickFields || pickFields.includes(name)) && !omitFields.includes(name);
+            };
+        }
+    }, {
         key: 'backendValidationErrors',
         get: function get$$1() {
             return this.__backendValidationErrors;
@@ -1738,7 +1761,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         }
     }]);
     return Model;
-}(), _class2$1.primaryKey = 'id', _class2$1.backendResourceName = '', _temp$1), (_descriptor$1 = _applyDecoratedDescriptor$1(_class$1.prototype, '__backendValidationErrors', [mobx.observable], {
+}(), _class2$1.primaryKey = 'id', _class2$1.backendResourceName = '', _class2$1.fileFields = [], _class2$1.pickFields = undefined, _class2$1.omitFields = [], _temp$1), (_descriptor$1 = _applyDecoratedDescriptor$1(_class$1.prototype, '__backendValidationErrors', [mobx.observable], {
     enumerable: true,
     initializer: function initializer() {
         return {};
@@ -1773,7 +1796,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     initializer: function initializer() {
         return {};
     }
-}), _applyDecoratedDescriptor$1(_class$1.prototype, 'url', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'url'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isNew', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isNew'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isLoading', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '__parseRelations', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, '__parseRelations'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'hasUserChanges', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasUserChanges'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fromBackend', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parse', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'save', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'save'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'setInput', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'setInput'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'saveAll', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'saveAll'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parseValidationErrors', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parseValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clearValidationErrors', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clearValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'backendValidationErrors', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'backendValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'delete', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'delete'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fetch', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clear', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'), _class$1.prototype)), _class$1);
+}), _applyDecoratedDescriptor$1(_class$1.prototype, 'url', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'url'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isNew', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isNew'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isLoading', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '__parseRelations', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, '__parseRelations'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'hasUserChanges', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasUserChanges'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fieldFilter', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fieldFilter'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fromBackend', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parse', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'save', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'save'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'setInput', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'setInput'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'saveAll', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'saveAll'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parseValidationErrors', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parseValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clearValidationErrors', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clearValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'backendValidationErrors', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'backendValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'delete', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'delete'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fetch', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clear', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'), _class$1.prototype)), _class$1);
 
 // Function ripped from Django docs.
 // See: https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
