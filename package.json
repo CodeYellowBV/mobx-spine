@@ -52,6 +52,7 @@
     "jest": "22.4.4",
     "lint-staged": "7.1.1",
     "lodash": "4.17.11",
+    "luxon": "1.24.1",
     "mobx": "4.9.4",
     "moment": "2.24.0",
     "prettier": "1.17.0",
