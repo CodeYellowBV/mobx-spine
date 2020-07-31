@@ -2,6 +2,7 @@ import { observable, computed, action, autorun, isObservableProp, extendObservab
 import { isArray, map, filter, find, sortBy, forIn, omit, isPlainObject, result, uniqBy, each, mapValues, get, uniqueId, uniq, mapKeys } from 'lodash';
 import axios from 'axios';
 import moment from 'moment';
+import { DateTime } from 'luxon';
 
 function invariant(condition) {
     var message = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'Illegal state';
@@ -2032,12 +2033,29 @@ var BinderApi = function () {
     return BinderApi;
 }();
 
+var DATE_LIB = 'moment';
+var SUPPORTED_DATE_LIBS = ['moment', 'luxon'];
+
+function configureDateLib(dateLib) {
+    invariant(SUPPORTED_DATE_LIBS.includes(dateLib), 'Unsupported date lib `' + dateLib + '`. ' + ('(Supported: ' + SUPPORTED_DATE_LIBS.map(function (dateLib) {
+        return '`' + dateLib + '`';
+    }).join(', ') + ')'));
+    DATE_LIB = dateLib;
+}
+
 function checkMomentInstance(attr, value) {
     invariant(moment.isMoment(value), 'Attribute `' + attr + '` is not a moment instance.');
 }
 
-var Casts = {
-    date: {
+function checkLuxonDateTime(attr, value) {
+    invariant(moment.isMoment(value), 'Attribute `' + attr + '` is not a luxon DateTime.');
+}
+
+var LUXON_DATE_FORMAT = 'yyyy-LL-dd';
+var LUXON_DATETIME_FORMAT = 'yyy-LL-ddTHH:mm:ssZZZ';
+
+var CASTS = {
+    momentDate: {
         parse: function parse(attr, value) {
             if (value === null || value === undefined) {
                 return null;
@@ -2050,9 +2068,11 @@ var Casts = {
             }
             checkMomentInstance(attr, value);
             return value.format('YYYY-MM-DD');
-        }
+        },
+
+        dateLib: 'moment'
     },
-    datetime: {
+    momentDatetime: {
         parse: function parse(attr, value) {
             if (value === null) {
                 return null;
@@ -2065,6 +2085,74 @@ var Casts = {
             }
             checkMomentInstance(attr, value);
             return value.toJSON(); // Use ISO8601 notation, adjusted to UTC
+        },
+
+        dateLib: 'moment'
+    },
+    luxonDate: {
+        parse: function parse(attr, value) {
+            if (value === null || value === undefined) {
+                return null;
+            }
+            return DateTime.fromFormat(value, LUXON_DATE_FORMAT);
+        },
+        toJS: function toJS$$1(attr, value) {
+            if (value === null || value === undefined) {
+                return null;
+            }
+            checkLuxonDateTime(attr, value);
+            return value.toFormat(LUXON_DATE_FORMAT);
+        },
+
+        dateLib: 'luxon'
+    },
+    luxonDatetime: {
+        parse: function parse(attr, value) {
+            if (value === null) {
+                return null;
+            }
+            return DateTime.fromFormat(value, LUXON_DATETIME_FORMAT);
+        },
+        toJS: function toJS$$1(attr, value) {
+            if (value === null) {
+                return null;
+            }
+            checkLuxonDateTime(attr, value);
+            return value.toFormat(LUXON_DATETIME_FORMAT);
+        },
+
+        dateLib: 'luxon'
+    },
+    date: {
+        parse: function parse() {
+            var _CASTS$;
+
+            return (_CASTS$ = CASTS[DATE_LIB + 'Date']).parse.apply(_CASTS$, arguments);
+        },
+        toJS: function toJS$$1() {
+            var _CASTS$2;
+
+            return (_CASTS$2 = CASTS[DATE_LIB + 'Date']).toJS.apply(_CASTS$2, arguments);
+        },
+
+        get dateLib() {
+            return DATE_LIB;
+        }
+    },
+    datetime: {
+        parse: function parse() {
+            var _CASTS$3;
+
+            return (_CASTS$3 = CASTS[DATE_LIB + 'Datetime']).parse.apply(_CASTS$3, arguments);
+        },
+        toJS: function toJS$$1() {
+            var _CASTS$4;
+
+            return (_CASTS$4 = CASTS[DATE_LIB + 'Datetime']).toJS.apply(_CASTS$4, arguments);
+        },
+
+        get dateLib() {
+            return DATE_LIB;
         }
     },
     enum: function _enum(expectedValues) {
@@ -2085,4 +2173,4 @@ var Casts = {
     }
 };
 
-export { Model, Store, BinderApi, Casts };
+export { Model, Store, BinderApi, CASTS as Casts, configureDateLib };
