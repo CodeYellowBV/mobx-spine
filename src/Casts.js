@@ -1,6 +1,19 @@
 import moment from 'moment';
+import { DateTime } from 'luxon';
 import { isArray } from 'lodash';
 import { invariant } from './utils';
+
+let DATE_LIB = 'moment';
+const SUPPORTED_DATE_LIBS = ['moment', 'luxon'];
+
+export function configureDateLib(dateLib) {
+    invariant(
+        SUPPORTED_DATE_LIBS.includes(dateLib),
+        `Unsupported date lib \`${dateLib}\`. ` +
+        `(Supported: ${SUPPORTED_DATE_LIBS.map((dateLib) => `\`${dateLib}\``).join(', ')})`,
+    );
+    DATE_LIB = dateLib;
+}
 
 function checkMomentInstance(attr, value) {
     invariant(
@@ -9,8 +22,18 @@ function checkMomentInstance(attr, value) {
     );
 }
 
-export default {
-    date: {
+function checkLuxonDateTime(attr, value) {
+    invariant(
+        moment.isMoment(value),
+        `Attribute \`${attr}\` is not a luxon DateTime.`
+    );
+}
+
+const LUXON_DATE_FORMAT = 'yyyy-LL-dd';
+const LUXON_DATETIME_FORMAT = 'yyy-LL-ddTHH:mm:ssZZZ';
+
+const CASTS = {
+    momentDate: {
         parse(attr, value) {
             if (value === null || value === undefined) {
                 return null;
@@ -24,8 +47,9 @@ export default {
             checkMomentInstance(attr, value);
             return value.format('YYYY-MM-DD');
         },
+        dateLib: 'moment',
     },
-    datetime: {
+    momentDatetime: {
         parse(attr, value) {
             if (value === null) {
                 return null;
@@ -38,6 +62,61 @@ export default {
             }
             checkMomentInstance(attr, value);
             return value.toJSON(); // Use ISO8601 notation, adjusted to UTC
+        },
+        dateLib: 'moment',
+    },
+    luxonDate: {
+        parse(attr, value) {
+            if (value === null || value === undefined) {
+                return null;
+            }
+            return DateTime.fromFormat(value, LUXON_DATE_FORMAT);
+        },
+        toJS(attr, value) {
+            if (value === null || value === undefined) {
+                return null;
+            }
+            checkLuxonDateTime(attr, value);
+            return value.toFormat(LUXON_DATE_FORMAT);
+        },
+        dateLib: 'luxon',
+    },
+    luxonDatetime: {
+        parse(attr, value) {
+            if (value === null) {
+                return null;
+            }
+            return DateTime.fromFormat(value, LUXON_DATETIME_FORMAT);
+        },
+        toJS(attr, value) {
+            if (value === null) {
+                return null;
+            }
+            checkLuxonDateTime(attr, value);
+            return value.toFormat(LUXON_DATETIME_FORMAT);
+        },
+        dateLib: 'luxon',
+    },
+    date: {
+        parse(...args) {
+            return CASTS[`${DATE_LIB}Date`].parse(...args);
+        },
+        toJS(...args) {
+            return CASTS[`${DATE_LIB}Date`].toJS(...args);
+        },
+        get dateLib() {
+            return DATE_LIB;
+        },
+    },
+    datetime: {
+        parse(...args) {
+            return CASTS[`${DATE_LIB}Datetime`].parse(...args);
+        },
+        toJS(...args) {
+            return CASTS[`${DATE_LIB}Datetime`].toJS(...args);
+        },
+        get dateLib() {
+            return DATE_LIB;
         },
     },
     enum: expectedValues => {
@@ -67,3 +146,5 @@ export default {
         };
     },
 };
+
+export default CASTS;
