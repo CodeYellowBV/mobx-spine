@@ -361,7 +361,7 @@ animal.toBackend(); // { id: 1, name: 'King' }
 #### As a function
 ```js
 class Animal extends Model {
-    pickFields() {
+    omitFields() {
         return ['color];
     }
 
