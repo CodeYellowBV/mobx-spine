@@ -1457,6 +1457,18 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             })));
         }
     }, {
+        key: 'isBase64',
+        value: function isBase64(str) {
+            if (str === '' || str.trim() === '') {
+                return false;
+            }
+            try {
+                return btoa(atob(str)) == str;
+            } catch (err) {
+                return false;
+            }
+        }
+    }, {
         key: 'setInput',
         value: function setInput(name, value) {
             invariant(this.__attributes.includes(name) || this.__activeCurrentRelations.includes(name), 'Field `' + name + '` does not exist on the model.');
@@ -1468,7 +1480,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     this.__fileChanges[name] = value;
                     delete this.__fileDeletions[name];
 
-                    console.log('value!', value);
+                    console.log('value!', isBase64(value));
+
                     value = URL.createObjectURL(value) + '?content_type=' + value.type;
                 } else {
                     if (!this.__fileChanges[name] || this.__fileChanges[name].existed) {

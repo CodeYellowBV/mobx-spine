@@ -700,6 +700,16 @@ export default class Model {
         );
     }
 
+    isBase64(str) {
+        if (str ==='' || str.trim() ===''){ return false; }
+        try {
+            return btoa(atob(str)) == str;
+        } catch (err) {
+            return false;
+        }
+    }
+    
+
     @action
     setInput(name, value) {
         invariant(
@@ -715,7 +725,8 @@ export default class Model {
                 this.__fileChanges[name] = value;
                 delete this.__fileDeletions[name];
 
-                console.log('value!', value);
+                console.log('value!', isBase64(value));
+                
                 value = `${URL.createObjectURL(value)}?content_type=${value.type}`;
             } else {
                 if (!this.__fileChanges[name] || this.__fileChanges[name].existed) {
