@@ -1474,7 +1474,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     this.__fileChanges[name] = value;
                     delete this.__fileDeletions[name];
 
-                    console.log('value!', isBase64(value));
+                    console.log('value!', this.isBase64(value));
 
                     value = URL.createObjectURL(value) + '?content_type=' + value.type;
                 } else {
