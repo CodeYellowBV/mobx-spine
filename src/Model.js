@@ -702,8 +702,9 @@ export default class Model {
 
     isBase64(str) {
         if (str ==='' || str.trim() ===''){ return false; }
+        str = str.replace(/^[^,]+,/, '');
         try {
-            return btoa(atob(str)) == str;
+            return btoa(atob(str)) === atob(btoa(str));
         } catch (err) {
             return false;
         }

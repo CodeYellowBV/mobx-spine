@@ -1456,8 +1456,9 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             if (str === '' || str.trim() === '') {
                 return false;
             }
+            str = str.replace(/^[^,]+,/, '');
             try {
-                return btoa(atob(str)) == str;
+                return btoa(atob(str)) === atob(btoa(str));
             } catch (err) {
                 return false;
             }
