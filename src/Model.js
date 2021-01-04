@@ -715,6 +715,7 @@ export default class Model {
                 this.__fileChanges[name] = value;
                 delete this.__fileDeletions[name];
 
+                console.log('value!', value);
                 value = `${URL.createObjectURL(value)}?content_type=${value.type}`;
             } else {
                 if (!this.__fileChanges[name] || this.__fileChanges[name].existed) {
