@@ -718,6 +718,8 @@ export default class Model {
                 this.__activeCurrentRelations.includes(name),
             `Field \`${name}\` does not exist on the model.`
         );
+        this.isBase64File = false;
+
         if (this.fileFields().includes(name)) {
             if (this.__fileExists[name] === undefined) {
                 this.__fileExists[name] = this[name] !== null;
@@ -726,9 +728,12 @@ export default class Model {
                 this.__fileChanges[name] = value;
                 delete this.__fileDeletions[name];
 
-                console.log('value!', this.isBase64(value));
-                
-                value = `${URL.createObjectURL(value)}?content_type=${value.type}`;
+                // console.log('value!', this.isBase64(value));
+                this.isBase64File = this.isBase64(value);    
+            
+                if(this.isBase64File){
+                    value = `${URL.createObjectURL(value)}?content_type=${value.type}`;
+                }
             } else {
                 if (!this.__fileChanges[name] || this.__fileChanges[name].existed) {
                     this.__fileDeletions[name] = true;
