@@ -709,6 +709,17 @@ export default class Model {
             return false;
         }
     }
+
+    dataURItoBlob(dataURI) {
+        var mime = dataURI.split(',')[0].split(':')[1].split(';')[0];
+        var binary = atob(dataURI.split(',')[1]);
+        var array = [];
+        for (var i = 0; i < binary.length; i++) {
+           array.push(binary.charCodeAt(i));
+        }
+        return new Blob([new Uint8Array(array)], {type: mime});
+      }
+      
     
 
     @action
@@ -735,6 +746,9 @@ export default class Model {
 
                 if(!this.isBase64File){
                     value = `${URL.createObjectURL(value)}?content_type=${value.type}`;
+                }else {
+                    var blob = this.dataURItoBlob(value);
+                    value = `${URL.createObjectURL(blob)}?content_type=${blob.type}`;
                 }
             } else {
                 if (!this.__fileChanges[name] || this.__fileChanges[name].existed) {

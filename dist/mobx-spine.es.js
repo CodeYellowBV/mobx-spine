@@ -1464,6 +1464,17 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             }
         }
     }, {
+        key: 'dataURItoBlob',
+        value: function dataURItoBlob(dataURI) {
+            var mime = dataURI.split(',')[0].split(':')[1].split(';')[0];
+            var binary = atob(dataURI.split(',')[1]);
+            var array = [];
+            for (var i = 0; i < binary.length; i++) {
+                array.push(binary.charCodeAt(i));
+            }
+            return new Blob([new Uint8Array(array)], { type: mime });
+        }
+    }, {
         key: 'setInput',
         value: function setInput(name, value) {
             invariant(this.__attributes.includes(name) || this.__activeCurrentRelations.includes(name), 'Field `' + name + '` does not exist on the model.');
@@ -1484,6 +1495,9 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
                     if (!this.isBase64File) {
                         value = URL.createObjectURL(value) + '?content_type=' + value.type;
+                    } else {
+                        var blob = this.dataURItoBlob(value);
+                        value = URL.createObjectURL(blob) + '?content_type=' + blob.type;
                     }
                 } else {
                     if (!this.__fileChanges[name] || this.__fileChanges[name].existed) {
