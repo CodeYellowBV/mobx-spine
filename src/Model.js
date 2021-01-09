@@ -730,7 +730,9 @@ export default class Model {
 
                 // console.log('value!', this.isBase64(value));
                 this.isBase64File = this.isBase64(value);    
-            
+
+                debugger;
+
                 if(!this.isBase64File){
                     value = `${URL.createObjectURL(value)}?content_type=${value.type}`;
                 }
