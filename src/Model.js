@@ -748,7 +748,7 @@ export default class Model {
                     value = `${URL.createObjectURL(value)}?content_type=${value.type}`;
                 }else {
                     var blob = this.dataURItoBlob(value);
-                    value = `${URL.createObjectURL(blob)}?content_type=${blob.type}`;
+                    value = `${URL.createObjectURL(blob)}`;
                 }
             } else {
                 if (!this.__fileChanges[name] || this.__fileChanges[name].existed) {
