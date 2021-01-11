@@ -612,6 +612,12 @@ export default class Model {
         }
         return value;
     }
+    
+    uuidv4() {
+        return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+          (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+      }
 
     saveFile(name) {
         const snakeName = camelToSnake(name);
@@ -619,10 +625,18 @@ export default class Model {
         if (this.__fileChanges[name]) {
             const file = this.__fileChanges[name];
 
-            debugger;
+            // debugger;
 
             const data = new FormData();
-            data.append(name, file, file.name);
+
+            if(this.isBase64(file)){
+                const newfile = this.dataURItoBlob(file);
+                // file = `${URL.createObjectURL(blob)}`;
+                const fname = this.uuidv4();
+                data.append(name, newfile, fname );
+            } else{
+                data.append(name, file, file.name);
+            }
 
             return (
                 this.api.post(

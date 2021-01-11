@@ -1380,6 +1380,13 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             return value;
         }
     }, {
+        key: 'uuidv4',
+        value: function uuidv4() {
+            return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (c) {
+                return (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);
+            });
+        }
+    }, {
         key: 'saveFile',
         value: function saveFile(name) {
             var _this10 = this;
@@ -1389,10 +1396,18 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             if (this.__fileChanges[name]) {
                 var file = this.__fileChanges[name];
 
-                debugger;
+                // debugger;
 
                 var data = new FormData();
-                data.append(name, file, file.name);
+
+                if (this.isBase64(file)) {
+                    var newfile = this.dataURItoBlob(file);
+                    // file = `${URL.createObjectURL(blob)}`;
+                    var fname = this.uuidv4();
+                    data.append(name, newfile, fname);
+                } else {
+                    data.append(name, file, file.name);
+                }
 
                 return this.api.post('' + this.url + snakeName + '/', data, { headers: { 'Content-Type': 'multipart/form-data' } }).then(action(function (res) {
                     _this10.__fileExists[name] = true;
