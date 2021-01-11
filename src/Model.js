@@ -619,6 +619,8 @@ export default class Model {
         if (this.__fileChanges[name]) {
             const file = this.__fileChanges[name];
 
+            debugger;
+
             const data = new FormData();
             data.append(name, file, file.name);
 
@@ -742,11 +744,10 @@ export default class Model {
                 // console.log('value!', this.isBase64(value));
                 this.isBase64File = this.isBase64(value);    
 
-                debugger;
-
                 if(!this.isBase64File){
                     value = `${URL.createObjectURL(value)}?content_type=${value.type}`;
-                }else {
+                }
+                else {
                     var blob = this.dataURItoBlob(value);
                     value = `${URL.createObjectURL(blob)}`;
                 }

@@ -1389,6 +1389,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             if (this.__fileChanges[name]) {
                 var file = this.__fileChanges[name];
 
+                debugger;
+
                 var data = new FormData();
                 data.append(name, file, file.name);
 
@@ -1490,8 +1492,6 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
                     // console.log('value!', this.isBase64(value));
                     this.isBase64File = this.isBase64(value);
-
-                    debugger;
 
                     if (!this.isBase64File) {
                         value = URL.createObjectURL(value) + '?content_type=' + value.type;
