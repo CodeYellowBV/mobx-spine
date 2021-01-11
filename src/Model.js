@@ -632,7 +632,7 @@ export default class Model {
             if(this.isBase64(file)){
                 const newfile = this.dataURItoBlob(file);
                 // file = `${URL.createObjectURL(blob)}`;
-                const fname = this.uuidv4();
+                const fname = `${this.uuidv4()}.png`;
                 data.append(name, newfile, fname );
             } else{
                 data.append(name, file, file.name);

@@ -1403,7 +1403,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 if (this.isBase64(file)) {
                     var newfile = this.dataURItoBlob(file);
                     // file = `${URL.createObjectURL(blob)}`;
-                    var fname = this.uuidv4();
+                    var fname = this.uuidv4() + '.png';
                     data.append(name, newfile, fname);
                 } else {
                     data.append(name, file, file.name);
