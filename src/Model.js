@@ -123,6 +123,14 @@ export default class Model {
     }
 
     @computed
+    encodedFile(file){
+        if(this.fileFields.includes(file)){
+            return `${result(this, 'urlRoot')}${id ? `${id}/` : ''}/${file}?encode=true`;
+        }
+        return '';
+    }
+
+    @computed
     get isNew() {
         return !this[this.constructor.primaryKey];
     }
