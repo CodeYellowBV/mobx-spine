@@ -123,7 +123,7 @@ export default class Model {
     }
 
     getEncodedFile(file){
-        if(this.fileFields.includes(file)){
+        if(this.fileFields().includes(file)){
             return `${result(this, 'urlRoot')}${id ? `${id}/` : ''}/${file}?encode=true`;
         }
         return '';
