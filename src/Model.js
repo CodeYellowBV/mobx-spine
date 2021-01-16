@@ -122,8 +122,7 @@ export default class Model {
         return `${result(this, 'urlRoot')}${id ? `${id}/` : ''}`;
     }
 
-    @computed
-    encodedFile(file){
+    getEncodedFile(file){
         if(this.fileFields.includes(file)){
             return `${result(this, 'urlRoot')}${id ? `${id}/` : ''}/${file}?encode=true`;
         }
