@@ -869,9 +869,9 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         key: 'getEncodedFile',
         value: function getEncodedFile(file) {
             // get the resource name from path
-            var id = this[this.constructor.primaryKey];
             if (this.fileFields().includes(file)) {
-                return '' + lodash.result(this, 'urlRoot') + (id ? id + '/' : '') + '/' + file + '?encode=true';
+                var id = this[this.constructor.primaryKey];
+                return '' + lodash.result(this, 'urlRoot') + (id ? id + '/' : '') + file + '/?encode=true';
             }
             return '';
         }
