@@ -123,6 +123,8 @@ export default class Model {
     }
 
     getEncodedFile(file){
+        // get the resource name from path
+        const id = this[this.constructor.primaryKey];
         if(this.fileFields().includes(file)){
             return `${result(this, 'urlRoot')}${id ? `${id}/` : ''}/${file}?encode=true`;
         }

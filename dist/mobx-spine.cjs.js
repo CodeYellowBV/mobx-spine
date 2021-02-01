@@ -868,6 +868,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'getEncodedFile',
         value: function getEncodedFile(file) {
+            // get the resource name from path
+            var id = this[this.constructor.primaryKey];
             if (this.fileFields().includes(file)) {
                 return '' + lodash.result(this, 'urlRoot') + (id ? id + '/' : '') + '/' + file + '?encode=true';
             }
@@ -1675,9 +1677,9 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             var bname = this.constructor.backendResourceName;
 
             if (valErrors[bname]) {
-                var _id = this.getInternalId();
+                var id = this.getInternalId();
                 // When there is no id or negative id, the backend may use the string 'null'. Bit weird, but eh.
-                var errorsForModel = valErrors[bname][_id] || valErrors[bname]['null'];
+                var errorsForModel = valErrors[bname][id] || valErrors[bname]['null'];
                 if (errorsForModel) {
                     var camelCasedErrors = lodash.mapKeys(errorsForModel, function (value, key) {
                         return snakeToCamel(key);
