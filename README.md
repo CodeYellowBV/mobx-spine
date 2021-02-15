@@ -90,8 +90,8 @@ console.log(cat.undefinedProperty); // undefined
 
 ### Constructor: options
 
-|key|default|  | |
-|-|-|-|-|-|-|
+|key|default| | |
+|---|---|---|---|
 |relations|undefined|Relations to be instantiated when instantiating this model as well. Should be an array of strings.| `['location', 'owner.parents']`
 
 
@@ -213,8 +213,8 @@ animal.save().then(() => {
 
 The `save` function accepts a few paramaters as an `options` object:
 
-|key|default|  | |
-|-|-|-|-|-|-|
+|key|default| | |
+|---|---|---|---|
 |onlyChanges|false|When true, only changes made with `setInput` are saved.| `animal.save({ onlyChanges: true })`
 |url|undefined|When set, use specified url for the request.| `animal.save({ url: '/api/animal/special/url' })`
 |data|undefined|When set, append `data` to result. Existing keys from `toBackend` will be overwritten by data, while new keys will be added. | `animal.save({ data: { id: 1, some_other_field: 'will be added' } })`
@@ -394,8 +394,8 @@ A Store (Collection in Backbone) is holds multiple instances of models and have 
 
 ### Constructor: options
 
-|key|default|  | |
-|-|-|-|-|-|-|
+|key|default| | |
+|---|---|---|---|
 |relations|undefined|Relations to be instantiated when new models are instantiated using `add()`. Should be an array of strings.| `animalStore = new AnimalStore({ relations: ['location', 'owner.parents'] })`
 |limit|25|Page size per fetch, also able to set using `setLimit()`. By default a limit is always set, but there are occations where you want to fetch everything. In this case, set limit to false. | `animalStore = new AnimalStore({ limit: false })`
 |comparator|undefined| The models in the store will be sorted by comparator. When it's a string, the models will be sorted by that property name. If it's a function, the models will be sorted using the [default array sort](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort). | `animalStore = new AnimalStore({ comparator: 'name' })`
