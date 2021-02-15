@@ -31,11 +31,13 @@ A model or collection can only do requests to an API if you add an `api` instanc
 
 A model is a data container with a set of helper functions. Models should extend `Model` from mobx-spine, and the very least define some properties. 
 
-### Constructor: data
-
 The `Model` contructor takes 2 arguments: 
 - `data`: An object with default values for a model.
 - `options`: An object with options.
+
+### Constructor: data
+
+Let's for example define a class `Animal` with 2 properties `id` and `name`.
 
 ```js
 import { observable } from 'mobx';
@@ -48,7 +50,7 @@ class Animal extends Model {
 }
 ```
 
-We've defined a class `Animal` with 2 properties `id` and `name`. If we instantiate a new animal without arguments it will create an empty animal using defaults defined on the model:
+If we instantiate a new animal without arguments it will create an empty animal using defaults defined on the model:
 
 ```js
 // Create an empty instance of an Animal.
