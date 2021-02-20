@@ -73,6 +73,12 @@ function forNestedRelations(model, nestedRelations, fn) {
     });
 }
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+  return typeof obj;
+} : function (obj) {
+  return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+};
+
 var classCallCheck = function (instance, Constructor) {
   if (!(instance instanceof Constructor)) {
     throw new TypeError("Cannot call a class as a function");
@@ -1481,7 +1487,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'isBase64',
         value: function isBase64(str) {
-            if (str === undefined || str === null) {
+            if ((typeof str === 'undefined' ? 'undefined' : _typeof(str)) === 'object' || str === undefined || str === null) {
                 return false;
             }
             if (str === '' || str.trim() === '') {

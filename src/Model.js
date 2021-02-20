@@ -727,7 +727,7 @@ export default class Model {
     }
 
     isBase64(str) {
-        if( str === undefined || str === null){ return false;}
+        if( typeof str === 'object' || str === undefined || str === null){ return false;}
         if (str ==='' || str.trim() ===''){ return false; }
         str = str.replace(/^[^,]+,/, '');
         try {
