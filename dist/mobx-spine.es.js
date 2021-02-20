@@ -1481,7 +1481,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'isBase64',
         value: function isBase64(str) {
-            if (str === '' || str.trim() === '') {
+            if (!str || str === '' || str.trim() === '') {
                 return false;
             }
             str = str.replace(/^[^,]+,/, '');
