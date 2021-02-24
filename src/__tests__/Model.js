@@ -1825,3 +1825,32 @@ describe('changes', () => {
         expect(animal.hasUserChanges).toBe(true);
     });
 });
+
+
+test('clone', () => {
+    const customer = new Customer(null, {
+        relations: ['oldTowns.bestCook.workPlaces'],
+    });
+
+    customer.fromBackend({
+        data: customersWithTownCookRestaurant.data,
+        repos: customersWithTownCookRestaurant.with,
+        relMapping: customersWithTownCookRestaurant.with_mapping,
+    });
+
+    customer.oldTowns.at(0).bestCook.at(0).workPlaces.at(0).setInput('name', "Italian");
+
+    const customerCopyWithChanges = new Customer();
+    customerCopyWithChanges.copy(customer)
+
+    // Clone with changes should give the same toBackend result as the cloned object
+    expect(customerCopyWithChanges.toBackendAll({onlyChanges: true})).toBe(customer.toBackendAll({onlyChanges: true}))
+
+    const customerCopyNoChanges = new Customer();
+    customerCopyNoChanges.copy(customer, {copyChanges: false})
+
+    // Clone without changes should give the same toBackend result as the cloned object when only changes is false
+    expect(customerCopyWithChanges.toBackendAll({onlyChanges: false})).toBe(customer.toBackendAll({onlyChanges: false}))
+});
+
+

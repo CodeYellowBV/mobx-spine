@@ -412,6 +412,65 @@ export default class Model {
         return { data: [data], relations };
     }
 
+    /**
+     * Makes this model a copy of the specified model
+     * It also clones the changes that were in the specified model.
+     * Cloning the changes requires recursion over all related models that have changes or are related to a model with changes.
+     * Cloning
+     *
+     * @param source {Model}    - The model that should be copied
+     * @param options {{}}      - Options, {copyChanges - only copy the changed attributes, requires recursion over all related objects with changes}
+     */
+    copy(source, options = {copyChanges: true}){
+        const copyChanges = options.copyChanges
+
+        // Copy all fields and values from the specified model
+        this.parse(source.toJS())
+
+
+        // Set only the changed attributes
+        if (copyChanges) {
+            this._copyChanges(source)
+        } else {
+            // Maintain the relations after copy
+            this.__activeRelations = source.__activeRelations;
+            this.__currentActiveRelations = source.__currentActiveRelations;
+        }
+    }
+
+    /**
+     * Goes over model and all related models to set the changed values
+     *
+     * @param source
+     * @private
+     */
+    _copyChanges(source) {
+        // Maintain the relations after copy
+        this.__activeRelations = source.__activeRelations;
+        this.__currentActiveRelations = source.__currentActiveRelations;
+
+        // Copy all changed fields and notify the store that there are changes
+        if (source.__changes.length > 0) {
+            this.__store.__setChanged = true;
+            source.__changes.forEach((changedAttribute) => {
+                this.setInput(changedAttribute, source[changedAttribute])
+            })
+        }
+
+
+        // Set the changes for all related models with changes
+        source.__activeRelations.forEach((relation) => {
+            if (relation && source[relation]) {
+                if (source[relation].hasUserChanges) {
+                    // Set the changes for all related models with changes
+                    source[relation].models.forEach((relatedModel,index) => {
+                        this[relation].models[index]._copyChanges(relatedModel);
+                    });
+                }
+            }
+        });
+    }
+
     toJS() {
         const output = {};
         this.__attributes.forEach(attr => {
