@@ -1211,7 +1211,9 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             // Copy all changed fields and notify the store that there are changes
             if (source.__changes.length > 0) {
-                this.__store.__setChanged = true;
+                if (this.__store) {
+                    this.__store.__setChanged = true;
+                }
                 source.__changes.forEach(function (changedAttribute) {
                     _this6.setInput(changedAttribute, source[changedAttribute]);
                 });
