@@ -230,6 +230,7 @@ export default class Model {
                 this.__activeCurrentRelations.push(currentRel);
             }
         });
+        // extendObservable where we omit the fields that are already created from other relations
         extendObservable(
             this,
             mapValues(omit(relModels, Object.keys(relModels).filter(rel => !!this[rel])), (otherRelNames, relName) => {
