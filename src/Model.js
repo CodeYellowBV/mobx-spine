@@ -441,21 +441,25 @@ export default class Model {
     }
 
     /**
-     * Goes over model and all related models to set the changed values
+     * Goes over model and all related models to set the changed values and notify the store
      *
-     * @param source
+     * @param source - the model to copy
+     * @param store  - the store of the current model, to setChanged if there are changes
      * @private
      */
-    _copyChanges(source) {
+    _copyChanges(source, store) {
         // Maintain the relations after copy
         this.__activeRelations = source.__activeRelations;
         this.__currentActiveRelations = source.__currentActiveRelations;
 
         // Copy all changed fields and notify the store that there are changes
         if (source.__changes.length > 0) {
-            if (this.__store) {
+            if (store) {
+                store.__setChanged = true;
+            } else if (this.__store) {
                 this.__store.__setChanged = true;
             }
+
             source.__changes.forEach((changedAttribute) => {
                 this.setInput(changedAttribute, source[changedAttribute])
             })
@@ -468,7 +472,7 @@ export default class Model {
                 if (source[relation].hasUserChanges) {
                     // Set the changes for all related models with changes
                     source[relation].models.forEach((relatedModel,index) => {
-                        this[relation].models[index]._copyChanges(relatedModel);
+                        this[relation].models[index]._copyChanges(relatedModel, this[relation]);
                     });
                 }
             }
