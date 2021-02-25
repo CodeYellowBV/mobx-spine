@@ -986,7 +986,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             activeRelations.forEach(function (aRel) {
                 // If aRel is null, this relation is already defined by another aRel
                 // IE.: town.restaurants.chef && town
-                if (aRel === null) {
+                if (aRel === null || !!_this3[aRel]) {
                     return;
                 }
                 var relNames = aRel.match(RE_SPLIT_FIRST_RELATION);
@@ -1004,7 +1004,10 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     _this3.__activeCurrentRelations.push(currentRel);
                 }
             });
-            mobx.extendObservable(this, lodash.mapValues(relModels, function (otherRelNames, relName) {
+            // extendObservable where we omit the fields that are already created from other relations
+            mobx.extendObservable(this, lodash.mapValues(lodash.omit(relModels, Object.keys(relModels).filter(function (rel) {
+                return !!_this3[rel];
+            })), function (otherRelNames, relName) {
                 var RelModel = relations[relName];
                 invariant(RelModel, 'Specified relation "' + relName + '" does not exist on model.');
                 var options = { relations: otherRelNames };
@@ -1158,18 +1161,86 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             return { data: [data], relations: relations };
         }
+
+        /**
+         * Makes this model a copy of the specified model
+         * It also clones the changes that were in the specified model.
+         * Cloning the changes requires recursion over all related models that have changes or are related to a model with changes.
+         * Cloning
+         *
+         * @param source {Model}    - The model that should be copied
+         * @param options {{}}      - Options, {copyChanges - only copy the changed attributes, requires recursion over all related objects with changes}
+         */
+
+    }, {
+        key: 'copy',
+        value: function copy(source) {
+            var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { copyChanges: true };
+
+            var copyChanges = options.copyChanges;
+
+            // Maintain the relations after copy
+            // this.__activeRelations = source.__activeRelations;
+            this.__currentActiveRelations = source.__currentActiveRelations;
+
+            this.__parseRelations(source.__activeRelations);
+            // Copy all fields and values from the specified model
+            this.parse(source.toJS());
+
+            // Set only the changed attributes
+            if (copyChanges) {
+                this._copyChanges(source);
+            }
+        }
+
+        /**
+         * Goes over model and all related models to set the changed values
+         *
+         * @param source
+         * @private
+         */
+
+    }, {
+        key: '_copyChanges',
+        value: function _copyChanges(source) {
+            var _this6 = this;
+
+            // Maintain the relations after copy
+            this.__activeRelations = source.__activeRelations;
+            this.__currentActiveRelations = source.__currentActiveRelations;
+
+            // Copy all changed fields and notify the store that there are changes
+            if (source.__changes.length > 0) {
+                this.__store.__setChanged = true;
+                source.__changes.forEach(function (changedAttribute) {
+                    _this6.setInput(changedAttribute, source[changedAttribute]);
+                });
+            }
+
+            // Set the changes for all related models with changes
+            source.__activeRelations.forEach(function (relation) {
+                if (relation && source[relation]) {
+                    if (source[relation].hasUserChanges) {
+                        // Set the changes for all related models with changes
+                        source[relation].models.forEach(function (relatedModel, index) {
+                            _this6[relation].models[index]._copyChanges(relatedModel);
+                        });
+                    }
+                }
+            });
+        }
     }, {
         key: 'toJS',
         value: function toJS() {
-            var _this6 = this;
+            var _this7 = this;
 
             var output = {};
             this.__attributes.forEach(function (attr) {
-                output[attr] = _this6.__toJSAttr(attr, _this6[attr]);
+                output[attr] = _this7.__toJSAttr(attr, _this7[attr]);
             });
 
             this.__activeCurrentRelations.forEach(function (currentRel) {
-                var model = _this6[currentRel];
+                var model = _this7[currentRel];
                 if (model) {
                     output[currentRel] = model.toJS();
                 }
@@ -1224,7 +1295,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: '__scopeBackendResponse',
         value: function __scopeBackendResponse(_ref2) {
-            var _this7 = this;
+            var _this8 = this;
 
             var data = _ref2.data,
                 targetRelName = _ref2.targetRelName,
@@ -1246,18 +1317,18 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 var repository = repos[repoName];
                 // For backwards compatibility, reverseMapping is optional (for now)
                 var reverseRelName = reverseMapping ? reverseMapping[backendRelName] : null;
-                var relName = _this7.constructor.fromBackendAttrKey(backendRelName);
+                var relName = _this8.constructor.fromBackendAttrKey(backendRelName);
 
                 if (targetRelName === relName) {
-                    var relKey = data[_this7.constructor.toBackendAttrKey(relName)];
+                    var relKey = data[_this8.constructor.toBackendAttrKey(relName)];
                     if (relKey !== undefined) {
                         relevant = true;
-                        scopedData = _this7.__parseRepositoryToData(relKey, repository);
+                        scopedData = _this8.__parseRepositoryToData(relKey, repository);
                     } else if (repository && reverseRelName) {
-                        var pk = data[_this7.constructor.primaryKey];
+                        var pk = data[_this8.constructor.primaryKey];
                         relevant = true;
-                        scopedData = _this7.__parseReverseRepositoryToData(reverseRelName, pk, repository);
-                        if (_this7.relations(relName).prototype instanceof Model) {
+                        scopedData = _this8.__parseReverseRepositoryToData(reverseRelName, pk, repository);
+                        if (_this8.relations(relName).prototype instanceof Model) {
                             if (scopedData.length === 0) {
                                 scopedData = null;
                             } else if (scopedData.length === 1) {
@@ -1297,7 +1368,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'fromBackend',
         value: function fromBackend(_ref3) {
-            var _this8 = this;
+            var _this9 = this;
 
             var data = _ref3.data,
                 repos = _ref3.repos,
@@ -1310,8 +1381,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             // So when we have a model with a `town.restaurants.chef` relation,
             // we call fromBackend on the `town` relation.
             lodash.each(this.__activeCurrentRelations, function (relName) {
-                var rel = _this8[relName];
-                var resScoped = _this8.__scopeBackendResponse({
+                var rel = _this9[relName];
+                var resScoped = _this9.__scopeBackendResponse({
                     data: data,
                     targetRelName: relName,
                     repos: repos,
@@ -1353,22 +1424,22 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'parse',
         value: function parse(data) {
-            var _this9 = this;
+            var _this10 = this;
 
             invariant(lodash.isPlainObject(data), 'Parameter supplied to `parse()` is not an object, got: ' + JSON.stringify(data));
 
             lodash.forIn(data, function (value, key) {
-                var attr = _this9.constructor.fromBackendAttrKey(key);
-                if (_this9.__attributes.includes(attr)) {
-                    _this9[attr] = _this9.__parseAttr(attr, value);
-                } else if (_this9.__activeCurrentRelations.includes(attr)) {
+                var attr = _this10.constructor.fromBackendAttrKey(key);
+                if (_this10.__attributes.includes(attr)) {
+                    _this10[attr] = _this10.__parseAttr(attr, value);
+                } else if (_this10.__activeCurrentRelations.includes(attr)) {
                     // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                     // However, it can also be an object if there are nested relations (non flattened).
                     if (lodash.isPlainObject(value) || lodash.isPlainObject(lodash.get(value, '[0]'))) {
-                        _this9[attr].parse(value);
+                        _this10[attr].parse(value);
                     } else if (value === null) {
                         // The relation is cleared.
-                        _this9[attr].clear();
+                        _this10[attr].clear();
                     }
                 }
             });
@@ -1388,7 +1459,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'saveFile',
         value: function saveFile(name) {
-            var _this10 = this;
+            var _this11 = this;
 
             var snakeName = camelToSnake(name);
 
@@ -1399,16 +1470,16 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 data.append(name, file, file.name);
 
                 return this.api.post('' + this.url + snakeName + '/', data, { headers: { 'Content-Type': 'multipart/form-data' } }).then(mobx.action(function (res) {
-                    _this10.__fileExists[name] = true;
-                    delete _this10.__fileChanges[name];
-                    _this10.saveFromBackend(res);
+                    _this11.__fileExists[name] = true;
+                    delete _this11.__fileChanges[name];
+                    _this11.saveFromBackend(res);
                 }));
             } else if (this.__fileDeletions[name]) {
                 if (this.__fileExists[name]) {
                     return this.api.delete('' + this.url + snakeName + '/').then(mobx.action(function () {
-                        _this10.__fileExists[name] = false;
-                        delete _this10.__fileDeletions[name];
-                        _this10.saveFromBackend({ data: defineProperty({}, snakeName, null) });
+                        _this11.__fileExists[name] = false;
+                        delete _this11.__fileDeletions[name];
+                        _this11.saveFromBackend({ data: defineProperty({}, snakeName, null) });
                     }));
                 } else {
                     delete this.__fileDeletions[name];
@@ -1425,7 +1496,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'save',
         value: function save() {
-            var _this11 = this;
+            var _this12 = this;
 
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -1441,17 +1512,17 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 isNew: this.isNew,
                 requestOptions: lodash.omit(options, 'url', 'data', 'mapData')
             }).then(mobx.action(function (res) {
-                _this11.saveFromBackend(_extends({}, res, {
-                    data: lodash.omit(res.data, _this11.fileFields().map(camelToSnake))
+                _this12.saveFromBackend(_extends({}, res, {
+                    data: lodash.omit(res.data, _this12.fileFields().map(camelToSnake))
                 }));
-                _this11.clearUserFieldChanges();
-                return _this11.saveFiles().then(function () {
-                    _this11.clearUserFileChanges();
+                _this12.clearUserFieldChanges();
+                return _this12.saveFiles().then(function () {
+                    _this12.clearUserFileChanges();
                     return Promise.resolve(res);
                 });
             })).catch(mobx.action(function (err) {
                 if (err.valErrors) {
-                    _this11.parseValidationErrors(err.valErrors);
+                    _this12.parseValidationErrors(err.valErrors);
                 }
                 throw err;
             })));
@@ -1535,7 +1606,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'saveAll',
         value: function saveAll() {
-            var _this12 = this;
+            var _this13 = this;
 
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -1551,10 +1622,10 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 }),
                 requestOptions: lodash.omit(options, 'relations', 'data', 'mapData')
             }).then(mobx.action(function (res) {
-                _this12.saveFromBackend(res);
-                _this12.clearUserFieldChanges();
+                _this13.saveFromBackend(res);
+                _this13.clearUserFieldChanges();
 
-                forNestedRelations(_this12, relationsToNestedKeys(options.relations || []), function (relation) {
+                forNestedRelations(_this13, relationsToNestedKeys(options.relations || []), function (relation) {
                     if (relation instanceof Model) {
                         relation.clearUserFieldChanges();
                     } else {
@@ -1562,10 +1633,10 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     }
                 });
 
-                return _this12.saveAllFiles(relationsToNestedKeys(options.relations || [])).then(function () {
-                    _this12.clearUserFileChanges();
+                return _this13.saveAllFiles(relationsToNestedKeys(options.relations || [])).then(function () {
+                    _this13.clearUserFileChanges();
 
-                    forNestedRelations(_this12, relationsToNestedKeys(options.relations || []), function (relation) {
+                    forNestedRelations(_this13, relationsToNestedKeys(options.relations || []), function (relation) {
                         if (relation instanceof Model) {
                             relation.clearUserFileChanges();
                         }
@@ -1575,7 +1646,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 });
             })).catch(mobx.action(function (err) {
                 if (err.valErrors) {
-                    _this12.parseValidationErrors(err.valErrors);
+                    _this13.parseValidationErrors(err.valErrors);
                 }
                 throw err;
             })));
@@ -1587,19 +1658,19 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: '__parseNewIds',
         value: function __parseNewIds(idMaps) {
-            var _this13 = this;
+            var _this14 = this;
 
             var bName = this.constructor.backendResourceName;
             if (bName && idMaps[bName]) {
                 var idMap = idMaps[bName].find(function (ids) {
-                    return ids[0] === _this13.getInternalId();
+                    return ids[0] === _this14.getInternalId();
                 });
                 if (idMap) {
                     this[this.constructor.primaryKey] = idMap[1];
                 }
             }
             lodash.each(this.__activeCurrentRelations, function (relName) {
-                var rel = _this13[relName];
+                var rel = _this14[relName];
                 rel.__parseNewIds(idMaps);
             });
         }
@@ -1611,7 +1682,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'parseValidationErrors',
         value: function parseValidationErrors(valErrors) {
-            var _this14 = this;
+            var _this15 = this;
 
             var bname = this.constructor.backendResourceName;
 
@@ -1624,24 +1695,24 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                         return snakeToCamel(key);
                     });
                     var formattedErrors = lodash.mapValues(camelCasedErrors, function (valError) {
-                        return valError.map(_this14.validationErrorFormatter);
+                        return valError.map(_this15.validationErrorFormatter);
                     });
                     this.__backendValidationErrors = formattedErrors;
                 }
             }
 
             this.__activeCurrentRelations.forEach(function (currentRel) {
-                _this14[currentRel].parseValidationErrors(valErrors);
+                _this15[currentRel].parseValidationErrors(valErrors);
             });
         }
     }, {
         key: 'clearValidationErrors',
         value: function clearValidationErrors() {
-            var _this15 = this;
+            var _this16 = this;
 
             this.__backendValidationErrors = {};
             this.__activeCurrentRelations.forEach(function (currentRel) {
-                _this15[currentRel].clearValidationErrors();
+                _this16[currentRel].clearValidationErrors();
             });
         }
 
@@ -1659,12 +1730,12 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'delete',
         value: function _delete() {
-            var _this16 = this;
+            var _this17 = this;
 
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
             var removeFromStore = function removeFromStore() {
-                return _this16.__store ? _this16.__store.remove(_this16) : null;
+                return _this17.__store ? _this17.__store.remove(_this17) : null;
             };
             if (options.immediate || this.isNew) {
                 removeFromStore();
@@ -1690,7 +1761,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'fetch',
         value: function fetch() {
-            var _this17 = this;
+            var _this18 = this;
 
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -1702,7 +1773,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 data: data,
                 requestOptions: lodash.omit(options, ['data', 'url'])
             }).then(mobx.action(function (res) {
-                _this17.fromBackend(res);
+                _this18.fromBackend(res);
             })));
 
             return promise;
@@ -1710,26 +1781,26 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'clear',
         value: function clear() {
-            var _this18 = this;
+            var _this19 = this;
 
             lodash.forIn(this.__originalAttributes, function (value, key) {
-                _this18[key] = value;
+                _this19[key] = value;
             });
 
             this.__activeCurrentRelations.forEach(function (currentRel) {
-                _this18[currentRel].clear();
+                _this19[currentRel].clear();
             });
         }
     }, {
         key: 'hasUserChanges',
         get: function get$$1() {
-            var _this19 = this;
+            var _this20 = this;
 
             if (this.__changes.length > 0) {
                 return true;
             }
             return this.__activeCurrentRelations.some(function (rel) {
-                return _this19[rel].hasUserChanges;
+                return _this20[rel].hasUserChanges;
             });
         }
     }, {
