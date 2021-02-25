@@ -1194,15 +1194,16 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         }
 
         /**
-         * Goes over model and all related models to set the changed values
+         * Goes over model and all related models to set the changed values and notify the store
          *
-         * @param source
+         * @param source - the model to copy
+         * @param store  - the store of the current model, to setChanged if there are changes
          * @private
          */
 
     }, {
         key: '_copyChanges',
-        value: function _copyChanges(source) {
+        value: function _copyChanges(source, store) {
             var _this6 = this;
 
             // Maintain the relations after copy
@@ -1211,9 +1212,12 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             // Copy all changed fields and notify the store that there are changes
             if (source.__changes.length > 0) {
-                if (this.__store) {
+                if (store) {
+                    store.__setChanged = true;
+                } else if (this.__store) {
                     this.__store.__setChanged = true;
                 }
+
                 source.__changes.forEach(function (changedAttribute) {
                     _this6.setInput(changedAttribute, source[changedAttribute]);
                 });
@@ -1225,7 +1229,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     if (source[relation].hasUserChanges) {
                         // Set the changes for all related models with changes
                         source[relation].models.forEach(function (relatedModel, index) {
-                            _this6[relation].models[index]._copyChanges(relatedModel);
+                            _this6[relation].models[index]._copyChanges(relatedModel, _this6[relation]);
                         });
                     }
                 }
