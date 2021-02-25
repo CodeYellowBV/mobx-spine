@@ -207,7 +207,7 @@ export default class Model {
         activeRelations.forEach(aRel => {
             // If aRel is null, this relation is already defined by another aRel
             // IE.: town.restaurants.chef && town
-            if (aRel === null) {
+            if (aRel === null || !!this[aRel]) {
                 return;
             }
             const relNames = aRel.match(RE_SPLIT_FIRST_RELATION);
@@ -232,7 +232,7 @@ export default class Model {
         });
         extendObservable(
             this,
-            mapValues(relModels, (otherRelNames, relName) => {
+            mapValues(omit(relModels, Object.keys(relModels).filter(rel => !!this[rel])), (otherRelNames, relName) => {
                 const RelModel = relations[relName];
                 invariant(
                     RelModel,
@@ -424,6 +424,11 @@ export default class Model {
     copy(source, options = {copyChanges: true}){
         const copyChanges = options.copyChanges
 
+        // Maintain the relations after copy
+        // this.__activeRelations = source.__activeRelations;
+        this.__currentActiveRelations = source.__currentActiveRelations;
+
+        this.__parseRelations(source.__activeRelations)
         // Copy all fields and values from the specified model
         this.parse(source.toJS())
 
@@ -431,10 +436,6 @@ export default class Model {
         // Set only the changed attributes
         if (copyChanges) {
             this._copyChanges(source)
-        } else {
-            // Maintain the relations after copy
-            this.__activeRelations = source.__activeRelations;
-            this.__currentActiveRelations = source.__currentActiveRelations;
         }
     }
 
