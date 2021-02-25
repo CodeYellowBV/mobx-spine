@@ -1825,3 +1825,48 @@ describe('changes', () => {
         expect(animal.hasUserChanges).toBe(true);
     });
 });
+
+
+test('copy (with changes)', () => {
+    const customer = new Customer(null, {
+        relations: ['oldTowns.bestCook.workPlaces'],
+    });
+
+    customer.fromBackend({
+        data: customersWithTownCookRestaurant.data,
+        repos: customersWithTownCookRestaurant.with,
+        relMapping: customersWithTownCookRestaurant.with_mapping,
+    });
+
+
+    customer.oldTowns.models[0].bestCook.workPlaces.models[0].setInput('name', "Italian");
+
+    const customerCopyWithChanges = new Customer(null, {relations: ['oldTowns.bestCook']});
+    customerCopyWithChanges.copy(customer)
+
+    // Clone with changes should give the same toBackend result as the cloned object
+    expect(customerCopyWithChanges.toBackendAll({ onlyChanges: true })).toEqual(customer.toBackendAll({ onlyChanges: true }))
+});
+
+test('copy (without changes)', () => {
+    const customer = new Customer(null, {
+        relations: ['oldTowns.bestCook.workPlaces'],
+    });
+
+    customer.fromBackend({
+        data: customersWithTownCookRestaurant.data,
+        repos: customersWithTownCookRestaurant.with,
+        relMapping: customersWithTownCookRestaurant.with_mapping,
+    });
+
+    customer.oldTowns.models[0].bestCook.workPlaces.models[0].setInput('name', "Italian");
+
+    const customerCopyNoChanges = new Customer();
+    customerCopyNoChanges.copy(customer, {copyChanges: true})
+
+
+    // Clone without changes should give the same toBackend result as the cloned object when only changes is false
+    expect(customerCopyNoChanges.toBackendAll({onlyChanges: false})).toEqual(customer.toBackendAll({onlyChanges: false}))
+});
+
+
