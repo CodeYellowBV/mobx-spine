@@ -1164,6 +1164,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
         /**
          * Makes this model a copy of the specified model
+         * or returns a copy of the current model when no model to copy is given
          * It also clones the changes that were in the specified model.
          * Cloning the changes requires recursion over all related models that have changes or are related to a model with changes.
          * Cloning
@@ -1174,23 +1175,43 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
     }, {
         key: 'copy',
-        value: function copy(source) {
+        value: function copy() {
+            var source = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
             var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { copyChanges: true };
+
+            var copiedModel = void 0;
+            // If our source is not a model it is 'probably' the options
+            if (source !== undefined && !(source instanceof Model)) {
+                options = source;
+                source = undefined;
+            }
+
+            // Make sure that we have the correct model
+            if (source === undefined) {
+                source = this;
+                copiedModel = new source.constructor();
+            } else if (this.constructor !== source.constructor) {
+                copiedModel = new source.constructor();
+            } else {
+                copiedModel = this;
+            }
 
             var copyChanges = options.copyChanges;
 
             // Maintain the relations after copy
             // this.__activeRelations = source.__activeRelations;
-            this.__currentActiveRelations = source.__currentActiveRelations;
+            copiedModel.__currentActiveRelations = source.__currentActiveRelations;
 
-            this.__parseRelations(source.__activeRelations);
+            copiedModel.__parseRelations(source.__activeRelations);
             // Copy all fields and values from the specified model
-            this.parse(source.toJS());
+            copiedModel.parse(source.toJS());
 
             // Set only the changed attributes
             if (copyChanges) {
-                this._copyChanges(source);
+                copiedModel._copyChanges(source);
             }
+
+            return copiedModel;
         }
 
         /**
