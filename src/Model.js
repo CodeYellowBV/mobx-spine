@@ -415,6 +415,7 @@ export default class Model {
 
     /**
      * Makes this model a copy of the specified model
+     * or returns a copy of the current model when no model to copy is given
      * It also clones the changes that were in the specified model.
      * Cloning the changes requires recursion over all related models that have changes or are related to a model with changes.
      * Cloning
@@ -422,22 +423,41 @@ export default class Model {
      * @param source {Model}    - The model that should be copied
      * @param options {{}}      - Options, {copyChanges - only copy the changed attributes, requires recursion over all related objects with changes}
      */
-    copy(source, options = {copyChanges: true}){
-        const copyChanges = options.copyChanges
+    copy(source= undefined, options = {copyChanges: true}){
+        let copiedModel;
+        // If our source is not a model it is 'probably' the options
+        if (source !== undefined && !(source instanceof Model)){
+            options = source;
+            source = undefined;
+        }
+
+        // Make sure that we have the correct model
+        if (source === undefined){
+            source = this;
+            copiedModel = new source.constructor();
+        } else if (this.constructor !== source.constructor) {
+            copiedModel = new source.constructor();
+        } else {
+            copiedModel = this;
+        }
+
+        const copyChanges = options.copyChanges;
 
         // Maintain the relations after copy
         // this.__activeRelations = source.__activeRelations;
-        this.__currentActiveRelations = source.__currentActiveRelations;
+        copiedModel.__currentActiveRelations = source.__currentActiveRelations;
 
-        this.__parseRelations(source.__activeRelations)
+        copiedModel.__parseRelations(source.__activeRelations);
         // Copy all fields and values from the specified model
-        this.parse(source.toJS())
+        copiedModel.parse(source.toJS());
 
 
         // Set only the changed attributes
         if (copyChanges) {
-            this._copyChanges(source)
+            copiedModel._copyChanges(source)
         }
+
+        return copiedModel;
     }
 
     /**
