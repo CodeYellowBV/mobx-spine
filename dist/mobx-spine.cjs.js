@@ -1535,7 +1535,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             // Add the validate option
             options.validate = true;
-            this.save(options);
+            return this.save(options);
         }
     }, {
         key: 'save',
@@ -1665,7 +1665,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             // Add the validate option
             options.validate = true;
-            this.saveAll(options);
+            return this.saveAll(options);
         }
     }, {
         key: 'saveAll',
