@@ -758,7 +758,7 @@ export default class Model {
     validate(options = {}){
         // Add the validate option
         options.validate = true;
-        this.save(options);
+        return this.save(options);
     }
 
     @action
@@ -867,7 +867,7 @@ export default class Model {
     validateAll(options = {}){
         // Add the validate option
         options.validate = true;
-        this.saveAll(options);
+        return this.saveAll(options);
     }
 
     @action
