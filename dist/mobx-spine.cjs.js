@@ -1535,9 +1535,9 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             // Add the validate parameter
             if (options.params) {
-                options.params = { validate: true };
-            } else {
                 options.params.validate = true;
+            } else {
+                options.params = { validate: true };
             }
             return this.save(options);
         }
@@ -1669,9 +1669,9 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             // Add the validate option
             if (options.params) {
-                options.params = { validate: true };
-            } else {
                 options.params.validate = true;
+            } else {
+                options.params = { validate: true };
             }
             return this.saveAll(options);
         }

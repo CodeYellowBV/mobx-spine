@@ -758,9 +758,9 @@ export default class Model {
     validate(options = {}){
         // Add the validate parameter
         if (options.params){
-            options.params = { validate: true };
-        } else {
             options.params.validate = true
+        } else {
+            options.params = { validate: true };
         }
         return this.save(options);
     }
@@ -871,9 +871,9 @@ export default class Model {
     validateAll(options = {}){
         // Add the validate option
         if (options.params){
-            options.params = { validate: true };
-        } else {
             options.params.validate = true
+        } else {
+            options.params = { validate: true };
         }
         return this.saveAll(options);
     }
