@@ -756,8 +756,12 @@ export default class Model {
      * @param options - same as for a normal save request, example: {onlyChanges: true}
      */
     validate(options = {}){
-        // Add the validate option
-        options.validate = true;
+        // Add the validate parameter
+        if (options.params){
+            options.params = { validate: true };
+        } else {
+            options.params.validate = true
+        }
         return this.save(options);
     }
 
@@ -779,7 +783,7 @@ export default class Model {
             })
             .then(action(res => {
                 // Only update the model when we are actually trying to save
-                if (!options.validate) {
+                if (!options.params || !options.params.validate) {
                     this.saveFromBackend({
                         ...res,
                         data: omit(res.data, this.fileFields().map(camelToSnake)),
@@ -866,7 +870,11 @@ export default class Model {
      */
     validateAll(options = {}){
         // Add the validate option
-        options.validate = true;
+        if (options.params){
+            options.params = { validate: true };
+        } else {
+            options.params.validate = true
+        }
         return this.saveAll(options);
     }
 
@@ -888,7 +896,7 @@ export default class Model {
             })
             .then(action(res => {
                 // Only update the models if we are actually trying to save
-                if (!options.validate) {
+                if (!options.params || !options.params.validate) {
                     this.saveFromBackend(res);
                     this.clearUserFieldChanges();
 

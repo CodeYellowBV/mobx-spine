@@ -1533,8 +1533,12 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function validate() {
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-            // Add the validate option
-            options.validate = true;
+            // Add the validate parameter
+            if (options.params) {
+                options.params = { validate: true };
+            } else {
+                options.params.validate = true;
+            }
             return this.save(options);
         }
     }, {
@@ -1557,7 +1561,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 requestOptions: lodash.omit(options, 'url', 'data', 'mapData')
             }).then(mobx.action(function (res) {
                 // Only update the model when we are actually trying to save
-                if (!options.validate) {
+                if (!options.params || !options.params.validate) {
                     _this12.saveFromBackend(_extends({}, res, {
                         data: lodash.omit(res.data, _this12.fileFields().map(camelToSnake))
                     }));
@@ -1664,7 +1668,11 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
             // Add the validate option
-            options.validate = true;
+            if (options.params) {
+                options.params = { validate: true };
+            } else {
+                options.params.validate = true;
+            }
             return this.saveAll(options);
         }
     }, {
@@ -1687,7 +1695,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 requestOptions: lodash.omit(options, 'relations', 'data', 'mapData')
             }).then(mobx.action(function (res) {
                 // Only update the models if we are actually trying to save
-                if (!options.validate) {
+                if (!options.params || !options.params.validate) {
                     _this13.saveFromBackend(res);
                     _this13.clearUserFieldChanges();
 
