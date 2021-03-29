@@ -1510,7 +1510,7 @@ describe('requests', () => {
             return [201, animalMultiPutResponse];
         });
 
-        return animal.validateAll({ relations: ['kind'] }).then(response => {
+        return animal.validate({ relations: ['kind'] }).then(response => {
             expect(spy).not.toHaveBeenCalled();
             expect(animal.id).toBe(10);
             expect(animal.kind.id).toBe(4);
@@ -2128,7 +2128,7 @@ test('copy (with changes)', () => {
         relMapping: customersWithTownCookRestaurant.with_mapping,
     });
 
-    customer.oldTowns.at(0).bestCook.at(0).workPlaces.at(0).setInput('name', "Italian");
+    customer.oldTowns.at(0).bestCook.workPlaces.at(0).setInput('name', "Italian");
 
     const customerCopyWithChanges = new Customer();
     customerCopyWithChanges.copy(customer)
