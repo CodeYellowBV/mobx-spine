@@ -1514,6 +1514,23 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function saveFiles() {
             return Promise.all(this.fileFields().filter(this.fieldFilter).map(this.saveFile));
         }
+
+        /**
+         * Validates a model by sending a save request to binder with the validate header set. Binder will return the validation
+         * errors without actually committing the save
+         *
+         * @param options - same as for a normal save request, example: {onlyChanges: true}
+         */
+
+    }, {
+        key: 'validate',
+        value: function validate() {
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+            // Add the validate option
+            options.validate = true;
+            this.save(options);
+        }
     }, {
         key: 'save',
         value: function save() {
@@ -1533,14 +1550,17 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 isNew: this.isNew,
                 requestOptions: omit(options, 'url', 'data', 'mapData')
             }).then(action(function (res) {
-                _this12.saveFromBackend(_extends({}, res, {
-                    data: omit(res.data, _this12.fileFields().map(camelToSnake))
-                }));
-                _this12.clearUserFieldChanges();
-                return _this12.saveFiles().then(function () {
-                    _this12.clearUserFileChanges();
-                    return Promise.resolve(res);
-                });
+                // Only update the model when we are actually trying to save
+                if (!options.validate) {
+                    _this12.saveFromBackend(_extends({}, res, {
+                        data: omit(res.data, _this12.fileFields().map(camelToSnake))
+                    }));
+                    _this12.clearUserFieldChanges();
+                    return _this12.saveFiles().then(function () {
+                        _this12.clearUserFileChanges();
+                        return Promise.resolve(res);
+                    });
+                }
             })).catch(action(function (err) {
                 if (err.valErrors) {
                     _this12.parseValidationErrors(err.valErrors);
@@ -1624,6 +1644,23 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             return Promise.all(promises);
         }
+
+        /**
+         * Validates a model and relations by sending a save request to binder with the validate header set. Binder will return the validation
+         * errors without actually committing the save
+         *
+         * @param options - same as for a normal saveAll request, example {relations:['foo'], onlyChanges: true}
+         */
+
+    }, {
+        key: 'validateAll',
+        value: function validateAll() {
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+            // Add the validate option
+            options.validate = true;
+            this.saveAll(options);
+        }
     }, {
         key: 'saveAll',
         value: function saveAll() {
@@ -1643,28 +1680,31 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 }),
                 requestOptions: omit(options, 'relations', 'data', 'mapData')
             }).then(action(function (res) {
-                _this13.saveFromBackend(res);
-                _this13.clearUserFieldChanges();
-
-                forNestedRelations(_this13, relationsToNestedKeys(options.relations || []), function (relation) {
-                    if (relation instanceof Model) {
-                        relation.clearUserFieldChanges();
-                    } else {
-                        relation.clearSetChanges();
-                    }
-                });
-
-                return _this13.saveAllFiles(relationsToNestedKeys(options.relations || [])).then(function () {
-                    _this13.clearUserFileChanges();
+                // Only update the models if we are actually trying to save
+                if (!options.validate) {
+                    _this13.saveFromBackend(res);
+                    _this13.clearUserFieldChanges();
 
                     forNestedRelations(_this13, relationsToNestedKeys(options.relations || []), function (relation) {
                         if (relation instanceof Model) {
-                            relation.clearUserFileChanges();
+                            relation.clearUserFieldChanges();
+                        } else {
+                            relation.clearSetChanges();
                         }
                     });
 
-                    return res;
-                });
+                    return _this13.saveAllFiles(relationsToNestedKeys(options.relations || [])).then(function () {
+                        _this13.clearUserFileChanges();
+
+                        forNestedRelations(_this13, relationsToNestedKeys(options.relations || []), function (relation) {
+                            if (relation instanceof Model) {
+                                relation.clearUserFileChanges();
+                            }
+                        });
+
+                        return res;
+                    });
+                }
             })).catch(action(function (err) {
                 if (err.valErrors) {
                     _this13.parseValidationErrors(err.valErrors);
