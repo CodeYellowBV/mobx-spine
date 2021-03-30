@@ -2054,11 +2054,11 @@ function checkMomentInstance(attr, value) {
 }
 
 function checkLuxonDateTime(attr, value) {
-    invariant(moment.isMoment(value), 'Attribute `' + attr + '` is not a luxon DateTime.');
+    invariant(luxon.DateTime.isDateTime(value), 'Attribute `' + attr + '` is not a luxon instance.');
 }
 
 var LUXON_DATE_FORMAT = 'yyyy-LL-dd';
-var LUXON_DATETIME_FORMAT = 'yyy-LL-ddTHH:mm:ssZZZ';
+var LUXON_DATETIME_FORMAT = "yyyy'-'LL'-'dd'T'HH':'mm':'ssZZ";
 
 var CASTS = {
     momentDate: {
@@ -2100,7 +2100,7 @@ var CASTS = {
             if (value === null || value === undefined) {
                 return null;
             }
-            return luxon.DateTime.fromFormat(value, LUXON_DATE_FORMAT);
+            return luxon.DateTime.fromISO(value);
         },
         toJS: function toJS(attr, value) {
             if (value === null || value === undefined) {
@@ -2117,7 +2117,8 @@ var CASTS = {
             if (value === null) {
                 return null;
             }
-            return luxon.DateTime.fromFormat(value, LUXON_DATETIME_FORMAT);
+
+            return luxon.DateTime.fromISO(value);
         },
         toJS: function toJS(attr, value) {
             if (value === null) {
