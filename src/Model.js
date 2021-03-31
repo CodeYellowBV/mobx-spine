@@ -490,10 +490,15 @@ export default class Model {
             source.__activeCurrentRelations.forEach((relation) => {
                 if (relation && source[relation]) {
                     if (source[relation].hasUserChanges) {
-                        // Set the changes for all related models with changes
-                        source[relation].models.forEach((relatedModel, index) => {
-                            this[relation].models[index]._copyChanges(relatedModel, this[relation]);
-                        });
+                        if (source[relation].models) { // If related item is a store
+                            // Set the changes for all related models with changes
+                            source[relation].models.forEach((relatedModel, index) => {
+                                this[relation].models[index]._copyChanges(relatedModel, this[relation]);
+                            });
+                        } else {
+                            // Set the changes for the related model
+                            this[relation].__copyChanges(source[relation], undefined)
+                        }
                     }
                 }
             });
