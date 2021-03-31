@@ -445,7 +445,6 @@ export default class Model {
 
         // Maintain the relations after copy
         // this.__activeRelations = source.__activeRelations;
-        copiedModel.__activeCurrentRelations = source.__activeCurrentRelations;
 
         copiedModel.__parseRelations(source.__activeRelations);
         // Copy all fields and values from the specified model
@@ -469,8 +468,7 @@ export default class Model {
      */
     __copyChanges(source, store) {
         // Maintain the relations after copy
-        this.__activeRelations = source.__activeRelations;
-        this.__activeCurrentRelations = source.__activeCurrentRelations;
+        this.__parseRelations(source.__activeRelations);
 
         // Copy all changed fields and notify the store that there are changes
         if (source.__changes.length > 0) {
@@ -503,7 +501,7 @@ export default class Model {
                         }
                     } else {
                         // Related object not in relations of the model we are copying
-                        console.warn(`Found related object ${source.backendResourceName} with relation ${relation},
+                        console.warn(`Found related object ${source.constructor.backendResourceName} with relation ${relation},
                         which is not defined in the relations of the model you are copying. Skipping ${relation}.`)
                     }
                 }

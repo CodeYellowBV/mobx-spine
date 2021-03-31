@@ -1194,7 +1194,6 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             // Maintain the relations after copy
             // this.__activeRelations = source.__activeRelations;
-            copiedModel.__activeCurrentRelations = source.__activeCurrentRelations;
 
             copiedModel.__parseRelations(source.__activeRelations);
             // Copy all fields and values from the specified model
@@ -1222,8 +1221,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             var _this6 = this;
 
             // Maintain the relations after copy
-            this.__activeRelations = source.__activeRelations;
-            this.__activeCurrentRelations = source.__activeCurrentRelations;
+            this.__parseRelations(source.__activeRelations);
 
             // Copy all changed fields and notify the store that there are changes
             if (source.__changes.length > 0) {
@@ -1257,7 +1255,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                             }
                         } else {
                             // Related object not in relations of the model we are copying
-                            console.warn('Found related object ' + source.backendResourceName + ' with relation ' + relation + ',\n                        which is not defined in the relations of the model you are copying. Skipping ' + relation + '.');
+                            console.warn('Found related object ' + source.constructor.backendResourceName + ' with relation ' + relation + ',\n                        which is not defined in the relations of the model you are copying. Skipping ' + relation + '.');
                         }
                     }
                 });
