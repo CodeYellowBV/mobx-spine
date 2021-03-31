@@ -1250,6 +1250,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                             if (source[relation].hasUserChanges) {
                                 if (source[relation].models) {
                                     // If related item is a store
+                                    // Check if the store has some changes
+                                    _this6[relation].__setChanged = source[relation].__setChanged;
                                     // Set the changes for all related models with changes
                                     source[relation].models.forEach(function (relatedModel, index) {
                                         _this6[relation].models[index].__copyChanges(relatedModel, _this6[relation]);

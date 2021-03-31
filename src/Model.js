@@ -490,6 +490,8 @@ export default class Model {
                     if (this[relation]) {
                         if (source[relation].hasUserChanges) {
                             if (source[relation].models) { // If related item is a store
+                                // Check if the store has some changes
+                                this[relation].__setChanged = source[relation].__setChanged;
                                 // Set the changes for all related models with changes
                                 source[relation].models.forEach((relatedModel, index) => {
                                     this[relation].models[index].__copyChanges(relatedModel, this[relation]);
