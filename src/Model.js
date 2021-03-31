@@ -487,22 +487,22 @@ export default class Model {
             // Set the changes for all related models with changes
             source.__activeCurrentRelations.forEach((relation) => {
                 if (relation && source[relation]) {
-                    if (this[relation]) {
-                        if (source[relation].hasUserChanges) {
-                            if (source[relation].models) { // If related item is a store
-                                // Set the changes for all related models with changes
-                                source[relation].models.forEach((relatedModel, index) => {
-                                    this[relation].models[index].__copyChanges(relatedModel, this[relation]);
-                                });
-                            } else {
-                                // Set the changes for the related model
-                                this[relation].__copyChanges(source[relation], undefined)
-                            }
+                    if (!this[relation]) {
+                        // Sometimes a nested model has relations that were not defined in the starting object,
+                        // these need to be copied as well
+                        this[relation] = source[relation].constructor({ relations: source[relation].__activeRelations });
+                        this[relation].parse(source[relation].toJS());
+                    }
+                    if (source[relation].hasUserChanges) {
+                        if (source[relation].models) { // If related item is a store
+                            // Set the changes for all related models with changes
+                            source[relation].models.forEach((relatedModel, index) => {
+                                this[relation].models[index].__copyChanges(relatedModel, this[relation]);
+                            });
+                        } else {
+                            // Set the changes for the related model
+                            this[relation].__copyChanges(source[relation], undefined)
                         }
-                    } else {
-                        // Related object not in relations of the model we are copying
-                        console.warn(`Found related object ${source.constructor.backendResourceName} with relation ${relation},
-                        which is not defined in the relations of the model you are copying. Skipping ${relation}.`)
                     }
                 }
             });
