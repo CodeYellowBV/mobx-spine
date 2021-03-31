@@ -1208,7 +1208,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             // Set only the changed attributes
             if (copyChanges) {
-                copiedModel._copyChanges(source);
+                copiedModel.__copyChanges(source);
             }
 
             return copiedModel;
@@ -1223,8 +1223,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
          */
 
     }, {
-        key: '_copyChanges',
-        value: function _copyChanges(source, store) {
+        key: '__copyChanges',
+        value: function __copyChanges(source, store) {
             var _this6 = this;
 
             // Maintain the relations after copy
@@ -1253,7 +1253,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                                 // If related item is a store
                                 // Set the changes for all related models with changes
                                 source[relation].models.forEach(function (relatedModel, index) {
-                                    _this6[relation].models[index]._copyChanges(relatedModel, _this6[relation]);
+                                    _this6[relation].models[index].__copyChanges(relatedModel, _this6[relation]);
                                 });
                             } else {
                                 // Set the changes for the related model

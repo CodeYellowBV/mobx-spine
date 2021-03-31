@@ -454,7 +454,7 @@ export default class Model {
 
         // Set only the changed attributes
         if (copyChanges) {
-            copiedModel._copyChanges(source)
+            copiedModel.__copyChanges(source)
         }
 
         return copiedModel;
@@ -467,7 +467,7 @@ export default class Model {
      * @param store  - the store of the current model, to setChanged if there are changes
      * @private
      */
-    _copyChanges(source, store) {
+    __copyChanges(source, store) {
         // Maintain the relations after copy
         this.__activeRelations = source.__activeRelations;
         this.__activeCurrentRelations = source.__activeCurrentRelations;
@@ -493,7 +493,7 @@ export default class Model {
                         if (source[relation].models) { // If related item is a store
                             // Set the changes for all related models with changes
                             source[relation].models.forEach((relatedModel, index) => {
-                                this[relation].models[index]._copyChanges(relatedModel, this[relation]);
+                                this[relation].models[index].__copyChanges(relatedModel, this[relation]);
                             });
                         } else {
                             // Set the changes for the related model
