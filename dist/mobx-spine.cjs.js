@@ -1246,23 +1246,22 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 // Set the changes for all related models with changes
                 source.__activeCurrentRelations.forEach(function (relation) {
                     if (relation && source[relation]) {
-                        if (!_this6[relation]) {
-                            // Sometimes a nested model has relations that were not defined in the starting object,
-                            // these need to be copied as well
-                            _this6[relation] = new source[relation].constructor({ relations: source[relation].__activeRelations });
-                            _this6[relation].parse(source[relation].toJS());
-                        }
-                        if (source[relation].hasUserChanges) {
-                            if (source[relation].models) {
-                                // If related item is a store
-                                // Set the changes for all related models with changes
-                                source[relation].models.forEach(function (relatedModel, index) {
-                                    _this6[relation].models[index].__copyChanges(relatedModel, _this6[relation]);
-                                });
-                            } else {
-                                // Set the changes for the related model
-                                _this6[relation].__copyChanges(source[relation], undefined);
+                        if (_this6[relation]) {
+                            if (source[relation].hasUserChanges) {
+                                if (source[relation].models) {
+                                    // If related item is a store
+                                    // Set the changes for all related models with changes
+                                    source[relation].models.forEach(function (relatedModel, index) {
+                                        _this6[relation].models[index].__copyChanges(relatedModel, _this6[relation]);
+                                    });
+                                } else {
+                                    // Set the changes for the related model
+                                    _this6[relation].__copyChanges(source[relation], undefined);
+                                }
                             }
+                        } else {
+                            // Related object not in relations of the model we are copying
+                            console.warn('Found related object ' + source.constructor.backendResourceName + ' with relation ' + relation + ',\n                        which is not defined in the relations of the model you are copying. Skipping ' + relation + '.');
                         }
                     }
                 });
