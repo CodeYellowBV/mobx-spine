@@ -434,9 +434,9 @@ export default class Model {
         // Make sure that we have the correct model
         if (source === undefined){
             source = this;
-            copiedModel = new source.constructor();
+            copiedModel = new source.constructor({relations: source.__activeRelations});
         } else if (this.constructor !== source.constructor) {
-            copiedModel = new source.constructor();
+            copiedModel = new source.constructor({relations: source.__activeRelations});
         } else {
             copiedModel = this;
         }
