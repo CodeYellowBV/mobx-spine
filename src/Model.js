@@ -434,9 +434,9 @@ export default class Model {
         // Make sure that we have the correct model
         if (source === undefined){
             source = this;
-            copiedModel = new source.constructor();
+            copiedModel = new source.constructor({relations: source.__activeRelations});
         } else if (this.constructor !== source.constructor) {
-            copiedModel = new source.constructor();
+            copiedModel = new source.constructor({relations: source.__activeRelations});
         } else {
             copiedModel = this;
         }
@@ -445,7 +445,7 @@ export default class Model {
 
         // Maintain the relations after copy
         // this.__activeRelations = source.__activeRelations;
-        copiedModel.__currentActiveRelations = source.__currentActiveRelations;
+        copiedModel.__activeCurrentRelations = source.__activeCurrentRelations;
 
         copiedModel.__parseRelations(source.__activeRelations);
         // Copy all fields and values from the specified model
@@ -470,7 +470,7 @@ export default class Model {
     _copyChanges(source, store) {
         // Maintain the relations after copy
         this.__activeRelations = source.__activeRelations;
-        this.__currentActiveRelations = source.__currentActiveRelations;
+        this.__activeCurrentRelations = source.__activeCurrentRelations;
 
         // Copy all changed fields and notify the store that there are changes
         if (source.__changes.length > 0) {
@@ -484,19 +484,20 @@ export default class Model {
                 this.setInput(changedAttribute, source[changedAttribute])
             })
         }
-
-
-        // Set the changes for all related models with changes
-        source.__activeRelations.forEach((relation) => {
-            if (relation && source[relation]) {
-                if (source[relation].hasUserChanges) {
-                    // Set the changes for all related models with changes
-                    source[relation].models.forEach((relatedModel,index) => {
-                        this[relation].models[index]._copyChanges(relatedModel, this[relation]);
-                    });
+        // Undefined safety
+        if (source.__activeCurrentRelations.length > 0) {
+            // Set the changes for all related models with changes
+            source.__activeCurrentRelations.forEach((relation) => {
+                if (relation && source[relation]) {
+                    if (source[relation].hasUserChanges) {
+                        // Set the changes for all related models with changes
+                        source[relation].models.forEach((relatedModel, index) => {
+                            this[relation].models[index]._copyChanges(relatedModel, this[relation]);
+                        });
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     toJS() {

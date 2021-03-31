@@ -1183,9 +1183,9 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             // Make sure that we have the correct model
             if (source === undefined) {
                 source = this;
-                copiedModel = new source.constructor();
+                copiedModel = new source.constructor({ relations: source.__activeRelations });
             } else if (this.constructor !== source.constructor) {
-                copiedModel = new source.constructor();
+                copiedModel = new source.constructor({ relations: source.__activeRelations });
             } else {
                 copiedModel = this;
             }
@@ -1194,7 +1194,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             // Maintain the relations after copy
             // this.__activeRelations = source.__activeRelations;
-            copiedModel.__currentActiveRelations = source.__currentActiveRelations;
+            copiedModel.__activeCurrentRelations = source.__activeCurrentRelations;
 
             copiedModel.__parseRelations(source.__activeRelations);
             // Copy all fields and values from the specified model
@@ -1223,7 +1223,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             // Maintain the relations after copy
             this.__activeRelations = source.__activeRelations;
-            this.__currentActiveRelations = source.__currentActiveRelations;
+            this.__activeCurrentRelations = source.__activeCurrentRelations;
 
             // Copy all changed fields and notify the store that there are changes
             if (source.__changes.length > 0) {
@@ -1237,18 +1237,20 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     _this6.setInput(changedAttribute, source[changedAttribute]);
                 });
             }
-
-            // Set the changes for all related models with changes
-            source.__activeRelations.forEach(function (relation) {
-                if (relation && source[relation]) {
-                    if (source[relation].hasUserChanges) {
-                        // Set the changes for all related models with changes
-                        source[relation].models.forEach(function (relatedModel, index) {
-                            _this6[relation].models[index]._copyChanges(relatedModel, _this6[relation]);
-                        });
+            // Undefined safety
+            if (source.__activeCurrentRelations.length > 0) {
+                // Set the changes for all related models with changes
+                source.__activeCurrentRelations.forEach(function (relation) {
+                    if (relation && source[relation]) {
+                        if (source[relation].hasUserChanges) {
+                            // Set the changes for all related models with changes
+                            source[relation].models.forEach(function (relatedModel, index) {
+                                _this6[relation].models[index]._copyChanges(relatedModel, _this6[relation]);
+                            });
+                        }
                     }
-                }
-            });
+                });
+            }
         }
     }, {
         key: 'toJS',
