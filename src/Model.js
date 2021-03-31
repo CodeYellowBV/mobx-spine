@@ -489,6 +489,12 @@ export default class Model {
             // Set the changes for all related models with changes
             source.__activeCurrentRelations.forEach((relation) => {
                 if (relation && source[relation]) {
+                    if (!this[relation]){
+                        // Sometimes a nested model has relations that were not defined in the starting object,
+                        // these need to be copied as well
+                        this[relation] = source[relation].constructor({relations: source[relation].__activeRelations});
+                        this[relation].parse(source[relation].toJS());
+                    }
                     if (source[relation].hasUserChanges) {
                         if (source[relation].models) { // If related item is a store
                             // Set the changes for all related models with changes
