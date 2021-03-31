@@ -490,7 +490,7 @@ export default class Model {
                     if (!this[relation]) {
                         // Sometimes a nested model has relations that were not defined in the starting object,
                         // these need to be copied as well
-                        this[relation] = source[relation].constructor({ relations: source[relation].__activeRelations });
+                        this[relation] = new source[relation].constructor({ relations: source[relation].__activeRelations });
                         this[relation].parse(source[relation].toJS());
                     }
                     if (source[relation].hasUserChanges) {

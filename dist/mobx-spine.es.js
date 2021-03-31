@@ -1243,7 +1243,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                         if (!_this6[relation]) {
                             // Sometimes a nested model has relations that were not defined in the starting object,
                             // these need to be copied as well
-                            _this6[relation] = source[relation].constructor({ relations: source[relation].__activeRelations });
+                            _this6[relation] = new source[relation].constructor({ relations: source[relation].__activeRelations });
                             _this6[relation].parse(source[relation].toJS());
                         }
                         if (source[relation].hasUserChanges) {
