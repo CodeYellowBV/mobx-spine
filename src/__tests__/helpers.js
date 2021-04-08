@@ -40,6 +40,13 @@ function modifyListNegativeIdCheck(expected){
     })
 }
 
+/**
+ * Checks if 2 objects are the same ignoring negative ids
+ * @param object    - The first object you want to compare
+ * @param toEqual   - The second object you want to compare the first object to
+ * @param expect    - The expect of the test to do the actual comparison
+ * @param bool      - True if the objects should be the same, false otherwise (default: true)
+ */
 export function compareObjectsIgnoringNegativeIds(object, toEqual, expect, bool = true){
     const expected = toEqual
     modifyObjectNegativeIdCheck(expected);
