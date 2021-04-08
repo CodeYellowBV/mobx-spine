@@ -24,13 +24,13 @@ function checkMomentInstance(attr, value) {
 
 function checkLuxonDateTime(attr, value) {
     invariant(
-        moment.isMoment(value),
-        `Attribute \`${attr}\` is not a luxon DateTime.`
+        DateTime.isDateTime(value),
+        `Attribute \`${attr}\` is not a luxon instance.`
     );
 }
 
 const LUXON_DATE_FORMAT = 'yyyy-LL-dd';
-const LUXON_DATETIME_FORMAT = 'yyy-LL-ddTHH:mm:ssZZZ';
+const LUXON_DATETIME_FORMAT = "yyyy'-'LL'-'dd'T'HH':'mm':'ssZZ";
 
 const CASTS = {
     momentDate: {
@@ -70,7 +70,7 @@ const CASTS = {
             if (value === null || value === undefined) {
                 return null;
             }
-            return DateTime.fromFormat(value, LUXON_DATE_FORMAT);
+            return DateTime.fromISO(value);
         },
         toJS(attr, value) {
             if (value === null || value === undefined) {
@@ -86,7 +86,8 @@ const CASTS = {
             if (value === null) {
                 return null;
             }
-            return DateTime.fromFormat(value, LUXON_DATETIME_FORMAT);
+
+            return DateTime.fromISO(value);
         },
         toJS(attr, value) {
             if (value === null) {

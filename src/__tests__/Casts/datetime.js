@@ -1,5 +1,6 @@
 import { Model, Casts } from '../../';
 import { observable } from 'mobx';
+import { Settings } from 'luxon';
 import moment from 'moment';
 import momentLocale from 'moment/min/moment-with-locales';
 
@@ -78,4 +79,40 @@ test('moment instance with locale should be recognized', () => {
     const animal = new Animal();
     animal.bornAt = momentLocale('2017-03-22T22:08:23+00:00');
     expect(animal.toJS().bornAt).toEqual(expect.stringContaining('2017-03-22'));
+});
+
+describe('luxon compatibility', () => {
+    Settings.defaultZoneName = 'utc';
+
+    class LuxonAnimal extends Animal {
+        @observable createdAt = '';
+
+        casts() {
+            return {
+                bornAt: Casts.luxonDatetime,
+            };
+        }
+    };
+
+    test('toJS() should throw error when luxon instance is gone', () => {
+        const animal = new LuxonAnimal({ bornAt: '2017-03-22T22:08:23+00:00' });
+
+        animal.bornAt = 'asdf';
+
+        expect(() => {
+            return animal.toJS();
+        }).toThrow('Attribute `bornAt` is not a luxon instance.');
+    });
+
+    test('should be serialized in toBackend()', () => {
+        const animal = new LuxonAnimal({ bornAt: '2017-03-22T22:08:23+00:00' });
+
+        expect(animal.toBackend().born_at).toEqual('2017-03-22T22:08:23+00:00');
+    });
+
+    test('should be serialized in toBackend() when given a binder specific format', () => {
+        const animal = new LuxonAnimal({ bornAt: '2017-03-22T22:08:23.575242+0000' });
+
+        expect(animal.toBackend().born_at).toEqual('2017-03-22T22:08:23+00:00');
+    });
 });

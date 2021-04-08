@@ -2,7 +2,7 @@ import axios from 'axios';
 import { toJS, observable } from 'mobx';
 import MockAdapter from 'axios-mock-adapter';
 import _ from 'lodash';
-import { Model, BinderApi } from '../';
+import { Model, BinderApi, Casts } from '../';
 import { compareObjectsIgnoringNegativeIds } from "./helpers";
 import {
     Animal,
