@@ -107,22 +107,45 @@ export default class Model {
         return -parseInt(this.cid.replace('m', ''));
     }
 
+    /**
+     * Get InternalId returns the id of a model or a negative id if the id is not set
+     * @returns {*}    the id of a model or a negative id if the id is not set
+     */
     getInternalId() {
-        if (this.isNew) {
+        if (!this[this.constructor.primaryKey]) {
             return this.getNegativeId();
         }
         return this[this.constructor.primaryKey];
     }
 
+    /**
+     * Gives the model the internal id, meaning that it will keep the set id of the model or will receive a negative
+     * id if the id is null. This is useful if you have a new model that you want to give an id so that it can be
+     * referred to in a relation.
+     */
+    assignInternalId() {
+        this[this.constructor.primaryKey] = this.getInternalId()
+    }
+
+    /**
+     * The get url returns the url for a model., it appends the id if there is one. If the model is new it should not
+     * append an id.
+     *
+     * @returns {string}  the url for a model
+     */
     @computed
     get url() {
         const id = this[this.constructor.primaryKey];
-        return `${result(this, 'urlRoot')}${id ? `${id}/` : ''}`;
+        return `${result(this, 'urlRoot')}${!this.isNew ? `${id}/` : ''}`;
     }
 
+    /**
+     * A model is considered new if it does not have an id, or if the id is a negative integer.
+     * @returns {boolean} True if the model id is not set or a negative integer
+     */
     @computed
     get isNew() {
-        return !this[this.constructor.primaryKey];
+        return !this[this.constructor.primaryKey] || this[this.constructor.primaryKey] < 0;
     }
 
     @computed
@@ -188,6 +211,16 @@ export default class Model {
         if (options.relations) {
             this.__parseRelations(options.relations);
         }
+
+        // The model will automatically be assigned a negative id, the id will still be overridden if it is supplied in the data
+        this.assignInternalId()
+
+        // We want our id to remain negative on a clear, only if it was not created with the id set to null
+        // which is usually the case when the object is a related model in which case we want the id to be reset to null
+        if ((data && data[this.constructor.primaryKey] !== null) || !data){
+            this.__originalAttributes[this.constructor.primaryKey] = this[this.constructor.primaryKey]
+        }
+
         if (data) {
             this.parse(data);
         }
@@ -205,7 +238,7 @@ export default class Model {
         activeRelations.forEach(aRel => {
             // If aRel is null, this relation is already defined by another aRel
             // IE.: town.restaurants.chef && town
-            if (aRel === null) {
+            if (aRel === null || !!this[aRel]) {
                 return;
             }
             const relNames = aRel.match(RE_SPLIT_FIRST_RELATION);
@@ -228,9 +261,10 @@ export default class Model {
                 this.__activeCurrentRelations.push(currentRel);
             }
         });
+        // extendObservable where we omit the fields that are already created from other relations
         extendObservable(
             this,
-            mapValues(relModels, (otherRelNames, relName) => {
+            mapValues(omit(relModels, Object.keys(relModels).filter(rel => !!this[rel])), (otherRelNames, relName) => {
                 const RelModel = relations[relName];
                 invariant(
                     RelModel,
@@ -240,7 +274,8 @@ export default class Model {
                 if (RelModel.prototype instanceof Store) {
                     return new RelModel(options);
                 }
-                return new RelModel(null, options);
+                // If we have a related model, we want to force the related model to have id null as that means there is no model set
+                return new RelModel({ [RelModel.primaryKey]: null }, options);
             })
         );
     }
@@ -408,6 +443,104 @@ export default class Model {
         });
 
         return { data: [data], relations };
+    }
+
+    /**
+     * Makes this model a copy of the specified model
+     * or returns a copy of the current model when no model to copy is given
+     * It also clones the changes that were in the specified model.
+     * Cloning the changes requires recursion over all related models that have changes or are related to a model with changes.
+     * Cloning
+     *
+     * @param source {Model}   The model that should be copied
+     * @param options {{}}     Options, {copyChanges - only copy the changed attributes, requires recursion over all related objects with changes}
+     */
+    copy(source= undefined, options = {copyChanges: true}){
+        let copiedModel;
+        // If our source is not a model it is 'probably' the options
+        if (source !== undefined && !(source instanceof Model)){
+            options = source;
+            source = undefined;
+        }
+
+        // Make sure that we have the correct model
+        if (source === undefined){
+            source = this;
+            copiedModel = new source.constructor({relations: source.__activeRelations});
+        } else if (this.constructor !== source.constructor) {
+            copiedModel = new source.constructor({relations: source.__activeRelations});
+        } else {
+            copiedModel = this;
+        }
+
+        const copyChanges = options.copyChanges;
+
+        // Maintain the relations after copy
+        // this.__activeRelations = source.__activeRelations;
+
+        copiedModel.__parseRelations(source.__activeRelations);
+        // Copy all fields and values from the specified model
+        copiedModel.parse(source.toJS());
+
+
+        // Set only the changed attributes
+        if (copyChanges) {
+            copiedModel.__copyChanges(source)
+        }
+
+        return copiedModel;
+    }
+
+    /**
+     * Goes over model and all related models to set the changed values and notify the store
+     *
+     * @param source the model to copy
+     * @param store  the store of the current model, to setChanged if there are changes
+     * @private
+     */
+    __copyChanges(source, store) {
+        // Maintain the relations after copy
+        this.__parseRelations(source.__activeRelations);
+
+        // Copy all changed fields and notify the store that there are changes
+        if (source.__changes.length > 0) {
+            if (store) {
+                store.__setChanged = true;
+            } else if (this.__store) {
+                this.__store.__setChanged = true;
+            }
+
+            source.__changes.forEach((changedAttribute) => {
+                this.setInput(changedAttribute, source[changedAttribute])
+            })
+        }
+        // Undefined safety
+        if (source.__activeCurrentRelations.length > 0) {
+            // Set the changes for all related models with changes
+            source.__activeCurrentRelations.forEach((relation) => {
+                if (relation && source[relation]) {
+                    if (this[relation]) {
+                        if (source[relation].hasUserChanges) {
+                            if (source[relation].models) { // If related item is a store
+                                // Check if the store has some changes
+                                this[relation].__setChanged = source[relation].__setChanged;
+                                // Set the changes for all related models with changes
+                                source[relation].models.forEach((relatedModel, index) => {
+                                    this[relation].models[index].__copyChanges(relatedModel, this[relation]);
+                                });
+                            } else {
+                                // Set the changes for the related model
+                                this[relation].__copyChanges(source[relation], undefined)
+                            }
+                        }
+                    } else {
+                        // Related object not in relations of the model we are copying
+                        console.warn(`Found related object ${source.constructor.backendResourceName} with relation ${relation},
+                        which is not defined in the relations of the model you are copying. Skipping ${relation}.`)
+                    }
+                }
+            });
+        }
     }
 
     toJS() {
@@ -944,7 +1077,13 @@ export default class Model {
     @action
     clear() {
         forIn(this.__originalAttributes, (value, key) => {
-            this[key] = value;
+            // If it is our primary key, and the primary key is negative, we generate a new negative pk, else we set it
+            // to the value
+            if (key === this.constructor.primaryKey && value < 0){
+                this[key] = -1 * uniqueId();
+            } else {
+                this[key] = value;
+            }
         });
 
         this.__activeCurrentRelations.forEach(currentRel => {
@@ -952,3 +1091,4 @@ export default class Model {
         });
     }
 }
+

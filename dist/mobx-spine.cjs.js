@@ -907,14 +907,40 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function getNegativeId() {
             return -parseInt(this.cid.replace('m', ''));
         }
+
+        /**
+         * Get InternalId returns the id of a model or a negative id if the id is not set
+         * @returns {*}    the id of a model or a negative id if the id is not set
+         */
+
     }, {
         key: 'getInternalId',
         value: function getInternalId() {
-            if (this.isNew) {
+            if (!this[this.constructor.primaryKey]) {
                 return this.getNegativeId();
             }
             return this[this.constructor.primaryKey];
         }
+
+        /**
+         * Gives the model the internal id, meaning that it will keep the set id of the model or will receive a negative
+         * id if the id is null. This is useful if you have a new model that you want to give an id so that it can be
+         * referred to in a relation.
+         */
+
+    }, {
+        key: 'assignInternalId',
+        value: function assignInternalId() {
+            this[this.constructor.primaryKey] = this.getInternalId();
+        }
+
+        /**
+         * The get url returns the url for a model., it appends the id if there is one. If the model is new it should not
+         * append an id.
+         *
+         * @returns {string}  the url for a model
+         */
+
     }, {
         key: 'casts',
         value: function casts() {
@@ -945,12 +971,18 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         key: 'url',
         get: function get$$1() {
             var id = this[this.constructor.primaryKey];
-            return '' + lodash.result(this, 'urlRoot') + (id ? id + '/' : '');
+            return '' + lodash.result(this, 'urlRoot') + (!this.isNew ? id + '/' : '');
         }
+
+        /**
+         * A model is considered new if it does not have an id, or if the id is a negative integer.
+         * @returns {boolean} True if the model id is not set or a negative integer
+         */
+
     }, {
         key: 'isNew',
         get: function get$$1() {
-            return !this[this.constructor.primaryKey];
+            return !this[this.constructor.primaryKey] || this[this.constructor.primaryKey] < 0;
         }
     }, {
         key: 'isLoading',
@@ -1016,6 +1048,16 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         if (options.relations) {
             this.__parseRelations(options.relations);
         }
+
+        // The model will automatically be assigned a negative id, the id will still be overridden if it is supplied in the data
+        this.assignInternalId();
+
+        // We want our id to remain negative on a clear, only if it was not created with the id set to null
+        // which is usually the case when the object is a related model in which case we want the id to be reset to null
+        if (data && data[this.constructor.primaryKey] !== null || !data) {
+            this.__originalAttributes[this.constructor.primaryKey] = this[this.constructor.primaryKey];
+        }
+
         if (data) {
             this.parse(data);
         }
@@ -1061,7 +1103,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 if (RelModel.prototype instanceof Store) {
                     return new RelModel(options);
                 }
-                return new RelModel(null, options);
+                // If we have a related model, we want to force the related model to have id null as that means there is no model set
+                return new RelModel(defineProperty({}, RelModel.primaryKey, null), options);
             }));
         }
 
@@ -1090,15 +1133,15 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function toBackend() {
             var _this4 = this;
 
-            var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+            var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-            var _ref$data = _ref.data,
-                data = _ref$data === undefined ? {} : _ref$data,
-                _ref$mapData = _ref.mapData,
-                mapData = _ref$mapData === undefined ? function (x) {
+            var _ref2$data = _ref2.data,
+                data = _ref2$data === undefined ? {} : _ref2$data,
+                _ref2$mapData = _ref2.mapData,
+                mapData = _ref2$mapData === undefined ? function (x) {
                 return x;
-            } : _ref$mapData,
-                options = objectWithoutProperties(_ref, ['data', 'mapData']);
+            } : _ref2$mapData,
+                options = objectWithoutProperties(_ref2, ['data', 'mapData']);
 
             var output = {};
             // By default we'll include all fields (attributes+relations), but sometimes you might want to specify the fields to be included.
@@ -1278,12 +1321,14 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         key: '__scopeBackendResponse',
         value: function __scopeBackendResponse(_ref2) {
             var _this7 = this;
+        value: function __scopeBackendResponse(_ref3) {
+            var _this8 = this;
 
-            var data = _ref2.data,
-                targetRelName = _ref2.targetRelName,
-                repos = _ref2.repos,
-                mapping = _ref2.mapping,
-                reverseMapping = _ref2.reverseMapping;
+            var data = _ref3.data,
+                targetRelName = _ref3.targetRelName,
+                repos = _ref3.repos,
+                mapping = _ref3.mapping,
+                reverseMapping = _ref3.reverseMapping;
 
             var scopedData = null;
             var relevant = false;
@@ -1351,11 +1396,13 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         key: 'fromBackend',
         value: function fromBackend(_ref3) {
             var _this8 = this;
+        value: function fromBackend(_ref4) {
+            var _this9 = this;
 
-            var data = _ref3.data,
-                repos = _ref3.repos,
-                relMapping = _ref3.relMapping,
-                reverseRelMapping = _ref3.reverseRelMapping;
+            var data = _ref4.data,
+                repos = _ref4.repos,
+                relMapping = _ref4.relMapping,
+                reverseRelMapping = _ref4.reverseRelMapping;
 
             // We handle the fromBackend recursively. On each relation of the source model
             // fromBackend gets called as well, but with data scoped for itself
@@ -1777,6 +1824,13 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             var _this18 = this;
 
             lodash.forIn(this.__originalAttributes, function (value, key) {
+                // If it is our primary key, and the primary key is negative, we generate a new negative pk, else we set it
+                // to the value
+                if (key === _this19.constructor.primaryKey && value < 0) {
+                    _this19[key] = -1 * lodash.uniqueId();
+                } else {
+                    _this19[key] = value;
+                }
                 _this18[key] = value;
             });
 
