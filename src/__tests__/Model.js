@@ -149,6 +149,21 @@ test('isNew should be true for new model', () => {
     expect(animal.isNew).toBe(true);
 });
 
+test('isNew should be true for a model with negative id', () => {
+    const animal = new Animal();
+    animal.id = animal.getInternalId();
+
+    expect(animal.isNew).toBe(true);
+});
+
+test('isNew should be true for a model that we assign an internal id', () => {
+    const animal = new Animal();
+    animal.assignInternalId();
+
+    expect(animal.isNew).toBe(true);
+});
+
+
 test('isNew should be false for existing model', () => {
     const animal = new Animal({ id: 2 });
 
