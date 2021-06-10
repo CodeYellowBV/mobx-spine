@@ -867,6 +867,17 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         }
 
         /**
+         * Gives the model the internal id. This is useful if you have a new model that you want to give an id so
+         * that it can be referred to in a relation.
+         */
+
+    }, {
+        key: 'assignInternalId',
+        value: function assignInternalId() {
+            this[this.constructor.primaryKey] = this.getInternalId();
+        }
+
+        /**
          * The get url returns the url for a model., it appends the id if there is one. If the model is new it should not
          * append an id.
          *

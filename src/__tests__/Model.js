@@ -161,6 +161,7 @@ test('isNew should be true for a model that we assign an internal id', () => {
     animal.assignInternalId();
 
     expect(animal.isNew).toBe(true);
+    expect(animal.id).toBeLessThan(0);
 });
 
 
