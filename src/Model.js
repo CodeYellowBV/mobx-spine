@@ -109,22 +109,36 @@ export default class Model {
         return -parseInt(this.cid.replace('m', ''));
     }
 
+    /**
+     * Get InternalId returns the id of a model or a negative id if the id is not set
+     * @returns {*}    - the id of a model or a negative id if the id is not set
+     */
     getInternalId() {
-        if (this.isNew) {
+        if (!this[this.constructor.primaryKey]) {
             return this.getNegativeId();
         }
         return this[this.constructor.primaryKey];
     }
 
+    /**
+     * The get url returns the url for a model., it appends the id if there is one. If the model is new it should not
+     * append an id.
+     *
+     * @returns {string}    - the url for a model
+     */
     @computed
     get url() {
         const id = this[this.constructor.primaryKey];
-        return `${result(this, 'urlRoot')}${id ? `${id}/` : ''}`;
+        return `${result(this, 'urlRoot')}${!this.isNew ? `${id}/` : ''}`;
     }
 
+    /**
+     * A model is considered new if it does not have an id, or if the id is a negative integer.
+     * @returns {boolean}   True if the model id is not set or a negative integer
+     */
     @computed
     get isNew() {
-        return !this[this.constructor.primaryKey];
+        return !this[this.constructor.primaryKey] || this[this.constructor.primaryKey] < 0;
     }
 
     @computed
