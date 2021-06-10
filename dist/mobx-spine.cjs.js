@@ -857,14 +857,28 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function getNegativeId() {
             return -parseInt(this.cid.replace('m', ''));
         }
+
+        /**
+         * Get InternalId returns the id of a model or a negative id if the id is not set
+         * @returns {*}    - the id of a model or a negative id if the id is not set
+         */
+
     }, {
         key: 'getInternalId',
         value: function getInternalId() {
-            if (this.isNew) {
+            if (!this[this.constructor.primaryKey]) {
                 return this.getNegativeId();
             }
             return this[this.constructor.primaryKey];
         }
+
+        /**
+         * The get url returns the url for a model., it appends the id if there is one. If the model is new it should not
+         * append an id.
+         *
+         * @returns {string}    - the url for a model
+         */
+
     }, {
         key: 'casts',
         value: function casts() {
@@ -895,12 +909,18 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         key: 'url',
         get: function get$$1() {
             var id = this[this.constructor.primaryKey];
-            return '' + lodash.result(this, 'urlRoot') + (id ? id + '/' : '');
+            return '' + lodash.result(this, 'urlRoot') + (!this.isNew ? id + '/' : '');
         }
+
+        /**
+         * A model is considered new if it does not have an id, or if the id is a negative integer.
+         * @returns {boolean}   True if the model id is not set or a negative integer
+         */
+
     }, {
         key: 'isNew',
         get: function get$$1() {
-            return !this[this.constructor.primaryKey];
+            return !this[this.constructor.primaryKey] || this[this.constructor.primaryKey] < 0;
         }
     }, {
         key: 'isLoading',
