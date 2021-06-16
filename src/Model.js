@@ -512,12 +512,14 @@ export default class Model {
                     if (this[relation]) {
                         if (source[relation].hasUserChanges) {
                             if (source[relation].models) { // If related item is a store
-                                // Check if the store has some changes
-                                this[relation].__setChanged = source[relation].__setChanged;
-                                // Set the changes for all related models with changes
-                                source[relation].models.forEach((relatedModel, index) => {
-                                    this[relation].models[index].__copyChanges(relatedModel, this[relation]);
-                                });
+                                if (source[relation].models.length === this[relation].models.length) { // run only if the store shares the same amount of items
+                                    // Check if the store has some changes
+                                    this[relation].__setChanged = source[relation].__setChanged;
+                                    // Set the changes for all related models with changes
+                                    source[relation].models.forEach((relatedModel, index) => {
+                                        this[relation].models[index].__copyChanges(relatedModel, this[relation]);
+                                    });
+                                }
                             } else {
                                 // Set the changes for the related model
                                 this[relation].__copyChanges(source[relation], undefined)
