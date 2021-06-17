@@ -990,6 +990,16 @@ test('setInput to parse store relation', () => {
     expect(animal.pastOwners.length).toBe(0);
 });
 
+test('parse empty list', () => {
+    const animal = new Animal(
+        { pastOwners: [{}, {}] },
+        { relations: ['pastOwners'] },
+    );
+    expect(animal.pastOwners.length).toEqual(2);
+    animal.parse({ pastOwners: [] });
+    expect(animal.pastOwners.length).toEqual(0);
+});
+
 describe('requests', () => {
     let mock;
     beforeEach(() => {
