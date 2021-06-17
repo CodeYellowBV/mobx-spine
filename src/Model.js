@@ -594,7 +594,7 @@ export default class Model {
                 // However, it can also be an object if there are nested relations (non flattened).
                 if (isPlainObject(value) || isPlainObject(get(value, '[0]'))) {
                     this[attr].parse(value);
-                } else if (value === null) {
+                } else {
                     // The relation is cleared.
                     this[attr].clear();
                 }
