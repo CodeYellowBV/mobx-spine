@@ -996,6 +996,12 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         // The model will automatically be assigned a negative id, the id will still be overridden if it is supplied in the data
         this.assignInternalId();
 
+        // We want our id to remain negative on a clear, only if it was not created with the id set to null
+        // which is usually the case when the object is a related model in which case we want the id to be reset to null
+        if (data && data[this.constructor.primaryKey] !== null || !data) {
+            this.__originalAttributes[this.constructor.primaryKey] = this[this.constructor.primaryKey];
+        }
+
         if (data) {
             this.parse(data);
         }
@@ -1044,7 +1050,10 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 if (RelModel.prototype instanceof Store) {
                     return new RelModel(options);
                 }
-                return new RelModel(null, options);
+                // If we have a related model, we want to force the related model to have id null as that means there is no model set
+                var newModelData = {};
+                newModelData[RelModel.primaryKey] = null;
+                return new RelModel(newModelData, options);
             }));
         }
 
