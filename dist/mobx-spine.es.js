@@ -1280,12 +1280,15 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                             if (source[relation].hasUserChanges) {
                                 if (source[relation].models) {
                                     // If related item is a store
-                                    // Check if the store has some changes
-                                    _this6[relation].__setChanged = source[relation].__setChanged;
-                                    // Set the changes for all related models with changes
-                                    source[relation].models.forEach(function (relatedModel, index) {
-                                        _this6[relation].models[index].__copyChanges(relatedModel, _this6[relation]);
-                                    });
+                                    if (source[relation].models.length === _this6[relation].models.length) {
+                                        // run only if the store shares the same amount of items
+                                        // Check if the store has some changes
+                                        _this6[relation].__setChanged = source[relation].__setChanged;
+                                        // Set the changes for all related models with changes
+                                        source[relation].models.forEach(function (relatedModel, index) {
+                                            _this6[relation].models[index].__copyChanges(relatedModel, _this6[relation]);
+                                        });
+                                    }
                                 } else {
                                     // Set the changes for the related model
                                     _this6[relation].__copyChanges(source[relation], undefined);
