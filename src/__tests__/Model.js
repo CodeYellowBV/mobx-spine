@@ -2503,46 +2503,46 @@ describe('copy with changes', () => {
 
 describe('negative id instead of null', () => {
 
-    test('New model instance should have a negative id instead of null', () => {
+    test('new model instance should have a negative id instead of null', () => {
         const animal = new Animal();
         expect(animal.id).toBeLessThan(0);
     });
 
-    test('New model instance should have a null id instead of negative when supplied in data', () => {
+    test('new model instance should have a null id instead of negative when supplied in data', () => {
         const animal = new Animal({ id: null });
         expect(animal.id).toBeNull();
     });
 
-    test('New model instance should not have negative id if a positive id was supplied in data', () => {
+    test('new model instance should not have negative id if a positive id was supplied in data', () => {
         const animal = new Animal({ id: 5 });
         expect(animal.id).toBe(5);
     });
 
-    test('New model should keep negative id on clear', () => {
+    test('new model should keep negative id on clear', () => {
         const animal = new Animal();
         animal.clear();
         expect(animal.id).toBeLessThan(0);
     });
 
-    test('New model should keep null id on clear when created with id null', () => {
+    test('new model should keep null id on clear when created with id null', () => {
         const animal = new Animal({id: null});
         animal.clear();
         expect(animal.id).toBeNull();
     });
 
-    test('New model should keep negative id on clear, when created with an id', () => {
+    test('new model should keep negative id on clear, when created with an id', () => {
         const animal = new Animal({id: 5});
         animal.clear();
         expect(animal.id).toBeLessThan(0);
     });
 
-    test('Related model should get null id if not initialized', () => {
+    test('related model should get null id if not initialized', () => {
         const animal = new Animal({id: 5}, {relations: ['kind']});
 
         expect(animal.kind.id).toBeNull();
     });
 
-    test('Related model should get null id on clear', () => {
+    test('related model should get null id on clear', () => {
         const animal = new Animal({id: 5, kind: {id: 5}}, {relations: ['kind']});
 
         expect(animal.kind.id).toBe(5);
@@ -2550,12 +2550,53 @@ describe('negative id instead of null', () => {
         expect(animal.kind.id).toBeNull();
     });
 
-    test('Related model should get null id on related model clear', () => {
+    test('related model should get null id on related model clear', () => {
         const animal = new Animal({id: 5, kind: {id: 5}}, {relations: ['kind']});
 
         expect(animal.kind.id).toBe(5);
         animal.kind.clear();
         expect(animal.kind.id).toBeNull();
+    });
+
+    test('model initialized with null should get negative id when clearing after copy', () => {
+        const animal = new Animal({id: null});
+
+        const copiedAnimal = animal.copy()
+        copiedAnimal.clear();
+        expect(copiedAnimal.id).toBeLessThan(0);
+    });
+
+    test('model should get negative id when clearing after copy', () => {
+        const animal = new Animal();
+
+        const copiedAnimal = animal.copy()
+        copiedAnimal.clear();
+        expect(copiedAnimal.id).toBeLessThan(0);
+    });
+
+    test('model should get null id when clearing after copy if it is instantiated with a null id', () => {
+        const animal = new Animal();
+
+        const copiedAnimal = new Animal({id: null});
+        copiedAnimal.copy(animal)
+        copiedAnimal.clear();
+        expect(copiedAnimal.id).toBeNull();
+    });
+
+    test('related model should get null id on clear after copy', () => {
+        const animal = new Animal({ id: 5, kind: { id: 5 } }, { relations: ['kind'] });
+
+        const copiedAnimal = animal.copy()
+        copiedAnimal.clear();
+        expect(copiedAnimal.kind.id).toBeNull();
+    });
+
+    test('copying a related model should get a negative id when clear() is called on copied model', () => {
+        const animal = new Animal({ id: 5, kind: { id: 5 } }, { relations: ['kind'] });
+
+        const copiedKind = animal.kind.copy()
+        copiedKind.clear();
+        expect(copiedKind.id).toBeLessThan(0);
     });
 
 });
