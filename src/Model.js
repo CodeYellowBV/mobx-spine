@@ -121,8 +121,9 @@ export default class Model {
     }
 
     /**
-     * Gives the model the internal id. This is useful if you have a new model that you want to give an id so
-     * that it can be referred to in a relation.
+     * Gives the model the internal id, meaning that it will keep the set id of the model or it will receive a negative
+     * id if the id is null. This is useful if you have a new model that you want to give an id so that it can be
+     * referred to in a relation.
      */
     assignInternalId() {
         this[this.constructor.primaryKey] = this.getInternalId()
@@ -142,7 +143,7 @@ export default class Model {
 
     /**
      * A model is considered new if it does not have an id, or if the id is a negative integer.
-     * @returns {boolean}   True if the model id is not set or a negative integer
+     * @returns {boolean}   - True if the model id is not set or a negative integer
      */
     @computed
     get isNew() {
@@ -212,6 +213,10 @@ export default class Model {
         if (options.relations) {
             this.__parseRelations(options.relations);
         }
+
+        // The model will automatically be assigned a negative id, the id will still be overridden if it is supplied in the data
+        this.assignInternalId()
+
         if (data) {
             this.parse(data);
         }

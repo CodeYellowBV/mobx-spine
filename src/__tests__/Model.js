@@ -3,7 +3,7 @@ import { toJS, observable } from 'mobx';
 import MockAdapter from 'axios-mock-adapter';
 import _ from 'lodash';
 import { Model, BinderApi, Casts } from '../';
-import { compareObjectsIgnoringNegativeIds } from "./helpers";
+import { compareObjectsIgnoringNegativeIds } from "./helpers/helpers";
 import {
     Animal,
     AnimalStore,
@@ -63,7 +63,7 @@ test('Initialize model with invalid data', () => {
 test('Initialize model without data', () => {
     const animal = new Animal(null);
 
-    expect(animal.id).toBeNull();
+    expect(animal.id).toBeLessThan(0);
     expect(animal.name).toBe('');
 });
 
@@ -449,7 +449,7 @@ test('toBackend with relations', () => {
         id: 4,
         name: 'Donkey',
         kind: 8,
-        owner: null,
+        owner: -3,
     });
 });
 
@@ -822,6 +822,7 @@ test('toBackend with observable array', () => {
 
     expect(animal.toBackend()).toEqual({
         foo: ['q', 'a'],
+        id: -1,
     });
 });
 
@@ -1150,7 +1151,7 @@ describe('requests', () => {
         mock.onAny().replyOnce(config => {
             expect(config.url).toBe('/api/animal/');
             expect(config.method).toBe('post');
-            expect(config.data).toBe('{"id":null,"name":"Doggo"}');
+            expect(config.data).toBe('{"id":-1,"name":"Doggo"}');
             return [201, { id: 10, name: 'Doggo' }];
         });
 
@@ -1170,12 +1171,12 @@ describe('requests', () => {
             expect(config.params).toEqual({ validate: true });
             expect(config.url).toBe('/api/animal/');
             expect(config.method).toBe('post');
-            expect(config.data).toBe('{"id":null,"name":"Doggo"}');
+            expect(config.data).toBe('{"id":-1,"name":"Doggo"}');
             return [201, { id: 10, name: 'Doggo' }];
         });
 
         return animal.validate().then(() => {
-            expect(animal.id).toBe(null);
+            expect(animal.id).toBe(-1);
             expect(spy).not.toHaveBeenCalled();
 
             spy.mockReset();
@@ -1287,7 +1288,7 @@ describe('requests', () => {
     test('save with custom data', () => {
         const animal = new Animal();
         mock.onAny().replyOnce(config => {
-            expect(JSON.parse(config.data)).toEqual({ id: null, name: '', extra_data: 'can be saved' });
+            expect(JSON.parse(config.data)).toEqual({ id: -1, name: '', extra_data: 'can be saved' });
             return [201, {}];
         });
 
@@ -1968,7 +1969,7 @@ describe('changes', () => {
                 id: 1,
                 name: 'Lino',
                 kind: 2,
-                owner: null,
+                owner: -4,
                 past_owners: [5]
             }],
             relations: {
@@ -2425,7 +2426,7 @@ describe('copy with changes', () => {
                     id: 1,
                     name: 'Lino',
                     kind: 2,
-                    owner: null,
+                    owner: -4,
                     past_owners: [5]
                 }],
                 relations: {
@@ -2433,13 +2434,13 @@ describe('copy with changes', () => {
                         {
                             id: 2,
                             // We don't care that our other copy gets a different id, as long as they are not the same
-                            breed: index === 0 ? -8 : -13,
+                            breed: -3,
                             name: '',
                         },
                     ],
                     breed: [
                         {
-                            id: index === 0 ? -8 : -13,
+                            id: -3 ,
                             name: 'Cat',
                         },
                     ],
@@ -2500,46 +2501,19 @@ describe('copy with changes', () => {
     });
 });
 
-// test('validate', () => {
-//     const customer = new Customer(null, {
-//         relations: ['oldTowns.bestCook.workPlaces'],
-//     });
-//
-//     customer.fromBackend({
-//         data: customersWithTownCookRestaurant.data,
-//         repos: customersWithTownCookRestaurant.with,
-//         relMapping: customersWithTownCookRestaurant.with_mapping,
-//     });
-//
-//     customer.oldTowns.models[0].bestCook.workPlaces.models[0].setInput('name', "Italian");
-//
-//     const customerCopyNoChanges = new Customer();
-//     customerCopyNoChanges.copy(customer, {copyChanges: true})
-//
-//
-//     // Clone without changes should give the same toBackend result as the cloned object when only changes is false
-//     expect(customerCopyNoChanges.toBackendAll({onlyChanges: false})).toEqual(customer.toBackendAll({onlyChanges: false}))
-// });
-//
-// test('validateAll', () => {
-//     const customer = new Customer(null, {
-//         relations: ['oldTowns.bestCook.workPlaces'],
-//     });
-//
-//     customer.fromBackend({
-//         data: customersWithTownCookRestaurant.data,
-//         repos: customersWithTownCookRestaurant.with,
-//         relMapping: customersWithTownCookRestaurant.with_mapping,
-//     });
-//
-//     customer.oldTowns.models[0].bestCook.workPlaces.models[0].setInput('name', "Italian");
-//
-//     const customerCopyNoChanges = new Customer();
-//     customerCopyNoChanges.copy(customer, {copyChanges: true})
-//
-//
-//     // Clone without changes should give the same toBackend result as the cloned object when only changes is false
-//     expect(customerCopyNoChanges.toBackendAll({onlyChanges: false})).toEqual(customer.toBackendAll({onlyChanges: false}))
-// });
+test('New model instance should have a negative id instead of null', () => {
+    const animal = new Animal();
+    expect(animal.id).toBeLessThan(0);
+});
+
+test('New model instance should have a null id instead of when supplied in data', () => {
+    const animal = new Animal({id: null});
+    expect(animal.id).toBeNull();
+});
+
+test('New model instance should not have negative id if a positive id was supplied in data', () => {
+    const animal = new Animal({id: 5});
+    expect(animal.id).toBe(5);
+});
 
 
