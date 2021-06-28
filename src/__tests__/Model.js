@@ -449,7 +449,7 @@ test('toBackend with relations', () => {
         id: 4,
         name: 'Donkey',
         kind: 8,
-        owner: -3,
+        owner: null,
     });
 });
 
@@ -834,7 +834,7 @@ test('clear with basic attribute', () => {
 
     animal.clear();
 
-    expect(animal.id).toBe(null);
+    expect(animal.id).toBeLessThan(0);
     expect(animal.name).toBe('');
 });
 
@@ -1969,7 +1969,7 @@ describe('changes', () => {
                 id: 1,
                 name: 'Lino',
                 kind: 2,
-                owner: -4,
+                owner: null,
                 past_owners: [5]
             }],
             relations: {
@@ -2426,7 +2426,7 @@ describe('copy with changes', () => {
                     id: 1,
                     name: 'Lino',
                     kind: 2,
-                    owner: -4,
+                    owner: null,
                     past_owners: [5]
                 }],
                 relations: {
@@ -2434,13 +2434,13 @@ describe('copy with changes', () => {
                         {
                             id: 2,
                             // We don't care that our other copy gets a different id, as long as they are not the same
-                            breed: -3,
+                            breed: index === 0 ? -8 : -13,
                             name: '',
                         },
                     ],
                     breed: [
                         {
-                            id: -3 ,
+                            id: index === 0 ? -8 : -13 ,
                             name: 'Cat',
                         },
                     ],
@@ -2501,19 +2501,61 @@ describe('copy with changes', () => {
     });
 });
 
-test('New model instance should have a negative id instead of null', () => {
-    const animal = new Animal();
-    expect(animal.id).toBeLessThan(0);
+describe('negative id instead of null', () => {
+
+    test('New model instance should have a negative id instead of null', () => {
+        const animal = new Animal();
+        expect(animal.id).toBeLessThan(0);
+    });
+
+    test('New model instance should have a null id instead of negative when supplied in data', () => {
+        const animal = new Animal({ id: null });
+        expect(animal.id).toBeNull();
+    });
+
+    test('New model instance should not have negative id if a positive id was supplied in data', () => {
+        const animal = new Animal({ id: 5 });
+        expect(animal.id).toBe(5);
+    });
+
+    test('New model should keep negative id on clear', () => {
+        const animal = new Animal();
+        animal.clear();
+        expect(animal.id).toBeLessThan(0);
+    });
+
+    test('New model should keep null id on clear when created with id null', () => {
+        const animal = new Animal({id: null});
+        animal.clear();
+        expect(animal.id).toBeNull();
+    });
+
+    test('New model should keep negative id on clear, when created with an id', () => {
+        const animal = new Animal({id: 5});
+        animal.clear();
+        expect(animal.id).toBeLessThan(0);
+    });
+
+    test('Related model should get null id if not initialized', () => {
+        const animal = new Animal({id: 5}, {relations: ['kind']});
+
+        expect(animal.kind.id).toBeNull();
+    });
+
+    test('Related model should get null id on clear', () => {
+        const animal = new Animal({id: 5, kind: {id: 5}}, {relations: ['kind']});
+
+        expect(animal.kind.id).toBe(5);
+        animal.clear();
+        expect(animal.kind.id).toBeNull();
+    });
+
+    test('Related model should get null id on related model clear', () => {
+        const animal = new Animal({id: 5, kind: {id: 5}}, {relations: ['kind']});
+
+        expect(animal.kind.id).toBe(5);
+        animal.kind.clear();
+        expect(animal.kind.id).toBeNull();
+    });
+
 });
-
-test('New model instance should have a null id instead of when supplied in data', () => {
-    const animal = new Animal({id: null});
-    expect(animal.id).toBeNull();
-});
-
-test('New model instance should not have negative id if a positive id was supplied in data', () => {
-    const animal = new Animal({id: 5});
-    expect(animal.id).toBe(5);
-});
-
-

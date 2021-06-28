@@ -198,7 +198,7 @@ Object {
   "data": Array [
     Object {
       "id": -1,
-      "kind": -2,
+      "kind": null,
       "name": "Doggo",
       "owner": -3,
     },
@@ -208,7 +208,7 @@ Object {
       Object {
         "id": -3,
         "name": "Henk",
-        "town": -4,
+        "town": null,
       },
     ],
   },
@@ -254,7 +254,7 @@ Object {
       "id": 4,
       "kind": 5,
       "name": "",
-      "owner": -4,
+      "owner": null,
     },
   ],
   "relations": Object {},
