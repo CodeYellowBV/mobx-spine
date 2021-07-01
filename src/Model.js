@@ -109,22 +109,44 @@ export default class Model {
         return -parseInt(this.cid.replace('m', ''));
     }
 
+    /**
+     * Get InternalId returns the id of a model or a negative id if the id is not set
+     * @returns {*}    - the id of a model or a negative id if the id is not set
+     */
     getInternalId() {
-        if (this.isNew) {
+        if (!this[this.constructor.primaryKey]) {
             return this.getNegativeId();
         }
         return this[this.constructor.primaryKey];
     }
 
+    /**
+     * Gives the model the internal id. This is useful if you have a new model that you want to give an id so
+     * that it can be referred to in a relation.
+     */
+    assignInternalId() {
+        this[this.constructor.primaryKey] = this.getInternalId()
+    }
+
+    /**
+     * The get url returns the url for a model., it appends the id if there is one. If the model is new it should not
+     * append an id.
+     *
+     * @returns {string}    - the url for a model
+     */
     @computed
     get url() {
         const id = this[this.constructor.primaryKey];
-        return `${result(this, 'urlRoot')}${id ? `${id}/` : ''}`;
+        return `${result(this, 'urlRoot')}${!this.isNew ? `${id}/` : ''}`;
     }
 
+    /**
+     * A model is considered new if it does not have an id, or if the id is a negative integer.
+     * @returns {boolean}   True if the model id is not set or a negative integer
+     */
     @computed
     get isNew() {
-        return !this[this.constructor.primaryKey];
+        return !this[this.constructor.primaryKey] || this[this.constructor.primaryKey] < 0;
     }
 
     @computed
@@ -434,9 +456,9 @@ export default class Model {
         // Make sure that we have the correct model
         if (source === undefined){
             source = this;
-            copiedModel = new source.constructor();
+            copiedModel = new source.constructor({relations: source.__activeRelations});
         } else if (this.constructor !== source.constructor) {
-            copiedModel = new source.constructor();
+            copiedModel = new source.constructor({relations: source.__activeRelations});
         } else {
             copiedModel = this;
         }
@@ -445,7 +467,6 @@ export default class Model {
 
         // Maintain the relations after copy
         // this.__activeRelations = source.__activeRelations;
-        copiedModel.__currentActiveRelations = source.__currentActiveRelations;
 
         copiedModel.__parseRelations(source.__activeRelations);
         // Copy all fields and values from the specified model
@@ -454,7 +475,7 @@ export default class Model {
 
         // Set only the changed attributes
         if (copyChanges) {
-            copiedModel._copyChanges(source)
+            copiedModel.__copyChanges(source)
         }
 
         return copiedModel;
@@ -467,10 +488,9 @@ export default class Model {
      * @param store  - the store of the current model, to setChanged if there are changes
      * @private
      */
-    _copyChanges(source, store) {
+    __copyChanges(source, store) {
         // Maintain the relations after copy
-        this.__activeRelations = source.__activeRelations;
-        this.__currentActiveRelations = source.__currentActiveRelations;
+        this.__parseRelations(source.__activeRelations);
 
         // Copy all changed fields and notify the store that there are changes
         if (source.__changes.length > 0) {
@@ -484,19 +504,35 @@ export default class Model {
                 this.setInput(changedAttribute, source[changedAttribute])
             })
         }
-
-
-        // Set the changes for all related models with changes
-        source.__activeRelations.forEach((relation) => {
-            if (relation && source[relation]) {
-                if (source[relation].hasUserChanges) {
-                    // Set the changes for all related models with changes
-                    source[relation].models.forEach((relatedModel,index) => {
-                        this[relation].models[index]._copyChanges(relatedModel, this[relation]);
-                    });
+        // Undefined safety
+        if (source.__activeCurrentRelations.length > 0) {
+            // Set the changes for all related models with changes
+            source.__activeCurrentRelations.forEach((relation) => {
+                if (relation && source[relation]) {
+                    if (this[relation]) {
+                        if (source[relation].hasUserChanges) {
+                            if (source[relation].models) { // If related item is a store
+                                if (source[relation].models.length === this[relation].models.length) { // run only if the store shares the same amount of items
+                                    // Check if the store has some changes
+                                    this[relation].__setChanged = source[relation].__setChanged;
+                                    // Set the changes for all related models with changes
+                                    source[relation].models.forEach((relatedModel, index) => {
+                                        this[relation].models[index].__copyChanges(relatedModel, this[relation]);
+                                    });
+                                }
+                            } else {
+                                // Set the changes for the related model
+                                this[relation].__copyChanges(source[relation], undefined)
+                            }
+                        }
+                    } else {
+                        // Related object not in relations of the model we are copying
+                        console.warn(`Found related object ${source.constructor.backendResourceName} with relation ${relation},
+                        which is not defined in the relations of the model you are copying. Skipping ${relation}.`)
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     toJS() {

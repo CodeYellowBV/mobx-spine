@@ -851,14 +851,39 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function getNegativeId() {
             return -parseInt(this.cid.replace('m', ''));
         }
+
+        /**
+         * Get InternalId returns the id of a model or a negative id if the id is not set
+         * @returns {*}    - the id of a model or a negative id if the id is not set
+         */
+
     }, {
         key: 'getInternalId',
         value: function getInternalId() {
-            if (this.isNew) {
+            if (!this[this.constructor.primaryKey]) {
                 return this.getNegativeId();
             }
             return this[this.constructor.primaryKey];
         }
+
+        /**
+         * Gives the model the internal id. This is useful if you have a new model that you want to give an id so
+         * that it can be referred to in a relation.
+         */
+
+    }, {
+        key: 'assignInternalId',
+        value: function assignInternalId() {
+            this[this.constructor.primaryKey] = this.getInternalId();
+        }
+
+        /**
+         * The get url returns the url for a model., it appends the id if there is one. If the model is new it should not
+         * append an id.
+         *
+         * @returns {string}    - the url for a model
+         */
+
     }, {
         key: 'casts',
         value: function casts() {
@@ -889,12 +914,18 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         key: 'url',
         get: function get$$1() {
             var id = this[this.constructor.primaryKey];
-            return '' + result(this, 'urlRoot') + (id ? id + '/' : '');
+            return '' + result(this, 'urlRoot') + (!this.isNew ? id + '/' : '');
         }
+
+        /**
+         * A model is considered new if it does not have an id, or if the id is a negative integer.
+         * @returns {boolean}   True if the model id is not set or a negative integer
+         */
+
     }, {
         key: 'isNew',
         get: function get$$1() {
-            return !this[this.constructor.primaryKey];
+            return !this[this.constructor.primaryKey] || this[this.constructor.primaryKey] < 0;
         }
     }, {
         key: 'isLoading',
@@ -1183,9 +1214,9 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             // Make sure that we have the correct model
             if (source === undefined) {
                 source = this;
-                copiedModel = new source.constructor();
+                copiedModel = new source.constructor({ relations: source.__activeRelations });
             } else if (this.constructor !== source.constructor) {
-                copiedModel = new source.constructor();
+                copiedModel = new source.constructor({ relations: source.__activeRelations });
             } else {
                 copiedModel = this;
             }
@@ -1194,7 +1225,6 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             // Maintain the relations after copy
             // this.__activeRelations = source.__activeRelations;
-            copiedModel.__currentActiveRelations = source.__currentActiveRelations;
 
             copiedModel.__parseRelations(source.__activeRelations);
             // Copy all fields and values from the specified model
@@ -1202,7 +1232,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             // Set only the changed attributes
             if (copyChanges) {
-                copiedModel._copyChanges(source);
+                copiedModel.__copyChanges(source);
             }
 
             return copiedModel;
@@ -1217,13 +1247,12 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
          */
 
     }, {
-        key: '_copyChanges',
-        value: function _copyChanges(source, store) {
+        key: '__copyChanges',
+        value: function __copyChanges(source, store) {
             var _this6 = this;
 
             // Maintain the relations after copy
-            this.__activeRelations = source.__activeRelations;
-            this.__currentActiveRelations = source.__currentActiveRelations;
+            this.__parseRelations(source.__activeRelations);
 
             // Copy all changed fields and notify the store that there are changes
             if (source.__changes.length > 0) {
@@ -1237,18 +1266,36 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     _this6.setInput(changedAttribute, source[changedAttribute]);
                 });
             }
-
-            // Set the changes for all related models with changes
-            source.__activeRelations.forEach(function (relation) {
-                if (relation && source[relation]) {
-                    if (source[relation].hasUserChanges) {
-                        // Set the changes for all related models with changes
-                        source[relation].models.forEach(function (relatedModel, index) {
-                            _this6[relation].models[index]._copyChanges(relatedModel, _this6[relation]);
-                        });
+            // Undefined safety
+            if (source.__activeCurrentRelations.length > 0) {
+                // Set the changes for all related models with changes
+                source.__activeCurrentRelations.forEach(function (relation) {
+                    if (relation && source[relation]) {
+                        if (_this6[relation]) {
+                            if (source[relation].hasUserChanges) {
+                                if (source[relation].models) {
+                                    // If related item is a store
+                                    if (source[relation].models.length === _this6[relation].models.length) {
+                                        // run only if the store shares the same amount of items
+                                        // Check if the store has some changes
+                                        _this6[relation].__setChanged = source[relation].__setChanged;
+                                        // Set the changes for all related models with changes
+                                        source[relation].models.forEach(function (relatedModel, index) {
+                                            _this6[relation].models[index].__copyChanges(relatedModel, _this6[relation]);
+                                        });
+                                    }
+                                } else {
+                                    // Set the changes for the related model
+                                    _this6[relation].__copyChanges(source[relation], undefined);
+                                }
+                            }
+                        } else {
+                            // Related object not in relations of the model we are copying
+                            console.warn('Found related object ' + source.constructor.backendResourceName + ' with relation ' + relation + ',\n                        which is not defined in the relations of the model you are copying. Skipping ' + relation + '.');
+                        }
                     }
-                }
-            });
+                });
+            }
         }
     }, {
         key: 'toJS',
