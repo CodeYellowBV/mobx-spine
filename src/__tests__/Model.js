@@ -2,7 +2,7 @@ import axios from 'axios';
 import { toJS, observable } from 'mobx';
 import MockAdapter from 'axios-mock-adapter';
 import _ from 'lodash';
-import { Model, BinderApi } from '../';
+import { Model, BinderApi, Casts } from '../';
 import {
     Animal,
     AnimalStore,
@@ -988,6 +988,16 @@ test('setInput to parse store relation', () => {
 
     animal.setInput('pastOwners', null);
     expect(animal.pastOwners.length).toBe(0);
+});
+
+test('parse empty list', () => {
+    const animal = new Animal(
+        { pastOwners: [{}, {}] },
+        { relations: ['pastOwners'] },
+    );
+    expect(animal.pastOwners.length).toEqual(2);
+    animal.parse({ pastOwners: [] });
+    expect(animal.pastOwners.length).toEqual(0);
 });
 
 describe('requests', () => {

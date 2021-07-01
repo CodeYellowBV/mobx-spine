@@ -1375,7 +1375,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 } else if (_this9.__activeCurrentRelations.includes(attr)) {
                     // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                     // However, it can also be an object if there are nested relations (non flattened).
-                    if (isPlainObject(value) || isPlainObject(get(value, '[0]'))) {
+                    if (isPlainObject(value) || Array.isArray(value) && value.every(isPlainObject)) {
                         _this9[attr].parse(value);
                     } else if (value === null) {
                         // The relation is cleared.
@@ -2119,11 +2119,11 @@ function checkMomentInstance(attr, value) {
 }
 
 function checkLuxonDateTime(attr, value) {
-    invariant(moment.isMoment(value), 'Attribute `' + attr + '` is not a luxon DateTime.');
+    invariant(DateTime.isDateTime(value), 'Attribute `' + attr + '` is not a luxon instance.');
 }
 
 var LUXON_DATE_FORMAT = 'yyyy-LL-dd';
-var LUXON_DATETIME_FORMAT = 'yyy-LL-ddTHH:mm:ssZZZ';
+var LUXON_DATETIME_FORMAT = "yyyy'-'LL'-'dd'T'HH':'mm':'ssZZ";
 
 var CASTS = {
     momentDate: {
@@ -2165,7 +2165,7 @@ var CASTS = {
             if (value === null || value === undefined) {
                 return null;
             }
-            return DateTime.fromFormat(value, LUXON_DATE_FORMAT);
+            return DateTime.fromISO(value);
         },
         toJS: function toJS$$1(attr, value) {
             if (value === null || value === undefined) {
@@ -2182,7 +2182,8 @@ var CASTS = {
             if (value === null) {
                 return null;
             }
-            return DateTime.fromFormat(value, LUXON_DATETIME_FORMAT);
+
+            return DateTime.fromISO(value);
         },
         toJS: function toJS$$1(attr, value) {
             if (value === null) {
