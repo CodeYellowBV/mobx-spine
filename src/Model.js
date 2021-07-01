@@ -196,6 +196,7 @@ export default class Model {
         this.initialize();
 
         this.saveFile = this.saveFile.bind(this);
+        this.handleValidationErrors = this.handleValidationErrors.bind(this);
     }
 
     @action
@@ -615,29 +616,25 @@ export default class Model {
 
     saveFile(name) {
         const snakeName = camelToSnake(name);
+        const url = `${this.url}${snakeName}/`;
 
         if (this.__fileChanges[name]) {
             const file = this.__fileChanges[name];
-
-            const data = new FormData();
-            data.append(name, file, file.name);
-
             return (
-                this.api.post(
-                    `${this.url}${snakeName}/`,
-                    data,
-                    { headers: { 'Content-Type': 'multipart/form-data' } },
-                )
+                this.__getApi()
+                .saveModelFile({ url, name, file })
                 .then(action((res) => {
                     this.__fileExists[name] = true;
                     delete this.__fileChanges[name];
                     this.saveFromBackend(res);
                 }))
+                .catch((err) => this.handleValidationErrors(err, true))
             );
         } else if (this.__fileDeletions[name]) {
             if (this.__fileExists[name]) {
                 return (
-                    this.api.delete(`${this.url}${snakeName}/`)
+                    this.__getApi()
+                    .deleteModelFile({ url, name })
                     .then(action(() => {
                         this.__fileExists[name] = false;
                         delete this.__fileDeletions[name];
@@ -645,6 +642,7 @@ export default class Model {
                             [snakeName]: null,
                         } });
                     }))
+                    .catch((err) => this.handleValidationErrors(err, true))
                 );
             } else {
                 delete this.__fileDeletions[name];
@@ -662,19 +660,25 @@ export default class Model {
         );
     }
 
-    @action
-    save(options = {}) {
+    @action handleValidationErrors(err, append = false) {
+        if (err.valErrors) {
+            this.parseValidationErrors(err.valErrors, append);
+        }
+        throw err;
+    }
+
+    @action save(options = {}) {
         this.clearValidationErrors();
         return this.wrapPendingRequestCount(
             this.__getApi()
             .saveModel({
                 url: options.url || this.url,
                 data: this.toBackend({
-                        data: options.data,
-                        mapData: options.mapData,
-                        fields: options.fields,
-                        onlyChanges: options.onlyChanges,
-                    }),
+                    data: options.data,
+                    mapData: options.mapData,
+                    fields: options.fields,
+                    onlyChanges: options.onlyChanges,
+                }),
                 isNew: this.isNew,
                 requestOptions: omit(options, 'url', 'data', 'mapData')
             })
@@ -689,14 +693,7 @@ export default class Model {
                     return Promise.resolve(res);
                 });
             }))
-            .catch(
-                action(err => {
-                    if (err.valErrors) {
-                        this.parseValidationErrors(err.valErrors);
-                    }
-                    throw err;
-                })
-            )
+            .catch(this.handleValidationErrors)
         );
     }
 
@@ -704,7 +701,7 @@ export default class Model {
     setInput(name, value) {
         invariant(
             this.__attributes.includes(name) ||
-                this.__activeCurrentRelations.includes(name),
+            this.__activeCurrentRelations.includes(name),
             `Field \`${name}\` does not exist on the model.`
         );
         if (this.fileFields().includes(name)) {
@@ -796,14 +793,7 @@ export default class Model {
                     return res;
                 });
             }))
-            .catch(
-                action(err => {
-                    if (err.valErrors) {
-                        this.parseValidationErrors(err.valErrors);
-                    }
-                    throw err;
-                })
-            )
+            .catch(this.handleValidationErrors)
         );
     }
 
@@ -830,7 +820,7 @@ export default class Model {
     }
 
     @action
-    parseValidationErrors(valErrors) {
+    parseValidationErrors(valErrors, append = false) {
         const bname = this.constructor.backendResourceName;
 
         if (valErrors[bname]) {
@@ -848,12 +838,16 @@ export default class Model {
                         return valError.map(this.validationErrorFormatter);
                     }
                 );
-                this.__backendValidationErrors = formattedErrors;
+                if (append) {
+                    this.__backendValidationErrors.push(...formattedErrors);
+                } else {
+                    this.__backendValidationErrors = formattedErrors;
+                }
             }
         }
 
         this.__activeCurrentRelations.forEach(currentRel => {
-            this[currentRel].parseValidationErrors(valErrors);
+            this[currentRel].parseValidationErrors(valErrors, append);
         });
     }
 
