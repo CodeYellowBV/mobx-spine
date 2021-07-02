@@ -1586,7 +1586,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             } else {
                 options.params = { validate: true };
             }
-            return this.save(options);
+            return this.save(options).catch(function () {});
         }
     }, {
         key: 'save',
@@ -1720,7 +1720,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             } else {
                 options.params = { validate: true };
             }
-            return this.saveAll(options);
+            return this.saveAll(options).catch(function () {});
         }
     }, {
         key: 'saveAll',
