@@ -798,7 +798,7 @@ export default class Model {
         } else {
             options.params = { validate: true };
         }
-        return this.save(options);
+        return this.save(options).catch(() => {});
     }
 
     @action
@@ -911,7 +911,7 @@ export default class Model {
         } else {
             options.params = { validate: true };
         }
-        return this.saveAll(options);
+        return this.saveAll(options).catch(() => {});
     }
 
     @action
