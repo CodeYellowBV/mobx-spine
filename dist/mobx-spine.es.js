@@ -1503,7 +1503,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 } else if (_this10.__activeCurrentRelations.includes(attr)) {
                     // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                     // However, it can also be an object if there are nested relations (non flattened).
-                    if (isPlainObject(value) || isPlainObject(get(value, '[0]'))) {
+                    if (isPlainObject(value) || Array.isArray(value) && value.every(isPlainObject)) {
                         _this10[attr].parse(value);
                     } else if (value === null) {
                         // The relation is cleared.
