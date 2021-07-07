@@ -729,7 +729,7 @@ export default class Model {
             } else if (this.__activeCurrentRelations.includes(attr)) {
                 // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                 // However, it can also be an object if there are nested relations (non flattened).
-                if (isPlainObject(value) || isPlainObject(get(value, '[0]'))) {
+                if (isPlainObject(value) || (Array.isArray(value) && value.every(isPlainObject))) {
                     this[attr].parse(value);
                 } else if (value === null) {
                     // The relation is cleared.
@@ -812,7 +812,7 @@ export default class Model {
         } else {
             options.params = { validate: true };
         }
-        return this.save(options);
+        return this.save(options).catch((err)=>{throw err});
     }
 
     @action
@@ -925,7 +925,7 @@ export default class Model {
         } else {
             options.params = { validate: true };
         }
-        return this.saveAll(options);
+        return this.saveAll(options).catch((err)=>{throw err});
     }
 
     @action
