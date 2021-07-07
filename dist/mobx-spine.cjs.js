@@ -1924,7 +1924,13 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             var _this19 = this;
 
             lodash.forIn(this.__originalAttributes, function (value, key) {
-                _this19[key] = value;
+                // If it is our primary key, and the primary key is negative, we generate a new negative pk, else we set it
+                // to the value
+                if (key === _this19.constructor.primaryKey && value < 0) {
+                    _this19[key] = -1 * lodash.uniqueId();
+                } else {
+                    _this19[key] = value;
+                }
             });
 
             this.__activeCurrentRelations.forEach(function (currentRel) {
