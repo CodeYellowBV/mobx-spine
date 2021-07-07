@@ -1110,7 +1110,13 @@ export default class Model {
     @action
     clear() {
         forIn(this.__originalAttributes, (value, key) => {
-            this[key] = value;
+            // If it is our primary key, and the primary key is negative, we generate a new negative pk, else we set it
+            // to the value
+            if (key === this.constructor.primaryKey && value < 0){
+                this[key] = -1 * uniqueId();
+            } else {
+                this[key] = value;
+            }
         });
 
         this.__activeCurrentRelations.forEach(currentRel => {
