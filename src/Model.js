@@ -726,11 +726,6 @@ export default class Model {
         }
     }
 
-    saveAll(options) {
-        console.warn('Calling Model.saveAll directly is deprecated, call Model.save with relations instead');
-        return this._saveAll(options);
-    }
-
     @action
     _save(options = {}) {
         this.clearValidationErrors();
