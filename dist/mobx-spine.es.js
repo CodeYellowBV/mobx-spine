@@ -854,7 +854,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
         /**
          * Get InternalId returns the id of a model or a negative id if the id is not set
-         * @returns {*}    - the id of a model or a negative id if the id is not set
+         * @returns {*}   the id of a model or a negative id if the id is not set
          */
 
     }, {
@@ -882,7 +882,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
          * The get url returns the url for a model., it appends the id if there is one. If the model is new it should not
          * append an id.
          *
-         * @returns {string}    - the url for a model
+         * @returns {string}   the url for a model
          */
 
     }, {
@@ -920,7 +920,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
         /**
          * A model is considered new if it does not have an id, or if the id is a negative integer.
-         * @returns {boolean}   - True if the model id is not set or a negative integer
+         * @returns {boolean}   True if the model id is not set or a negative integer
          */
 
     }, {
@@ -1208,8 +1208,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
          * Cloning the changes requires recursion over all related models that have changes or are related to a model with changes.
          * Cloning
          *
-         * @param source {Model}    - The model that should be copied
-         * @param options {{}}      - Options, {copyChanges - only copy the changed attributes, requires recursion over all related objects with changes}
+         * @param source {Model}   The model that should be copied
+         * @param options {{}}     Options, {copyChanges - only copy the changed attributes, requires recursion over all related objects with changes}
          */
 
     }, {

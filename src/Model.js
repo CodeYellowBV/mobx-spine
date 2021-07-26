@@ -111,7 +111,7 @@ export default class Model {
 
     /**
      * Get InternalId returns the id of a model or a negative id if the id is not set
-     * @returns {*}    - the id of a model or a negative id if the id is not set
+     * @returns {*}    the id of a model or a negative id if the id is not set
      */
     getInternalId() {
         if (!this[this.constructor.primaryKey]) {
@@ -133,7 +133,7 @@ export default class Model {
      * The get url returns the url for a model., it appends the id if there is one. If the model is new it should not
      * append an id.
      *
-     * @returns {string}    - the url for a model
+     * @returns {string}  the url for a model
      */
     @computed
     get url() {
@@ -143,7 +143,7 @@ export default class Model {
 
     /**
      * A model is considered new if it does not have an id, or if the id is a negative integer.
-     * @returns {boolean}   - True if the model id is not set or a negative integer
+     * @returns {boolean}   True if the model id is not set or a negative integer
      */
     @computed
     get isNew() {
@@ -454,8 +454,8 @@ export default class Model {
      * Cloning the changes requires recursion over all related models that have changes or are related to a model with changes.
      * Cloning
      *
-     * @param source {Model}    - The model that should be copied
-     * @param options {{}}      - Options, {copyChanges - only copy the changed attributes, requires recursion over all related objects with changes}
+     * @param source {Model}   The model that should be copied
+     * @param options {{}}     Options, {copyChanges - only copy the changed attributes, requires recursion over all related objects with changes}
      */
     copy(source= undefined, options = {copyChanges: true}){
         let copiedModel;
