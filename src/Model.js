@@ -277,9 +277,7 @@ export default class Model {
                     return new RelModel(options);
                 }
                 // If we have a related model, we want to force the related model to have id null as that means there is no model set
-                const newModelData = {}
-                newModelData[RelModel.primaryKey] = null;
-                return new RelModel(newModelData, options);
+                return new RelModel({ [RelModel.primaryKey]: null }, options);
             })
         );
     }

@@ -2450,7 +2450,7 @@ describe('copy with changes', () => {
                     ],
                     breed: [
                         {
-                            id: index === 0 ? -8 : -13 ,
+                            id: index === 0 ? -8 : -13,
                             name: 'Cat',
                         },
                     ],
