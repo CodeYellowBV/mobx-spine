@@ -1240,7 +1240,6 @@ describe('requests', () => {
         return animal.save({ data: { extra_data: 'can be saved' }, mapData: data => ({ ...data, id: 'overwritten' }) });
     });
 
-    // OLD
     test('save all with relations', () => {
         const animal = new Animal(
             {
@@ -1257,7 +1256,7 @@ describe('requests', () => {
             return [201, animalMultiPutResponse];
         });
 
-        return animal.saveAll({ relations: ['kind'] }).then(response => {
+        return animal.save({ relations: ['kind'] }).then(response => {
             expect(spy).toHaveBeenCalled();
             expect(animal.id).toBe(10);
             expect(animal.kind.id).toBe(4);
@@ -1286,7 +1285,7 @@ describe('requests', () => {
             ];
         });
 
-        return animal.saveAll({ relations: ['pastOwners'] }).then(() => {
+        return animal.save({ relations: ['pastOwners'] }).then(() => {
             expect(animal.pastOwners.map('id')).toEqual([100, 125]);
         });
     });
@@ -1304,7 +1303,7 @@ describe('requests', () => {
             return [400, animalMultiPutError];
         });
 
-        return animal.saveAll({ relations: ['kind'] }).then(
+        return animal.save({ relations: ['kind'] }).then(
             () => {},
             err => {
                 if (!err.response) {
@@ -1343,14 +1342,14 @@ describe('requests', () => {
         });
 
         const options = { relations: ['pastOwners.town'] };
-        return animal.saveAll(options).then(
+        return animal.save(options).then(
             () => {},
             err => {
                 if (!err.response) {
                     throw err;
                 }
                 mock.onAny().replyOnce(200, { idmap: [] });
-                return animal.saveAll(options).then(() => {
+                return animal.save(options).then(() => {
                     const valErrors1 = toJS(
                         animal.pastOwners.at(0).backendValidationErrors
                     );
@@ -1377,7 +1376,7 @@ describe('requests', () => {
             return [201, animalMultiPutResponse];
         });
 
-        return animal.saveAll({ relations: ['kind'] });
+        return animal.save({ relations: ['kind'] });
     });
 
     test('save all with empty response from backend', () => {
@@ -1389,16 +1388,16 @@ describe('requests', () => {
             return [201, {}];
         });
 
-        return animal.saveAll();
+        return animal.save({ relations: ['kind'] });
     });
 
     test('save all fail', () => {
-        const animal = new Animal({});
+        const animal = new Animal({}, { relations: ['kind'] });
         mock.onAny().replyOnce(() => {
             return [500, {}];
         });
 
-        const promise = animal.saveAll();
+        const promise = animal.save({ relations: ['kind'] });
         expect(animal.isLoading).toBe(true);
         return promise.catch(() => {
             expect(animal.isLoading).toBe(false);
@@ -1546,7 +1545,7 @@ describe('requests', () => {
             return [200, {}];
         });
 
-        return animal.saveAll({ relations: ['kind.breed'] }).then(() => {
+        return animal.save({ relations: ['kind.breed'] }).then(() => {
             expect(animal.hasUserChanges).toBe(false);
         });
     });
@@ -1567,7 +1566,7 @@ describe('requests', () => {
             return [200, {}];
         });
 
-        return animal.saveAll({ relations: ['kind.breed'] }).then(() => {
+        return animal.save({ relations: ['kind.breed'] }).then(() => {
             expect(animal.hasUserChanges).toBe(true);
             expect(animal.pastOwners.hasUserChanges).toBe(true);
             expect(animal.pastOwners.get(2).hasUserChanges).toBe(true);
@@ -1592,7 +1591,7 @@ describe('requests', () => {
             return [200, {}];
         });
 
-        return animal.saveAll({ relations: ['pastOwners'] }).then(() => {
+        return animal.save({ relations: ['pastOwners'] }).then(() => {
             expect(animal.pastOwners.hasUserChanges).toBe(false);
             expect(animal.hasUserChanges).toBe(false);
         });
@@ -1615,210 +1614,9 @@ describe('requests', () => {
             return [200, {}];
         });
 
-        return animal.saveAll().then(() => {
+        return animal.save({ relations: ['kind'] }).then(() => {
             expect(animal.pastOwners.hasUserChanges).toBe(true);
             expect(animal.hasUserChanges).toBe(true);
-        });
-    });
-
-    // NEW
-    test('save all with relations', () => {
-        const animal = new Animal(
-            {
-                name: 'Doggo',
-                kind: { name: 'Dog' },
-                pastOwners: [{ name: 'Henk' }],
-            },
-            { relations: ['kind', 'pastOwners'] }
-        );
-        const spy = jest.spyOn(animal, 'saveFromBackend');
-        mock.onAny().replyOnce(config => {
-            expect(config.url).toBe('/api/animal/');
-            expect(config.method).toBe('put');
-            return [201, animalMultiPutResponse];
-        });
-
-        return animal.save({ relations: ['kind'] }).then(response => {
-            expect(spy).toHaveBeenCalled();
-            expect(animal.id).toBe(10);
-            expect(animal.kind.id).toBe(4);
-            expect(animal.pastOwners.at(0).id).toBe(100);
-            expect(response).toEqual(animalMultiPutResponse);
-
-            spy.mockReset();
-            spy.mockRestore();
-        });
-    });
-
-    test('save all with relations - verify ids are mapped correctly', () => {
-        const animal = new Animal(
-            {
-                pastOwners: [{ name: 'Henk' }, { id: 125, name: 'Hanos' }],
-            },
-            { relations: ['pastOwners'] }
-        );
-        // Sanity check unrelated to the actual test.
-        expect(animal.pastOwners.at(0).getInternalId()).toBe(-2);
-
-        mock.onAny().replyOnce(config => {
-            return [
-                201,
-                { idmap: { animal: [[-1, 10]], person: [[-2, 100]] } },
-            ];
-        });
-
-        return animal.save({ relations: ['pastOwners'] }).then(() => {
-            expect(animal.pastOwners.map('id')).toEqual([100, 125]);
-        });
-    });
-
-    test('save all with validation errors', () => {
-        const animal = new Animal(
-            {
-                name: 'Doggo',
-                kind: { name: 'Dog' },
-                pastOwners: [{ name: 'Jo', town: { id: 5, name: '' } }],
-            },
-            { relations: ['kind', 'pastOwners.town'] }
-        );
-        mock.onAny().replyOnce(config => {
-            return [400, animalMultiPutError];
-        });
-
-        return animal.save({ relations: ['kind'] }).then(
-            () => {},
-            err => {
-                if (!err.response) {
-                    throw err;
-                }
-                expect(toJS(animal.backendValidationErrors).name).toEqual([
-                    'blank',
-                ]);
-                expect(toJS(animal.kind.backendValidationErrors).name).toEqual([
-                    'required',
-                ]);
-                expect(
-                    toJS(animal.pastOwners.at(0).backendValidationErrors).name
-                ).toEqual(['required']);
-                expect(
-                    toJS(animal.pastOwners.at(0).town.backendValidationErrors)
-                        .name
-                ).toEqual(['maxlength']);
-            }
-        );
-    });
-
-    test('save all with validation errors and check if it clears them', () => {
-        const animal = new Animal(
-            {
-                name: 'Doggo',
-                pastOwners: [{ name: 'Jo', town: { id: 5, name: '' } }],
-            },
-            { relations: ['pastOwners.town'] }
-        );
-
-        // We first trigger a save with validation errors from the backend, then we trigger a second save which fixes those validation errors,
-        // then we check if the errors get cleared.
-        mock.onAny().replyOnce(config => {
-            return [400, animalMultiPutError];
-        });
-
-        const options = { relations: ['pastOwners.town'] };
-        return animal.save(options).then(
-            () => {},
-            err => {
-                if (!err.response) {
-                    throw err;
-                }
-                mock.onAny().replyOnce(200, { idmap: [] });
-                return animal.save(options).then(() => {
-                    const valErrors1 = toJS(
-                        animal.pastOwners.at(0).backendValidationErrors
-                    );
-                    expect(valErrors1).toEqual({});
-                    const valErrors2 = toJS(
-                        animal.pastOwners.at(0).town.backendValidationErrors
-                    );
-                    expect(valErrors2).toEqual({});
-                });
-            }
-        );
-    });
-
-    test('save all with existing model', () => {
-        const animal = new Animal(
-            { id: 10, name: 'Doggo', kind: { name: 'Dog' } },
-            { relations: ['kind'] }
-        );
-        mock.onAny().replyOnce(config => {
-            expect(config.url).toBe('/api/animal/');
-            expect(config.method).toBe('put');
-            const putData = JSON.parse(config.data);
-            expect(putData).toMatchSnapshot();
-            return [201, animalMultiPutResponse];
-        });
-
-        return animal.save({ relations: ['kind'] });
-    });
-
-    test('hasUserChanges should clear changes in saved model relations', () => {
-        const animal = new Animal({ id: 1 }, { relations: ['kind.breed'] });
-
-        animal.kind.breed.setInput('name', 'Katachtige');
-
-        mock.onAny().replyOnce(() => {
-            return [200, {}];
-        });
-
-        return animal.save({ relations: ['kind.breed'] }).then(() => {
-            expect(animal.hasUserChanges).toBe(false);
-        });
-    });
-
-    test('hasUserChanges should not clear changes in non-saved models relations', () => {
-        const animal = new Animal(
-            { id: 1, pastOwners: [
-                { id: 2 },
-                { id: 3 },
-            ] },
-            { relations: ['pastOwners', 'kind.breed'] }
-        );
-
-        animal.kind.breed.setInput('name', 'Katachtige');
-        animal.pastOwners.get(2).setInput('name', 'Zaico');
-
-        mock.onAny().replyOnce(() => {
-            return [200, {}];
-        });
-
-        return animal.save({ relations: ['kind.breed'] }).then(() => {
-            expect(animal.hasUserChanges).toBe(true);
-            expect(animal.pastOwners.hasUserChanges).toBe(true);
-            expect(animal.pastOwners.get(2).hasUserChanges).toBe(true);
-            expect(animal.pastOwners.get(3).hasUserChanges).toBe(false);
-        });
-    });
-
-    test('hasUserChanges should clear set changes in saved relations', () => {
-        const animal = new Animal(
-            { id: 1, pastOwners: [
-                { id: 2 },
-                { id: 3 },
-            ] },
-            { relations: ['pastOwners', 'kind.breed'] }
-        );
-
-        animal.pastOwners.add({});
-        expect(animal.hasUserChanges).toBe(true);
-        expect(animal.pastOwners.hasUserChanges).toBe(true);
-
-        mock.onAny().replyOnce(() => {
-            return [200, {}];
-        });
-
-        return animal.save({ relations: ['pastOwners'] }).then(() => {
-            expect(animal.pastOwners.hasUserChanges).toBe(false);
-            expect(animal.hasUserChanges).toBe(false);
         });
     });
 });
