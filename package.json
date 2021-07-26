@@ -19,7 +19,7 @@
     "version": "git add -A dist",
     "build": "rm -f dist/** && BABEL_ENV=production node build.js",
     "//precommit": "lint-staged",
-    "ci": "npm run -s lint && npm run -s test-coverage && codecov"
+    "ci": "npm run -s lint && npm run -s test-coverage"
   },
   "lint-staged": {
     "*.js": [
