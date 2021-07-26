@@ -269,3 +269,83 @@ test('Failing request with onRequestError and skipRequestError option', () => {
             expect(api.onRequestError).not.toHaveBeenCalled();
         });
 });
+
+test('Blobs in json get converted to form data', () => {
+    const foo = new Blob(['foo'], { type: 'text/plain' });
+    const bar = new Blob(['bar'], { type: 'text/plain' });
+
+    mock.onAny().replyOnce(config => {
+        expect(config.url).toBe('/api/test/');
+        expect(config.method).toBe('put');
+        expect(config.params).toEqual(undefined);
+        expect(config.data).toBeInstanceOf(FormData);
+
+        const keys = Array.from(config.data.keys()).sort();
+        expect(keys).toEqual(['data', 'file:bar.2', 'file:foo']);
+
+        const data = JSON.parse(config.data.get('data'));
+        expect(data).toEqual({
+            foo: null,
+            bar: [1, 'test', null],
+        });
+
+        const foo = config.data.get('file:foo');
+        expect(foo).toBeInstanceOf(Blob);
+
+        const bar = config.data.get('file:bar.2');
+        expect(bar).toBeInstanceOf(Blob);
+
+        return [200, {}];
+    });
+
+    const api = new BinderApi();
+    return api.put('/api/test/', {
+        foo,
+        bar: [1, 'test', bar],
+    });
+});
+
+test('FormData is left intact', () => {
+    const foo = new Blob(['foo'], { type: 'text/plain' });
+    const bar = new Blob(['bar'], { type: 'text/plain' });
+    const data = new FormData();
+    data.set('foo', foo);
+    data.set('bar', bar);
+
+    mock.onAny().replyOnce(config => {
+        expect(config.url).toBe('/api/test/');
+        expect(config.method).toBe('put');
+        expect(config.params).toEqual(undefined);
+        expect(config.data).toBeInstanceOf(FormData);
+
+        const keys = Array.from(config.data.keys()).sort();
+        expect(keys).toEqual(['bar', 'foo']);
+
+        const foo = config.data.get('foo');
+        expect(foo).toBeInstanceOf(Blob);
+
+        const bar = config.data.get('bar');
+        expect(bar).toBeInstanceOf(Blob);
+
+        return [200, {}];
+    });
+
+    const api = new BinderApi();
+    return api.put('/api/test/', data);
+});
+
+test('Blob is left intact', () => {
+    const data = new Blob(['foo'], { type: 'text/plain' });
+
+    mock.onAny().replyOnce(config => {
+        expect(config.url).toBe('/api/test/');
+        expect(config.method).toBe('put');
+        expect(config.params).toEqual(undefined);
+        expect(config.data).toBeInstanceOf(Blob);
+
+        return [200, {}];
+    });
+
+    const api = new BinderApi();
+    return api.put('/api/test/', data);
+});
