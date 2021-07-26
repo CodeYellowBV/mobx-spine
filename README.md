@@ -45,7 +45,7 @@ import { Model } from 'mobx-spine';
 
 // Define a class Animal, with 2 observed properties `id` and `name`.
 class Animal extends Model {
-    @observable id = null; // Default value is null.
+    @observable id; // Default value is undefined, a new negative integer will automatically be generated for a new model.
     @observable name = ''; // Default value is ''.
 }
 ```
@@ -56,7 +56,7 @@ If we instantiate a new animal without arguments it will create an empty animal 
 // Create an empty instance of an Animal.
 const lion = new Animal();
 
-console.log(lion.id); // null
+console.log(lion.id); // -1, a unique negative integer for this model
 console.log(lion.name); // ''
 ```
 
@@ -67,6 +67,7 @@ You can also supply data when creating a new instance:
 const cat = new Animal({ id: 1, name: 'Cat' });
 
 console.log(cat.name); // Cat
+console.log(cat.id); // 1
 ```
 
 When data is supplied in the constructor, these can be reset by calling `clear`:
@@ -89,6 +90,11 @@ const cat = new Animal({ id: 1, name: 'Cat', undefinedProperty: 'will be ignored
 cat.name = '';
 console.log(cat.undefinedProperty); // undefined
 ```
+
+### New models
+A new model is a model that exists in the store, but not on the backend. A new model either has a negative id, or the id is `null`. Checking if a model is new can be done with `model.isNew()` which returns a boolean `true` when the model is new.
+
+By default, a new model will be initialized with a negative id, this way the model can be used as a related model. When a model is initialized with a negative id it will automatically generate a new negative id for the model on a clear. In some cases a `null` id might be preferred, in this case a model can be forced to get a `null` id by passing `{id: null}` in the constructor. In this case the id will also be reset to `null` on a clear. A model with a `null` id functions the same as a model with a negative id other than that the model cannot be used in a relation.
 
 ### Constructor: options
 
@@ -307,6 +313,9 @@ class animal = new Animal({ id: 2, name: 'Rova', breed: { id: 3, name: 'Main Coo
 
 console.log(animal.breed.name); // Throws cannot read property name from undefined.
 ```
+
+### Negative IDs for related models
+A related model will always be initialized with a `null` id. When the id of the related model is set to `null` it indicates to django-binder that the field is empty. 
 
 ### Pick fields
 
