@@ -222,7 +222,7 @@ The `save` function accepts a few paramaters as an `options` object:
 |data|undefined|When set, append `data` to result. Existing keys from `toBackend` will be overwritten by data, while new keys will be added. | `animal.save({ data: { id: 1, some_other_field: 'will be added' } })`
 |mapData|undefined|You can change the data which will be used for the request send by supplying a function. First argument is the formatted data ready for sending a request. Called at the very last of data formatting operations.| `animal.save({ mapData: data => (...data, some_other_field: 'will be added' } ) } })`
 |forceFields|undefined|When `onlyChanges` is given, you can force fields to be included despite of having no changes.| `animal.save({ onlyChanges: true, forceFields: ['name'] } ) } })`
-|relations|undefined|Relations to be instantiated when instantiating this model as well. Should be an array of strings.| `animal = new Animal({ relations: ['location', 'owner.parents'] })`
+|relations|undefined|Relations to save when saving this model as well. Note that its not needed to include relations here so that they will be linked, only to save the models themselves. Should be an array of strings.| `animal.save({ relations: ['location', 'owner.parents'] })`
 
 #### Backend request: delete
 
