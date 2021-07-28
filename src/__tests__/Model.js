@@ -1369,7 +1369,7 @@ describe('requests', () => {
             return [201, animalMultiPutResponse];
         });
 
-        return animal.validateAll({ relations: ['kind'] }).then(response => {
+        return animal.validate({ relations: ['kind'] }).then(response => {
             expect(spy).not.toHaveBeenCalled();
             expect(animal.id).toBe(10);
             expect(animal.kind.id).toBe(4);
@@ -1502,7 +1502,7 @@ describe('requests', () => {
                     throw err;
                 }
                 mock.onAny().replyOnce(200, { idmap: [] });
-                return animal.saveAll(options).then(() => {
+                return animal.save(options).then(() => {
                     const valErrors1 = toJS(
                         animal.pastOwners.at(0).backendValidationErrors
                     );
@@ -1533,7 +1533,7 @@ describe('requests', () => {
         });
 
         const options = { relations: ['pastOwners.town'] };
-        return animal.validateAll(options).then(
+        return animal.validate(options).then(
             () => {
             },
             err => {
