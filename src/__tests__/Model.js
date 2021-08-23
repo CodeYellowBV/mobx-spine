@@ -2,7 +2,7 @@ import axios from 'axios';
 import { toJS, observable } from 'mobx';
 import MockAdapter from 'axios-mock-adapter';
 import _ from 'lodash';
-import { Model, BinderApi, Casts } from '../';
+import { Model, BinderApi } from '../';
 import {
     Animal,
     AnimalStore,
@@ -19,6 +19,8 @@ import {
     Person,
     PersonStore,
     Location,
+    File,
+    FileCabinet,
 } from './fixtures/Animal';
 import { Customer, Location as CLocation } from './fixtures/Customer';
 import animalKindBreedData from './fixtures/animal-with-kind-breed.json';
@@ -1024,6 +1026,74 @@ describe('requests', () => {
         return animal.fetch().then(() => {
             expect(animal.id).toBe(2);
         });
+    });
+
+    test('Save model with file', () => {
+        const file = new File({ id: 5 });
+        const dataFile = new Blob(['foo'], { type: 'text/plain' });
+        file.setInput('dataFile', dataFile);
+
+        mock.onAny().replyOnce(config => {
+            expect(config.method).toBe('patch');
+
+            expect(config.data).toBeInstanceOf(FormData);
+
+            const keys = Array.from(config.data.keys()).sort();
+            expect(keys).toEqual(['data', 'file:data_file']);
+
+            const data = JSON.parse(config.data.get('data'));
+            expect(data).toEqual({
+                data_file: null,
+                id: 5,
+            });
+            return [200, { data: { id: 5, data_file: dataFile } }];
+        });
+
+        file.save().then(() => {
+            expect(file.id).toBe(5);
+            expect(file.dataFile).toBeInstanceOf(Blob);
+        });
+    });
+
+    test('Save model with realtion and multiple files', () => {
+        const fileCabinet = new FileCabinet({ id: 5 },{relations: ['files']});
+        const dataFile1 = new Blob(['foo'], { type: 'text/plain' });
+        fileCabinet.files.add({ dataFile: dataFile1 });
+        const dataFile2 = new Blob(['bar'], { type: 'text/plain' });
+        fileCabinet.files.add({ dataFile: dataFile2 });
+        const dataFile3 = new Blob(['baz'], { type: 'text/plain' });
+        fileCabinet.files.add({ dataFile: dataFile3 });
+
+        mock.onAny().replyOnce(config => {
+            expect(config.method).toBe('put');
+
+            expect(config.data).toBeInstanceOf(FormData);
+
+            const keys = Array.from(config.data.keys()).sort();
+            expect(keys).toEqual([
+                'data',
+                'file:with.files.0.data_file',
+                'file:with.files.1.data_file',
+                'file:with.files.2.data_file']);
+
+            const data = JSON.parse(config.data.get('data'));
+            expect(data).toEqual({
+                data: [{
+                    id: 5,
+                    files: [-2, -3, -4],
+                }],
+                with: {
+                    files: [
+                        { id: -2, data_file: null },
+                        { id: -3, data_file: null },
+                        { id: -4, data_file: null },
+                    ],
+                },
+            });
+            return [200, {}];
+        });
+
+        fileCabinet.save({ relations: ['files'] });
     });
 
     test('fetch with relations', () => {
