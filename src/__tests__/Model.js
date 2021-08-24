@@ -2,7 +2,7 @@ import axios from 'axios';
 import { toJS, observable } from 'mobx';
 import MockAdapter from 'axios-mock-adapter';
 import _ from 'lodash';
-import { Model, BinderApi } from '../';
+import { Model, BinderApi, Casts } from '../';
 import {
     Animal,
     AnimalStore,
@@ -990,6 +990,16 @@ test('setInput to parse store relation', () => {
     expect(animal.pastOwners.length).toBe(0);
 });
 
+test('parse empty list', () => {
+    const animal = new Animal(
+        { pastOwners: [{}, {}] },
+        { relations: ['pastOwners'] },
+    );
+    expect(animal.pastOwners.length).toEqual(2);
+    animal.parse({ pastOwners: [] });
+    expect(animal.pastOwners.length).toEqual(0);
+});
+
 describe('requests', () => {
     let mock;
     beforeEach(() => {
@@ -1246,7 +1256,7 @@ describe('requests', () => {
             return [201, animalMultiPutResponse];
         });
 
-        return animal.saveAll({ relations: ['kind'] }).then(response => {
+        return animal.save({ relations: ['kind'] }).then(response => {
             expect(spy).toHaveBeenCalled();
             expect(animal.id).toBe(10);
             expect(animal.kind.id).toBe(4);
@@ -1275,7 +1285,7 @@ describe('requests', () => {
             ];
         });
 
-        return animal.saveAll({ relations: ['pastOwners'] }).then(() => {
+        return animal.save({ relations: ['pastOwners'] }).then(() => {
             expect(animal.pastOwners.map('id')).toEqual([100, 125]);
         });
     });
@@ -1293,7 +1303,7 @@ describe('requests', () => {
             return [400, animalMultiPutError];
         });
 
-        return animal.saveAll({ relations: ['kind'] }).then(
+        return animal.save({ relations: ['kind'] }).then(
             () => {},
             err => {
                 if (!err.response) {
@@ -1332,14 +1342,14 @@ describe('requests', () => {
         });
 
         const options = { relations: ['pastOwners.town'] };
-        return animal.saveAll(options).then(
+        return animal.save(options).then(
             () => {},
             err => {
                 if (!err.response) {
                     throw err;
                 }
                 mock.onAny().replyOnce(200, { idmap: [] });
-                return animal.saveAll(options).then(() => {
+                return animal.save(options).then(() => {
                     const valErrors1 = toJS(
                         animal.pastOwners.at(0).backendValidationErrors
                     );
@@ -1366,7 +1376,7 @@ describe('requests', () => {
             return [201, animalMultiPutResponse];
         });
 
-        return animal.saveAll({ relations: ['kind'] });
+        return animal.save({ relations: ['kind'] });
     });
 
     test('save all with empty response from backend', () => {
@@ -1378,16 +1388,16 @@ describe('requests', () => {
             return [201, {}];
         });
 
-        return animal.saveAll();
+        return animal.save({ relations: ['kind'] });
     });
 
     test('save all fail', () => {
-        const animal = new Animal({});
+        const animal = new Animal({}, { relations: ['kind'] });
         mock.onAny().replyOnce(() => {
             return [500, {}];
         });
 
-        const promise = animal.saveAll();
+        const promise = animal.save({ relations: ['kind'] });
         expect(animal.isLoading).toBe(true);
         return promise.catch(() => {
             expect(animal.isLoading).toBe(false);
@@ -1535,7 +1545,7 @@ describe('requests', () => {
             return [200, {}];
         });
 
-        return animal.saveAll({ relations: ['kind.breed'] }).then(() => {
+        return animal.save({ relations: ['kind.breed'] }).then(() => {
             expect(animal.hasUserChanges).toBe(false);
         });
     });
@@ -1556,7 +1566,7 @@ describe('requests', () => {
             return [200, {}];
         });
 
-        return animal.saveAll({ relations: ['kind.breed'] }).then(() => {
+        return animal.save({ relations: ['kind.breed'] }).then(() => {
             expect(animal.hasUserChanges).toBe(true);
             expect(animal.pastOwners.hasUserChanges).toBe(true);
             expect(animal.pastOwners.get(2).hasUserChanges).toBe(true);
@@ -1581,7 +1591,7 @@ describe('requests', () => {
             return [200, {}];
         });
 
-        return animal.saveAll({ relations: ['pastOwners'] }).then(() => {
+        return animal.save({ relations: ['pastOwners'] }).then(() => {
             expect(animal.pastOwners.hasUserChanges).toBe(false);
             expect(animal.hasUserChanges).toBe(false);
         });
@@ -1604,7 +1614,7 @@ describe('requests', () => {
             return [200, {}];
         });
 
-        return animal.saveAll().then(() => {
+        return animal.save({ relations: ['kind'] }).then(() => {
             expect(animal.pastOwners.hasUserChanges).toBe(true);
             expect(animal.hasUserChanges).toBe(true);
         });

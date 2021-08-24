@@ -602,7 +602,7 @@ export default class Model {
             } else if (this.__activeCurrentRelations.includes(attr)) {
                 // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                 // However, it can also be an object if there are nested relations (non flattened).
-                if (isPlainObject(value) || isPlainObject(get(value, '[0]'))) {
+                if (isPlainObject(value) || (Array.isArray(value) && value.every(isPlainObject))) {
                     this[attr].parse(value);
                 } else if (value === null) {
                     // The relation is cleared.
@@ -685,44 +685,6 @@ export default class Model {
             this.fileFields()
             .filter(this.fieldFilter)
             .map(this.saveFile)
-        );
-    }
-
-    @action
-    save(options = {}) {
-        this.clearValidationErrors();
-        return this.wrapPendingRequestCount(
-            this.__getApi()
-            .saveModel({
-                url: options.url || this.url,
-                data: this.toBackend({
-                        data: options.data,
-                        mapData: options.mapData,
-                        fields: options.fields,
-                        onlyChanges: options.onlyChanges,
-                    }),
-                isNew: this.isNew,
-                requestOptions: omit(options, 'url', 'data', 'mapData')
-            })
-            .then(action(res => {
-                this.saveFromBackend({
-                    ...res,
-                    data: omit(res.data, this.fileFields().map(camelToSnake)),
-                });
-                this.clearUserFieldChanges();
-                return this.saveFiles().then(() => {
-                    this.clearUserFileChanges();
-                    return Promise.resolve(res);
-                });
-            }))
-            .catch(
-                action(err => {
-                    if (err.valErrors) {
-                        this.parseValidationErrors(err.valErrors);
-                    }
-                    throw err;
-                })
-            )
         );
     }
 
@@ -816,8 +778,54 @@ export default class Model {
         return Promise.all(promises);
     }
 
+    save(options = {}) {
+        if (options.relations && options.relations.length > 0) {
+            return this._saveAll(options);
+        } else {
+            return this._save(options);
+        }
+    }
+
     @action
-    saveAll(options = {}) {
+    _save(options = {}) {
+        this.clearValidationErrors();
+        return this.wrapPendingRequestCount(
+            this.__getApi()
+            .saveModel({
+                url: options.url || this.url,
+                data: this.toBackend({
+                        data: options.data,
+                        mapData: options.mapData,
+                        fields: options.fields,
+                        onlyChanges: options.onlyChanges,
+                    }),
+                isNew: this.isNew,
+                requestOptions: omit(options, 'url', 'data', 'mapData')
+            })
+            .then(action(res => {
+                this.saveFromBackend({
+                    ...res,
+                    data: omit(res.data, this.fileFields().map(camelToSnake)),
+                });
+                this.clearUserFieldChanges();
+                return this.saveFiles().then(() => {
+                    this.clearUserFileChanges();
+                    return Promise.resolve(res);
+                });
+            }))
+            .catch(
+                action(err => {
+                    if (err.valErrors) {
+                        this.parseValidationErrors(err.valErrors);
+                    }
+                    throw err;
+                })
+            )
+        );
+    }
+
+    @action
+    _saveAll(options = {}) {
         this.clearValidationErrors();
         return this.wrapPendingRequestCount(
             this.__getApi()

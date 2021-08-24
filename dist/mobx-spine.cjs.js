@@ -1381,7 +1381,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 } else if (_this9.__activeCurrentRelations.includes(attr)) {
                     // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                     // However, it can also be an object if there are nested relations (non flattened).
-                    if (lodash.isPlainObject(value) || lodash.isPlainObject(lodash.get(value, '[0]'))) {
+                    if (lodash.isPlainObject(value) || Array.isArray(value) && value.every(lodash.isPlainObject)) {
                         _this9[attr].parse(value);
                     } else if (value === null) {
                         // The relation is cleared.
@@ -1455,40 +1455,6 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         key: 'saveFiles',
         value: function saveFiles() {
             return Promise.all(this.fileFields().filter(this.fieldFilter).map(this.saveFile));
-        }
-    }, {
-        key: 'save',
-        value: function save() {
-            var _this11 = this;
-
-            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-            this.clearValidationErrors();
-            return this.wrapPendingRequestCount(this.__getApi().saveModel({
-                url: options.url || this.url,
-                data: this.toBackend({
-                    data: options.data,
-                    mapData: options.mapData,
-                    fields: options.fields,
-                    onlyChanges: options.onlyChanges
-                }),
-                isNew: this.isNew,
-                requestOptions: lodash.omit(options, 'url', 'data', 'mapData')
-            }).then(mobx.action(function (res) {
-                _this11.saveFromBackend(_extends({}, res, {
-                    data: lodash.omit(res.data, _this11.fileFields().map(camelToSnake))
-                }));
-                _this11.clearUserFieldChanges();
-                return _this11.saveFiles().then(function () {
-                    _this11.clearUserFileChanges();
-                    return Promise.resolve(res);
-                });
-            })).catch(mobx.action(function (err) {
-                if (err.valErrors) {
-                    _this11.parseValidationErrors(err.valErrors);
-                }
-                throw err;
-            })));
         }
     }, {
         key: 'isBase64',
@@ -1604,8 +1570,53 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             return Promise.all(promises);
         }
     }, {
-        key: 'saveAll',
-        value: function saveAll() {
+        key: 'save',
+        value: function save() {
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+            if (options.relations && options.relations.length > 0) {
+                return this._saveAll(options);
+            } else {
+                return this._save(options);
+            }
+        }
+    }, {
+        key: '_save',
+        value: function _save() {
+            var _this11 = this;
+
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+            this.clearValidationErrors();
+            return this.wrapPendingRequestCount(this.__getApi().saveModel({
+                url: options.url || this.url,
+                data: this.toBackend({
+                    data: options.data,
+                    mapData: options.mapData,
+                    fields: options.fields,
+                    onlyChanges: options.onlyChanges
+                }),
+                isNew: this.isNew,
+                requestOptions: lodash.omit(options, 'url', 'data', 'mapData')
+            }).then(mobx.action(function (res) {
+                _this11.saveFromBackend(_extends({}, res, {
+                    data: lodash.omit(res.data, _this11.fileFields().map(camelToSnake))
+                }));
+                _this11.clearUserFieldChanges();
+                return _this11.saveFiles().then(function () {
+                    _this11.clearUserFileChanges();
+                    return Promise.resolve(res);
+                });
+            })).catch(mobx.action(function (err) {
+                if (err.valErrors) {
+                    _this11.parseValidationErrors(err.valErrors);
+                }
+                throw err;
+            })));
+        }
+    }, {
+        key: '_saveAll',
+        value: function _saveAll() {
             var _this12 = this;
 
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -1868,7 +1879,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     initializer: function initializer() {
         return {};
     }
-}), _applyDecoratedDescriptor$1(_class$1.prototype, 'url', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'url'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isNew', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isNew'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isLoading', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '__parseRelations', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, '__parseRelations'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'hasUserChanges', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasUserChanges'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fieldFilter', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fieldFilter'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fromBackend', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parse', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'save', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'save'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'setInput', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'setInput'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'saveAll', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'saveAll'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parseValidationErrors', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parseValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clearValidationErrors', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clearValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'backendValidationErrors', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'backendValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'delete', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'delete'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fetch', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clear', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'), _class$1.prototype)), _class$1);
+}), _applyDecoratedDescriptor$1(_class$1.prototype, 'url', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'url'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isNew', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isNew'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isLoading', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '__parseRelations', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, '__parseRelations'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'hasUserChanges', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasUserChanges'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fieldFilter', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fieldFilter'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fromBackend', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parse', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'setInput', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'setInput'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '_save', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, '_save'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '_saveAll', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, '_saveAll'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parseValidationErrors', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parseValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clearValidationErrors', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clearValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'backendValidationErrors', [mobx.computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'backendValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'delete', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'delete'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fetch', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clear', [mobx.action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'), _class$1.prototype)), _class$1);
 
 // Function ripped from Django docs.
 // See: https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
@@ -2125,11 +2136,11 @@ function checkMomentInstance(attr, value) {
 }
 
 function checkLuxonDateTime(attr, value) {
-    invariant(moment.isMoment(value), 'Attribute `' + attr + '` is not a luxon DateTime.');
+    invariant(luxon.DateTime.isDateTime(value), 'Attribute `' + attr + '` is not a luxon instance.');
 }
 
 var LUXON_DATE_FORMAT = 'yyyy-LL-dd';
-var LUXON_DATETIME_FORMAT = 'yyy-LL-ddTHH:mm:ssZZZ';
+var LUXON_DATETIME_FORMAT = "yyyy'-'LL'-'dd'T'HH':'mm':'ssZZ";
 
 var CASTS = {
     momentDate: {
@@ -2171,7 +2182,7 @@ var CASTS = {
             if (value === null || value === undefined) {
                 return null;
             }
-            return luxon.DateTime.fromFormat(value, LUXON_DATE_FORMAT);
+            return luxon.DateTime.fromISO(value);
         },
         toJS: function toJS(attr, value) {
             if (value === null || value === undefined) {
@@ -2188,7 +2199,8 @@ var CASTS = {
             if (value === null) {
                 return null;
             }
-            return luxon.DateTime.fromFormat(value, LUXON_DATETIME_FORMAT);
+
+            return luxon.DateTime.fromISO(value);
         },
         toJS: function toJS(attr, value) {
             if (value === null) {
