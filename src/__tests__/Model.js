@@ -1046,23 +1046,23 @@ describe('requests', () => {
                 data_file: null,
                 id: 5,
             });
-            return [200, { data: { id: 5, data_file: dataFile } }];
+            return [200, { id: 5, data_file: '/api/dataFile' } ];
         });
 
-        file.save().then(() => {
+        file.save().then(res => {
             expect(file.id).toBe(5);
-            expect(file.dataFile).toBeInstanceOf(Blob);
+            expect(file.dataFile).toBe('/api/dataFile');
         });
     });
 
-    test('Save model with realtion and multiple files', () => {
+    test('Save model with relations and multiple files', () => {
         const fileCabinet = new FileCabinet({ id: 5 },{relations: ['files']});
-        const dataFile1 = new Blob(['foo'], { type: 'text/plain' });
-        fileCabinet.files.add({ dataFile: dataFile1 });
-        const dataFile2 = new Blob(['bar'], { type: 'text/plain' });
-        fileCabinet.files.add({ dataFile: dataFile2 });
-        const dataFile3 = new Blob(['baz'], { type: 'text/plain' });
-        fileCabinet.files.add({ dataFile: dataFile3 });
+        fileCabinet.files.add([
+            { dataFile: new Blob(['bar'], { type: 'text/plain' }) },
+            { dataFile: new Blob(['foo'], { type: 'text/plain' }) },
+            { dataFile: new Blob(['baz'], { type: 'text/plain' }) },
+        ]);
+
 
         mock.onAny().replyOnce(config => {
             expect(config.method).toBe('put');
