@@ -73,6 +73,12 @@ function forNestedRelations(model, nestedRelations, fn) {
     });
 }
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+  return typeof obj;
+} : function (obj) {
+  return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+};
+
 var classCallCheck = function (instance, Constructor) {
   if (!(instance instanceof Constructor)) {
     throw new TypeError("Cannot call a class as a function");
@@ -860,6 +866,17 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             return this[this.constructor.primaryKey];
         }
     }, {
+        key: 'getEncodedFile',
+        value: function getEncodedFile(file) {
+            // get the resource name from path
+            var id = this[this.constructor.primaryKey];
+
+            if (this.fileFields().includes(file) && id) {
+                return '' + result(this, 'urlRoot') + (id ? id + '/' : '') + file + '/?encode=true';
+            }
+            return '';
+        }
+    }, {
         key: 'casts',
         value: function casts() {
             return {};
@@ -1380,6 +1397,13 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             return value;
         }
     }, {
+        key: 'uuidv4',
+        value: function uuidv4() {
+            return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (c) {
+                return (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);
+            });
+        }
+    }, {
         key: 'saveFile',
         value: function saveFile(name) {
             var _this10 = this;
@@ -1389,8 +1413,18 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             if (this.__fileChanges[name]) {
                 var file = this.__fileChanges[name];
 
+                // debugger;
+
                 var data = new FormData();
-                data.append(name, file, file.name);
+
+                if (this.isBase64(file)) {
+                    var newfile = this.dataURItoBlob(file);
+                    // file = `${URL.createObjectURL(blob)}`;
+                    var fname = this.uuidv4() + '.png';
+                    data.append(name, newfile, fname);
+                } else {
+                    data.append(name, file, file.name);
+                }
 
                 return this.api.post('' + this.url + snakeName + '/', data, { headers: { 'Content-Type': 'multipart/form-data' } }).then(action(function (res) {
                     _this10.__fileExists[name] = true;
@@ -1417,43 +1451,38 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             return Promise.all(this.fileFields().filter(this.fieldFilter).map(this.saveFile));
         }
     }, {
-        key: 'save',
-        value: function save() {
-            var _this11 = this;
-
-            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-            this.clearValidationErrors();
-            return this.wrapPendingRequestCount(this.__getApi().saveModel({
-                url: options.url || this.url,
-                data: this.toBackend({
-                    data: options.data,
-                    mapData: options.mapData,
-                    fields: options.fields,
-                    onlyChanges: options.onlyChanges
-                }),
-                isNew: this.isNew,
-                requestOptions: omit(options, 'url', 'data', 'mapData')
-            }).then(action(function (res) {
-                _this11.saveFromBackend(_extends({}, res, {
-                    data: omit(res.data, _this11.fileFields().map(camelToSnake))
-                }));
-                _this11.clearUserFieldChanges();
-                return _this11.saveFiles().then(function () {
-                    _this11.clearUserFileChanges();
-                    return Promise.resolve(res);
-                });
-            })).catch(action(function (err) {
-                if (err.valErrors) {
-                    _this11.parseValidationErrors(err.valErrors);
-                }
-                throw err;
-            })));
+        key: 'isBase64',
+        value: function isBase64(str) {
+            if ((typeof str === 'undefined' ? 'undefined' : _typeof(str)) === 'object' || str === undefined || str === null) {
+                return false;
+            }
+            if (str === '' || str.trim() === '') {
+                return false;
+            }
+            str = str.replace(/^[^,]+,/, '');
+            try {
+                return btoa(atob(str)) === atob(btoa(str));
+            } catch (err) {
+                return false;
+            }
+        }
+    }, {
+        key: 'dataURItoBlob',
+        value: function dataURItoBlob(dataURI) {
+            var mime = dataURI.split(',')[0].split(':')[1].split(';')[0];
+            var binary = atob(dataURI.split(',')[1]);
+            var array = [];
+            for (var i = 0; i < binary.length; i++) {
+                array.push(binary.charCodeAt(i));
+            }
+            return new Blob([new Uint8Array(array)], { type: mime });
         }
     }, {
         key: 'setInput',
         value: function setInput(name, value) {
             invariant(this.__attributes.includes(name) || this.__activeCurrentRelations.includes(name), 'Field `' + name + '` does not exist on the model.');
+            this.isBase64File = false;
+
             if (this.fileFields().includes(name)) {
                 if (this.__fileExists[name] === undefined) {
                     this.__fileExists[name] = this[name] !== null;
@@ -1462,7 +1491,14 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     this.__fileChanges[name] = value;
                     delete this.__fileDeletions[name];
 
-                    value = URL.createObjectURL(value) + '?content_type=' + value.type;
+                    this.isBase64File = this.isBase64(value);
+
+                    if (!this.isBase64File) {
+                        value = URL.createObjectURL(value) + '?content_type=' + value.type;
+                    } else {
+                        var blob = this.dataURItoBlob(value);
+                        value = '' + URL.createObjectURL(blob);
+                    }
                 } else {
                     if (!this.__fileChanges[name] || this.__fileChanges[name].existed) {
                         this.__fileDeletions[name] = true;
@@ -1527,8 +1563,53 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             return Promise.all(promises);
         }
     }, {
-        key: 'saveAll',
-        value: function saveAll() {
+        key: 'save',
+        value: function save() {
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+            if (options.relations && options.relations.length > 0) {
+                return this._saveAll(options);
+            } else {
+                return this._save(options);
+            }
+        }
+    }, {
+        key: '_save',
+        value: function _save() {
+            var _this11 = this;
+
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+            this.clearValidationErrors();
+            return this.wrapPendingRequestCount(this.__getApi().saveModel({
+                url: options.url || this.url,
+                data: this.toBackend({
+                    data: options.data,
+                    mapData: options.mapData,
+                    fields: options.fields,
+                    onlyChanges: options.onlyChanges
+                }),
+                isNew: this.isNew,
+                requestOptions: omit(options, 'url', 'data', 'mapData')
+            }).then(action(function (res) {
+                _this11.saveFromBackend(_extends({}, res, {
+                    data: omit(res.data, _this11.fileFields().map(camelToSnake))
+                }));
+                _this11.clearUserFieldChanges();
+                return _this11.saveFiles().then(function () {
+                    _this11.clearUserFileChanges();
+                    return Promise.resolve(res);
+                });
+            })).catch(action(function (err) {
+                if (err.valErrors) {
+                    _this11.parseValidationErrors(err.valErrors);
+                }
+                throw err;
+            })));
+        }
+    }, {
+        key: '_saveAll',
+        value: function _saveAll() {
             var _this12 = this;
 
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -1791,7 +1872,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     initializer: function initializer() {
         return {};
     }
-}), _applyDecoratedDescriptor$1(_class$1.prototype, 'url', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'url'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isNew', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isNew'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isLoading', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '__parseRelations', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, '__parseRelations'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'hasUserChanges', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasUserChanges'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fieldFilter', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fieldFilter'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fromBackend', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parse', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'save', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'save'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'setInput', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'setInput'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'saveAll', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'saveAll'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parseValidationErrors', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parseValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clearValidationErrors', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clearValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'backendValidationErrors', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'backendValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'delete', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'delete'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fetch', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clear', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'), _class$1.prototype)), _class$1);
+}), _applyDecoratedDescriptor$1(_class$1.prototype, 'url', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'url'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isNew', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isNew'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isLoading', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '__parseRelations', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, '__parseRelations'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'hasUserChanges', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasUserChanges'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fieldFilter', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fieldFilter'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fromBackend', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parse', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'setInput', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'setInput'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '_save', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, '_save'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '_saveAll', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, '_saveAll'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parseValidationErrors', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parseValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clearValidationErrors', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clearValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'backendValidationErrors', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'backendValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'delete', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'delete'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fetch', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clear', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'), _class$1.prototype)), _class$1);
 
 // Function ripped from Django docs.
 // See: https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
