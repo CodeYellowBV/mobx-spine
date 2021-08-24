@@ -1049,7 +1049,7 @@ describe('requests', () => {
             return [200, { id: 5, data_file: '/api/dataFile' } ];
         });
 
-        file.save().then(res => {
+        file.save().then(() => {
             expect(file.id).toBe(5);
             expect(file.dataFile).toBe('/api/dataFile');
         });
@@ -1062,7 +1062,6 @@ describe('requests', () => {
             { dataFile: new Blob(['foo'], { type: 'text/plain' }) },
             { dataFile: new Blob(['baz'], { type: 'text/plain' }) },
         ]);
-
 
         mock.onAny().replyOnce(config => {
             expect(config.method).toBe('put');
