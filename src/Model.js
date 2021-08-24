@@ -728,7 +728,6 @@ export default class Model {
                 this.__fileChanges[name] = value;
                 delete this.__fileDeletions[name];
 
-                // console.log('value!', this.isBase64(value));
                 this.isBase64File = this.isBase64(value);    
 
                 if(!this.isBase64File){
