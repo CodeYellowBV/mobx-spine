@@ -518,9 +518,6 @@ test('toBackend with omit fields', () => {
 
     const serialized = model.toBackend();
 
-    const expected = {
-        weight: 32
-    }
     expect(serialized).toEqual({
         color: 'red',
         id: 1
