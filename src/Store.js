@@ -335,7 +335,7 @@ export default class Store {
     getNextPage() {
         invariant(this.hasNextPage, 'There is no next page.');
         this.__state.currentPage += 1;
-        debouncedFetch = debounce(this.fetch, 300)
+        const debouncedFetch = debounce(this.fetch, 300)
         return debouncedFetch();
     }
 
@@ -343,7 +343,7 @@ export default class Store {
     getPreviousPage() {
         invariant(this.hasPreviousPage, 'There is no previous page.');
         this.__state.currentPage -= 1;
-        debouncedFetch = debounce(this.fetch, 300)
+        const debouncedFetch = debounce(this.fetch, 300)
         return debouncedFetch();
     }
 
