@@ -14,7 +14,6 @@ import {
     mapValues,
     find,
     filter,
-    get,
     isPlainObject,
     isArray,
     omit,
@@ -23,7 +22,6 @@ import {
     uniqBy,
     mapKeys,
     result,
-    pick,
 } from 'lodash';
 import Store from './Store';
 import { invariant, snakeToCamel, camelToSnake, relationsToNestedKeys, forNestedRelations } from './utils';
