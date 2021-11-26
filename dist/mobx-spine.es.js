@@ -1,5 +1,5 @@
 import { observable, computed, action, autorun, isObservableProp, extendObservable, isObservableArray, isObservableObject, toJS } from 'mobx';
-import { isArray, map, filter, find, sortBy, forIn, omit, isPlainObject, result, uniqBy, each, mapValues, get, uniqueId, uniq, mapKeys } from 'lodash';
+import { isArray, map, filter, find, sortBy, forIn, omit, isPlainObject, result, uniqBy, each, mapValues, uniqueId, uniq, mapKeys, get, range } from 'lodash';
 import axios from 'axios';
 import moment from 'moment';
 import { DateTime } from 'luxon';
@@ -73,6 +73,12 @@ function forNestedRelations(model, nestedRelations, fn) {
     });
 }
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+  return typeof obj;
+} : function (obj) {
+  return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+};
+
 var classCallCheck = function (instance, Constructor) {
   if (!(instance instanceof Constructor)) {
     throw new TypeError("Cannot call a class as a function");
@@ -137,6 +143,44 @@ var objectWithoutProperties = function (obj, keys) {
 
   return target;
 };
+
+var slicedToArray = function () {
+  function sliceIterator(arr, i) {
+    var _arr = [];
+    var _n = true;
+    var _d = false;
+    var _e = undefined;
+
+    try {
+      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+        _arr.push(_s.value);
+
+        if (i && _arr.length === i) break;
+      }
+    } catch (err) {
+      _d = true;
+      _e = err;
+    } finally {
+      try {
+        if (!_n && _i["return"]) _i["return"]();
+      } finally {
+        if (_d) throw _e;
+      }
+    }
+
+    return _arr;
+  }
+
+  return function (arr, i) {
+    if (Array.isArray(arr)) {
+      return arr;
+    } else if (Symbol.iterator in Object(arr)) {
+      return sliceIterator(arr, i);
+    } else {
+      throw new TypeError("Invalid attempt to destructure non-iterable instance");
+    }
+  };
+}();
 
 var _class, _descriptor, _descriptor2, _descriptor3, _descriptor4, _descriptor5, _class2, _temp;
 
@@ -1417,40 +1461,6 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             return Promise.all(this.fileFields().filter(this.fieldFilter).map(this.saveFile));
         }
     }, {
-        key: 'save',
-        value: function save() {
-            var _this11 = this;
-
-            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-            this.clearValidationErrors();
-            return this.wrapPendingRequestCount(this.__getApi().saveModel({
-                url: options.url || this.url,
-                data: this.toBackend({
-                    data: options.data,
-                    mapData: options.mapData,
-                    fields: options.fields,
-                    onlyChanges: options.onlyChanges
-                }),
-                isNew: this.isNew,
-                requestOptions: omit(options, 'url', 'data', 'mapData')
-            }).then(action(function (res) {
-                _this11.saveFromBackend(_extends({}, res, {
-                    data: omit(res.data, _this11.fileFields().map(camelToSnake))
-                }));
-                _this11.clearUserFieldChanges();
-                return _this11.saveFiles().then(function () {
-                    _this11.clearUserFileChanges();
-                    return Promise.resolve(res);
-                });
-            })).catch(action(function (err) {
-                if (err.valErrors) {
-                    _this11.parseValidationErrors(err.valErrors);
-                }
-                throw err;
-            })));
-        }
-    }, {
         key: 'setInput',
         value: function setInput(name, value) {
             invariant(this.__attributes.includes(name) || this.__activeCurrentRelations.includes(name), 'Field `' + name + '` does not exist on the model.');
@@ -1527,8 +1537,53 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             return Promise.all(promises);
         }
     }, {
-        key: 'saveAll',
-        value: function saveAll() {
+        key: 'save',
+        value: function save() {
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+            if (options.relations && options.relations.length > 0) {
+                return this._saveAll(options);
+            } else {
+                return this._save(options);
+            }
+        }
+    }, {
+        key: '_save',
+        value: function _save() {
+            var _this11 = this;
+
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+            this.clearValidationErrors();
+            return this.wrapPendingRequestCount(this.__getApi().saveModel({
+                url: options.url || this.url,
+                data: this.toBackend({
+                    data: options.data,
+                    mapData: options.mapData,
+                    fields: options.fields,
+                    onlyChanges: options.onlyChanges
+                }),
+                isNew: this.isNew,
+                requestOptions: omit(options, 'url', 'data', 'mapData')
+            }).then(action(function (res) {
+                _this11.saveFromBackend(_extends({}, res, {
+                    data: omit(res.data, _this11.fileFields().map(camelToSnake))
+                }));
+                _this11.clearUserFieldChanges();
+                return _this11.saveFiles().then(function () {
+                    _this11.clearUserFileChanges();
+                    return Promise.resolve(res);
+                });
+            })).catch(action(function (err) {
+                if (err.valErrors) {
+                    _this11.parseValidationErrors(err.valErrors);
+                }
+                throw err;
+            })));
+        }
+    }, {
+        key: '_saveAll',
+        value: function _saveAll() {
             var _this12 = this;
 
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -1791,7 +1846,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     initializer: function initializer() {
         return {};
     }
-}), _applyDecoratedDescriptor$1(_class$1.prototype, 'url', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'url'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isNew', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isNew'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isLoading', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '__parseRelations', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, '__parseRelations'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'hasUserChanges', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasUserChanges'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fieldFilter', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fieldFilter'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fromBackend', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parse', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'save', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'save'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'setInput', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'setInput'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'saveAll', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'saveAll'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parseValidationErrors', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parseValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clearValidationErrors', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clearValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'backendValidationErrors', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'backendValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'delete', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'delete'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fetch', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clear', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'), _class$1.prototype)), _class$1);
+}), _applyDecoratedDescriptor$1(_class$1.prototype, 'url', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'url'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isNew', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isNew'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isLoading', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '__parseRelations', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, '__parseRelations'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'hasUserChanges', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasUserChanges'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fieldFilter', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fieldFilter'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fromBackend', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parse', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'setInput', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'setInput'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '_save', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, '_save'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '_saveAll', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, '_saveAll'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parseValidationErrors', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parseValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clearValidationErrors', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clearValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'backendValidationErrors', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'backendValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'delete', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'delete'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fetch', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clear', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'), _class$1.prototype)), _class$1);
 
 // Function ripped from Django docs.
 // See: https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
@@ -1799,6 +1854,48 @@ function csrfSafeMethod(method) {
     // These HTTP methods do not require CSRF protection.
     return (/^(GET|HEAD|OPTIONS|TRACE)$/i.test(method)
     );
+}
+
+function escapeKey(key) {
+    return key.toString().replace(/([.\\])/g, '\\$1');
+}
+
+function extractFiles(data) {
+    var prefix = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+
+    var keys = Array.isArray(data) ? range(data.length) : (typeof data === 'undefined' ? 'undefined' : _typeof(data)) === 'object' && data !== null ? Object.keys(data) : [];
+    var files = {};
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
+
+    try {
+        for (var _iterator = keys[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var key = _step.value;
+
+            if (data[key] instanceof Blob) {
+                files[prefix + escapeKey(key)] = data[key];
+                data[key] = null;
+            } else if (_typeof(data[key]) === 'object' && data[key] !== null) {
+                Object.assign(files, extractFiles(data[key], prefix + escapeKey(key) + '.'));
+            }
+        }
+    } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+    } finally {
+        try {
+            if (!_iteratorNormalCompletion && _iterator.return) {
+                _iterator.return();
+            }
+        } finally {
+            if (_didIteratorError) {
+                throw _iteratorError;
+            }
+        }
+    }
+
+    return files;
 }
 
 var BinderApi = function () {
@@ -1854,6 +1951,42 @@ var BinderApi = function () {
                 'X-Csrftoken': useCsrfToken
             }, this.defaultHeaders, options.headers);
             axiosOptions.headers = headers;
+
+            if (axiosOptions.data && !(axiosOptions.data instanceof Blob) && !(axiosOptions.data instanceof FormData)) {
+                var files = extractFiles(axiosOptions.data);
+                if (Object.keys(files).length > 0) {
+                    var _data = new FormData();
+                    _data.append('data', JSON.stringify(axiosOptions.data));
+                    var _iteratorNormalCompletion2 = true;
+                    var _didIteratorError2 = false;
+                    var _iteratorError2 = undefined;
+
+                    try {
+                        for (var _iterator2 = Object.entries(files)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                            var _step2$value = slicedToArray(_step2.value, 2),
+                                path = _step2$value[0],
+                                file = _step2$value[1];
+
+                            _data.append('file:' + path, file, file.name);
+                        }
+                    } catch (err) {
+                        _didIteratorError2 = true;
+                        _iteratorError2 = err;
+                    } finally {
+                        try {
+                            if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                                _iterator2.return();
+                            }
+                        } finally {
+                            if (_didIteratorError2) {
+                                throw _iteratorError2;
+                            }
+                        }
+                    }
+
+                    axiosOptions.data = _data;
+                }
+            }
 
             var xhr = this.axios(axiosOptions);
 
