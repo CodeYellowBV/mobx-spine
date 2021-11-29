@@ -41,22 +41,30 @@ export function relationsToNestedKeys(relations) {
 // Use output of relationsToNestedKeys to iterate each relation, fn is called on each model and store.
 export function forNestedRelations(model, nestedRelations, fn) {
     Object.keys(nestedRelations).forEach(key => {
-        if (Object.keys(nestedRelations[key]).length > 0) {
-            if (model[key].forEach) {
-                model[key].forEach(m => {
-                    forNestedRelations(m, nestedRelations[key], fn);
-                });
 
-                fn(model);
-            } else {
-                forNestedRelations(model[key], nestedRelations[key], fn);
+        if (!model[key]) {
+
+            throw new Error(`Relation '${key}' is not there`);
+
+        } else {
+            if (Object.keys(nestedRelations[key]).length > 0) {
+                if (model[key].forEach) {
+                    model[key].forEach(m => {
+                        forNestedRelations(m, nestedRelations[key], fn);
+                    });
+
+                    fn(model);
+                } else {
+                    forNestedRelations(model[key], nestedRelations[key], fn);
+                }
             }
+
+            if (model[key].forEach) {
+                model[key].forEach(fn);
+            }
+
+            fn(model[key]);
         }
 
-        if (model[key].forEach) {
-            model[key].forEach(fn);
-        }
-
-        fn(model[key]);
     });
 }
