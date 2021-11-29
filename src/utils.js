@@ -43,9 +43,8 @@ export function forNestedRelations(model, nestedRelations, fn) {
     Object.keys(nestedRelations).forEach(key => {
 
         if (!model[key]) {
-
-            throw new Error(`Relation '${key}' is not there`);
-
+            //check if passed relation is defined in relations
+            throw new Error(`Relation '${key}' is not defined in relations`);
         } else {
             if (Object.keys(nestedRelations[key]).length > 0) {
                 if (model[key].forEach) {
