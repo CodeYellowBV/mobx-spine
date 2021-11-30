@@ -1445,6 +1445,27 @@ describe('requests', () => {
         return animal.save({ relations: ['kind'] });
     });
 
+    test('save all with not defined relation error', () => {
+        const animal = new Animal(
+            { id: 10, name: 'Doggo', kind: { name: 'Dog' } },
+            { relations: ['kind'] }
+        );
+
+        mock.onAny().replyOnce(config => {
+            expect(config.url).toBe('/api/animal/');
+            expect(config.method).toBe('put');
+            const putData = JSON.parse(config.data);
+            expect(putData).toMatchSnapshot();
+            return [201, animalMultiPutResponse];
+        });
+
+        return animal.save({ relations: ['kind', 'owner'] }).catch((e) => {
+            const error = 'Relation \'owner\' is not defined in relations'
+            expect(e.message).toEqual(error);
+        })
+    });
+
+
     test('save all with empty response from backend', () => {
         const animal = new Animal(
             { name: 'Doggo', kind: { name: 'Dog' } },
