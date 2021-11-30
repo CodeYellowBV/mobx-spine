@@ -1459,8 +1459,10 @@ describe('requests', () => {
             return [201, animalMultiPutResponse];
         });
 
-        return animal.save({ relations: ['kind', 'owner'] });
-
+        return animal.save({ relations: ['kind', 'owner'] }).catch((e) => {
+            const error = 'Relation \'owner\' is not defined in relations'
+            expect(e.message).toEqual(error);
+        })
     });
 
 
