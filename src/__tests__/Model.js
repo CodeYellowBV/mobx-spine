@@ -2,7 +2,7 @@ import axios from 'axios';
 import { toJS, observable } from 'mobx';
 import MockAdapter from 'axios-mock-adapter';
 import _ from 'lodash';
-import { Model, BinderApi, Casts } from '../';
+import { Model, BinderApi } from '../';
 import { compareObjectsIgnoringNegativeIds } from "./helpers/helpers";
 import {
     Animal,
@@ -20,6 +20,8 @@ import {
     Person,
     PersonStore,
     Location,
+    File,
+    FileCabinet,
 } from './fixtures/Animal';
 import { Customer, Location as CLocation } from './fixtures/Customer';
 import animalKindBreedData from './fixtures/animal-with-kind-breed.json';
@@ -106,7 +108,6 @@ test('property defined as both attribute and relation should throw error', () =>
 
 test('initialize() method should be called', () => {
     const initMock = jest.fn();
-
     class Zebra extends Model {
         initialize() {
             initMock();
@@ -534,9 +535,6 @@ test('toBackend with omit fields', () => {
 
     const serialized = model.toBackend();
 
-    const expected = {
-        weight: 32
-    }
     expect(serialized).toEqual({
         color: 'red',
         id: 1
@@ -634,7 +632,7 @@ test('toBackendAll with model relation', () => {
     animal.kind.parse({ id: 5 });
 
     const serialized = animal.toBackendAll({
-        nestedRelations: { kind: { breed: {} }, owner: {} },
+        nestedRelations: {kind: { breed: {}}, owner: {}},
     });
     expect(serialized).toMatchSnapshot();
 });
@@ -662,7 +660,7 @@ test('toBackendAll with partial relations', () => {
         },
         { relations: ['kind', 'owner.town'] }
     );
-    const serialized = animal.toBackendAll({ nestedRelations: { owner: {} } });
+    const serialized = animal.toBackendAll({ nestedRelations: {owner: {}} });
     expect(serialized).toMatchSnapshot();
 });
 
@@ -683,7 +681,7 @@ test('toBackendAll with store relation', () => {
         { id: 10, name: 'R' },
     ]);
 
-    const serialized = animal.toBackendAll({ nestedRelations: { pastOwners: {} } });
+    const serialized = animal.toBackendAll({ nestedRelations: {pastOwners: {}} });
     expect(serialized).toMatchSnapshot();
 });
 
@@ -700,7 +698,7 @@ test('toBackendAll should de-duplicate relations', () => {
     expect(animalBar.cid).toBe(animal.pastOwners.at(1).cid);
 
     const serialized = animal.toBackendAll({
-        nestedRelations: { pastOwners: { town: {} } },
+        nestedRelations: {pastOwners: {town: {}}},
     });
     expect(serialized).toMatchSnapshot();
 });
@@ -719,7 +717,7 @@ test('toBackendAll with deep nested relation', () => {
     });
 
     const serialized = animal.toBackendAll({
-        nestedRelations: { kind: { location: {}, breed: { location: {} } } },
+        nestedRelations: {kind: { location: {}, breed: { location: {} }}},
     });
     expect(serialized).toMatchSnapshot();
 });
@@ -744,7 +742,7 @@ test('toBackendAll with nested store relation', () => {
     ]);
 
     const serialized = animal.toBackendAll({
-        nestedRelations: { pastOwners: { town: {} } },
+        nestedRelations: {pastOwners: { town: {} }},
     });
     expect(serialized).toMatchSnapshot();
 });
@@ -773,7 +771,7 @@ test('toBackendAll with `backendResourceName` property model', () => {
     });
 
     const serialized = animal.toBackendAll({
-        nestedRelations: { blaat: {}, owners: {}, pastOwners: {} },
+        nestedRelations: {blaat: {}, owners: {}, pastOwners: {}},
     });
     expect(serialized).toMatchSnapshot();
 });
@@ -958,7 +956,6 @@ test('setInput to clear backend validation errors', () => {
 test('allow custom validationErrorFormatter', () => {
     const location = new class extends Location {
         static backendResourceName = 'location';
-
         validationErrorFormatter(obj) {
             return obj.msg;
         }
@@ -1044,6 +1041,73 @@ describe('requests', () => {
         return animal.fetch().then(() => {
             expect(animal.id).toBe(2);
         });
+    });
+
+    test('Save model with file', () => {
+        const file = new File({ id: 5 });
+        const dataFile = new Blob(['foo'], { type: 'text/plain' });
+        file.setInput('dataFile', dataFile);
+
+        mock.onAny().replyOnce(config => {
+            expect(config.method).toBe('patch');
+
+            expect(config.data).toBeInstanceOf(FormData);
+
+            const keys = Array.from(config.data.keys()).sort();
+            expect(keys).toEqual(['data', 'file:data_file']);
+
+            const data = JSON.parse(config.data.get('data'));
+            expect(data).toEqual({
+                data_file: null,
+                id: 5,
+            });
+            return [200, { id: 5, data_file: '/api/dataFile' } ];
+        });
+
+        file.save().then(() => {
+            expect(file.id).toBe(5);
+            expect(file.dataFile).toBe('/api/dataFile');
+        });
+    });
+
+    test('Save model with relations and multiple files', () => {
+        const fileCabinet = new FileCabinet({ id: 5 },{relations: ['files']});
+        fileCabinet.files.add([
+            { dataFile: new Blob(['bar'], { type: 'text/plain' }) },
+            { dataFile: new Blob(['foo'], { type: 'text/plain' }) },
+            { dataFile: new Blob(['baz'], { type: 'text/plain' }) },
+        ]);
+
+        mock.onAny().replyOnce(config => {
+            expect(config.method).toBe('put');
+
+            expect(config.data).toBeInstanceOf(FormData);
+
+            const keys = Array.from(config.data.keys()).sort();
+            expect(keys).toEqual([
+                'data',
+                'file:with.files.0.data_file',
+                'file:with.files.1.data_file',
+                'file:with.files.2.data_file']);
+
+            const data = JSON.parse(config.data.get('data'));
+            expect(data).toEqual({
+                data: [{
+                    id: 5,
+                    files: [-2, -3, -4],
+                }],
+                with: {
+                    files: [
+                        { id: -2, data_file: null },
+                        { id: -3, data_file: null },
+                        { id: -4, data_file: null },
+                    ],
+                },
+            });
+            return [200, {}];
+        });
+
+        fileCabinet.save({ relations: ['files'] });
     });
 
     test('fetch with relations', () => {
@@ -1571,6 +1635,27 @@ describe('requests', () => {
 
         return animal.save({ relations: ['kind'] });
     });
+
+    test('save all with not defined relation error', () => {
+        const animal = new Animal(
+            { id: 10, name: 'Doggo', kind: { name: 'Dog' } },
+            { relations: ['kind'] }
+        );
+
+        mock.onAny().replyOnce(config => {
+            expect(config.url).toBe('/api/animal/');
+            expect(config.method).toBe('put');
+            const putData = JSON.parse(config.data);
+            expect(putData).toMatchSnapshot();
+            return [201, animalMultiPutResponse];
+        });
+
+        return animal.save({ relations: ['kind', 'owner'] }).catch((e) => {
+            const error = 'Relation \'owner\' is not defined in relations'
+            expect(e.message).toEqual(error);
+        })
+    });
+
 
     test('save all with empty response from backend', () => {
         const animal = new Animal(

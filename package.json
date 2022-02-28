@@ -65,7 +65,7 @@
     "moment": "^2.22.0"
   },
   "jest": {
-    "testEnvironment": "node",
+    "testEnvironment": "jsdom",
     "roots": [
       "./src"
     ],
