@@ -121,7 +121,7 @@ export default class Model {
     }
 
     /**
-     * Gives the model the internal id, meaning that it will keep the set id of the model or it will receive a negative
+     * Gives the model the internal id, meaning that it will keep the set id of the model or will receive a negative
      * id if the id is null. This is useful if you have a new model that you want to give an id so that it can be
      * referred to in a relation.
      */
@@ -797,62 +797,6 @@ export default class Model {
         );
     }
 
-    /**
-     * Validates a model by sending a save request to binder with the validate header set. Binder will return the validation
-     * errors without actually committing the save
-     *
-     * @param options same as for a normal save request, example: {onlyChanges: true}
-     */
-    validate(options = {}){
-        // Add the validate parameter
-        if (options.params){
-            options.params.validate = true
-        } else {
-            options.params = { validate: true };
-        }
-        return this.save(options).catch((err)=>{throw err});
-    }
-
-    @action
-    save(options = {}) {
-        this.clearValidationErrors();
-        return this.wrapPendingRequestCount(
-            this.__getApi()
-            .saveModel({
-                url: options.url || this.url,
-                data: this.toBackend({
-                        data: options.data,
-                        mapData: options.mapData,
-                        fields: options.fields,
-                        onlyChanges: options.onlyChanges,
-                    }),
-                isNew: this.isNew,
-                requestOptions: omit(options, 'url', 'data', 'mapData')
-            })
-            .then(action(res => {
-                // Only update the model when we are actually trying to save
-                if (!options.params || !options.params.validate) {
-                    this.saveFromBackend({
-                        ...res,
-                        data: omit(res.data, this.fileFields().map(camelToSnake)),
-                    });
-                    this.clearUserFieldChanges();
-                    return this.saveFiles().then(() => {
-                        this.clearUserFileChanges();
-                        return Promise.resolve(res);
-                    });
-                }
-            }))
-            .catch(
-                action(err => {
-                    if (err.valErrors) {
-                        this.parseValidationErrors(err.valErrors);
-                    }
-                    throw err;
-                })
-            )
-        );
-    }
 
     @action
     setInput(name, value) {
@@ -910,24 +854,74 @@ export default class Model {
         return Promise.all(promises);
     }
 
-    /**
-     * Validates a model and relations by sending a save request to binder with the validate header set. Binder will return the validation
+     /**
+     * Validates a model by sending a save request to binder with the validate header set. Binder will return the validation
      * errors without actually committing the save
      *
-     * @param options same as for a normal saveAll request, example {relations:['foo'], onlyChanges: true}
+     * @param options same as for a normal save request, example: {onlyChanges: true}
      */
-    validateAll(options = {}){
-        // Add the validate option
+    validate(options = {}){
+        // Add the validate parameter
         if (options.params){
             options.params.validate = true
         } else {
             options.params = { validate: true };
         }
-        return this.saveAll(options).catch((err)=>{throw err});
+
+        return this.save(options).catch((err)=>{throw err});
+    }
+
+    save(options = {}) {
+        if (options.relations && options.relations.length > 0) {
+            return this._saveAll(options);
+        } else {
+            return this._save(options);
+        }
     }
 
     @action
-    saveAll(options = {}) {
+    _save(options = {}) {
+        this.clearValidationErrors();
+        return this.wrapPendingRequestCount(
+            this.__getApi()
+            .saveModel({
+                url: options.url || this.url,
+                data: this.toBackend({
+                        data: options.data,
+                        mapData: options.mapData,
+                        fields: options.fields,
+                        onlyChanges: options.onlyChanges,
+                    }),
+                isNew: this.isNew,
+                requestOptions: omit(options, 'url', 'data', 'mapData')
+            })
+            .then(action(res => {
+                // Only update the model when we are actually trying to save
+                if (!options.params || !options.params.validate) {
+                    this.saveFromBackend({
+                        ...res,
+                        data: omit(res.data, this.fileFields().map(camelToSnake)),
+                    });
+                    this.clearUserFieldChanges();
+                    return this.saveFiles().then(() => {
+                        this.clearUserFileChanges();
+                        return Promise.resolve(res);
+                    });
+                }
+            }))
+            .catch(
+                action(err => {
+                    if (err.valErrors) {
+                        this.parseValidationErrors(err.valErrors);
+                    }
+                    throw err;
+                })
+            )
+        );
+    }
+
+    @action
+    _saveAll(options = {}) {
         this.clearValidationErrors();
         return this.wrapPendingRequestCount(
             this.__getApi()

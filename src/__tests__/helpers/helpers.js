@@ -25,7 +25,6 @@ export function modifyObjectNegativeIdCheck(object){
  * @param expected
  */
 function modifyListNegativeIdCheck(expected){
-    debugger
     Array.prototype.forEach.call(expected,(item) => {
         if (item < 0){
              // If value

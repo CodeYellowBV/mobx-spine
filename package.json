@@ -19,7 +19,7 @@
     "version": "git add -A dist",
     "build": "rm -f dist/** && BABEL_ENV=production node build.js",
     "//precommit": "lint-staged",
-    "ci": "npm run -s lint && npm run -s test-coverage && codecov"
+    "ci": "npm run -s lint && npm run -s test-coverage"
   },
   "lint-staged": {
     "*.js": [
@@ -45,13 +45,13 @@
     "babel-plugin-transform-es2015-modules-commonjs": "6.26.2",
     "babel-preset-es2015": "6.24.1",
     "babel-preset-stage-2": "6.24.1",
-    "codecov": "3.4.0",
+    "codecov": "3.7.1",
     "eslint": "5.16.0",
     "eslint-config-codeyellow": "4.1.5",
     "husky": "0.14.3",
     "jest": "22.4.4",
     "lint-staged": "7.1.1",
-    "lodash": "4.17.11",
+    "lodash": "4.17.21",
     "luxon": "1.24.1",
     "mobx": "4.9.4",
     "moment": "2.24.0",
