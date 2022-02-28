@@ -867,7 +867,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         }
 
         /**
-         * Gives the model the internal id, meaning that it will keep the set id of the model or it will receive a negative
+         * Gives the model the internal id, meaning that it will keep the set id of the model or will receive a negative
          * id if the id is null. This is useful if you have a new model that you want to give an id so that it can be
          * referred to in a relation.
          */
@@ -1573,66 +1573,6 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function saveFiles() {
             return Promise.all(this.fileFields().filter(this.fieldFilter).map(this.saveFile));
         }
-
-        /**
-         * Validates a model by sending a save request to binder with the validate header set. Binder will return the validation
-         * errors without actually committing the save
-         *
-         * @param options same as for a normal save request, example: {onlyChanges: true}
-         */
-
-    }, {
-        key: 'validate',
-        value: function validate() {
-            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-            // Add the validate parameter
-            if (options.params) {
-                options.params.validate = true;
-            } else {
-                options.params = { validate: true };
-            }
-            return this.save(options).catch(function (err) {
-                throw err;
-            });
-        }
-    }, {
-        key: 'save',
-        value: function save() {
-            var _this12 = this;
-
-            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-            this.clearValidationErrors();
-            return this.wrapPendingRequestCount(this.__getApi().saveModel({
-                url: options.url || this.url,
-                data: this.toBackend({
-                    data: options.data,
-                    mapData: options.mapData,
-                    fields: options.fields,
-                    onlyChanges: options.onlyChanges
-                }),
-                isNew: this.isNew,
-                requestOptions: omit(options, 'url', 'data', 'mapData')
-            }).then(action(function (res) {
-                // Only update the model when we are actually trying to save
-                if (!options.params || !options.params.validate) {
-                    _this12.saveFromBackend(_extends({}, res, {
-                        data: omit(res.data, _this12.fileFields().map(camelToSnake))
-                    }));
-                    _this12.clearUserFieldChanges();
-                    return _this12.saveFiles().then(function () {
-                        _this12.clearUserFileChanges();
-                        return Promise.resolve(res);
-                    });
-                }
-            })).catch(action(function (err) {
-                if (err.valErrors) {
-                    _this12.parseValidationErrors(err.valErrors);
-                }
-                throw err;
-            })));
-        }
     }, {
         key: 'setInput',
         value: function setInput(name, value) {
@@ -1711,30 +1651,79 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         }
 
         /**
-         * Validates a model and relations by sending a save request to binder with the validate header set. Binder will return the validation
-         * errors without actually committing the save
-         *
-         * @param options same as for a normal saveAll request, example {relations:['foo'], onlyChanges: true}
-         */
+        * Validates a model by sending a save request to binder with the validate header set. Binder will return the validation
+        * errors without actually committing the save
+        *
+        * @param options same as for a normal save request, example: {onlyChanges: true}
+        */
 
     }, {
-        key: 'validateAll',
-        value: function validateAll() {
+        key: 'validate',
+        value: function validate() {
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-            // Add the validate option
+            // Add the validate parameter
             if (options.params) {
                 options.params.validate = true;
             } else {
                 options.params = { validate: true };
             }
-            return this.saveAll(options).catch(function (err) {
+
+            return this.save(options).catch(function (err) {
                 throw err;
             });
         }
     }, {
-        key: 'saveAll',
-        value: function saveAll() {
+        key: 'save',
+        value: function save() {
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+            if (options.relations && options.relations.length > 0) {
+                return this._saveAll(options);
+            } else {
+                return this._save(options);
+            }
+        }
+    }, {
+        key: '_save',
+        value: function _save() {
+            var _this12 = this;
+
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+            this.clearValidationErrors();
+            return this.wrapPendingRequestCount(this.__getApi().saveModel({
+                url: options.url || this.url,
+                data: this.toBackend({
+                    data: options.data,
+                    mapData: options.mapData,
+                    fields: options.fields,
+                    onlyChanges: options.onlyChanges
+                }),
+                isNew: this.isNew,
+                requestOptions: omit(options, 'url', 'data', 'mapData')
+            }).then(action(function (res) {
+                // Only update the model when we are actually trying to save
+                if (!options.params || !options.params.validate) {
+                    _this12.saveFromBackend(_extends({}, res, {
+                        data: omit(res.data, _this12.fileFields().map(camelToSnake))
+                    }));
+                    _this12.clearUserFieldChanges();
+                    return _this12.saveFiles().then(function () {
+                        _this12.clearUserFileChanges();
+                        return Promise.resolve(res);
+                    });
+                }
+            })).catch(action(function (err) {
+                if (err.valErrors) {
+                    _this12.parseValidationErrors(err.valErrors);
+                }
+                throw err;
+            })));
+        }
+    }, {
+        key: '_saveAll',
+        value: function _saveAll() {
             var _this13 = this;
 
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -2006,7 +1995,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     initializer: function initializer() {
         return {};
     }
-}), _applyDecoratedDescriptor$1(_class$1.prototype, 'url', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'url'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isNew', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isNew'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isLoading', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '__parseRelations', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, '__parseRelations'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'hasUserChanges', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasUserChanges'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fieldFilter', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fieldFilter'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fromBackend', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parse', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'save', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'save'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'setInput', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'setInput'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'saveAll', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'saveAll'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parseValidationErrors', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parseValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clearValidationErrors', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clearValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'backendValidationErrors', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'backendValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'delete', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'delete'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fetch', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clear', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'), _class$1.prototype)), _class$1);
+}), _applyDecoratedDescriptor$1(_class$1.prototype, 'url', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'url'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isNew', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isNew'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'isLoading', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'isLoading'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '__parseRelations', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, '__parseRelations'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'hasUserChanges', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'hasUserChanges'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fieldFilter', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fieldFilter'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fromBackend', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fromBackend'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parse', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parse'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'setInput', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'setInput'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '_save', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, '_save'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, '_saveAll', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, '_saveAll'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'parseValidationErrors', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'parseValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clearValidationErrors', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clearValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'backendValidationErrors', [computed], Object.getOwnPropertyDescriptor(_class$1.prototype, 'backendValidationErrors'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'delete', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'delete'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'fetch', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'fetch'), _class$1.prototype), _applyDecoratedDescriptor$1(_class$1.prototype, 'clear', [action], Object.getOwnPropertyDescriptor(_class$1.prototype, 'clear'), _class$1.prototype)), _class$1);
 
 // Function ripped from Django docs.
 // See: https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
