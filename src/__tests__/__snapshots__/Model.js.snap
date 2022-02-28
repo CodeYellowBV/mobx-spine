@@ -20,6 +20,26 @@ Object {
 }
 `;
 
+exports[`requests save all with not defined relation error 1`] = `
+Object {
+  "data": Array [
+    Object {
+      "id": 10,
+      "kind": -2,
+      "name": "Doggo",
+    },
+  ],
+  "with": Object {
+    "kind": Array [
+      Object {
+        "id": -2,
+        "name": "Dog",
+      },
+    ],
+  },
+}
+`;
+
 exports[`toBackendAll should de-duplicate relations 1`] = `
 Object {
   "data": Array [

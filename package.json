@@ -1,6 +1,6 @@
 {
   "name": "mobx-spine",
-  "version": "0.28.4",
+  "version": "0.30.0",
   "license": "ISC",
   "author": "Kees Kluskens <kees@webduck.nl>",
   "description": "MobX with support for models, relations and an API.",
@@ -65,7 +65,7 @@
     "moment": "^2.22.0"
   },
   "jest": {
-    "testEnvironment": "node",
+    "testEnvironment": "jsdom",
     "roots": [
       "./src"
     ],

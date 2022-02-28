@@ -2,7 +2,7 @@ import axios from 'axios';
 import { toJS, observable } from 'mobx';
 import MockAdapter from 'axios-mock-adapter';
 import _ from 'lodash';
-import { Model, BinderApi, Casts } from '../';
+import { Model, BinderApi } from '../';
 import { compareObjectsIgnoringNegativeIds } from "./helpers/helpers";
 import {
     Animal,
@@ -20,6 +20,8 @@ import {
     Person,
     PersonStore,
     Location,
+    File,
+    FileCabinet,
 } from './fixtures/Animal';
 import { Customer, Location as CLocation } from './fixtures/Customer';
 import animalKindBreedData from './fixtures/animal-with-kind-breed.json';
@@ -63,7 +65,7 @@ test('Initialize model with invalid data', () => {
 test('Initialize model without data', () => {
     const animal = new Animal(null);
 
-    expect(animal.id).toBeNull();
+    expect(animal.id).toBeLessThan(0);
     expect(animal.name).toBe('');
 });
 
@@ -106,7 +108,6 @@ test('property defined as both attribute and relation should throw error', () =>
 
 test('initialize() method should be called', () => {
     const initMock = jest.fn();
-
     class Zebra extends Model {
         initialize() {
             initMock();
@@ -534,9 +535,6 @@ test('toBackend with omit fields', () => {
 
     const serialized = model.toBackend();
 
-    const expected = {
-        weight: 32
-    }
     expect(serialized).toEqual({
         color: 'red',
         id: 1
@@ -634,7 +632,7 @@ test('toBackendAll with model relation', () => {
     animal.kind.parse({ id: 5 });
 
     const serialized = animal.toBackendAll({
-        nestedRelations: { kind: { breed: {} }, owner: {} },
+        nestedRelations: {kind: { breed: {}}, owner: {}},
     });
     expect(serialized).toMatchSnapshot();
 });
@@ -662,7 +660,7 @@ test('toBackendAll with partial relations', () => {
         },
         { relations: ['kind', 'owner.town'] }
     );
-    const serialized = animal.toBackendAll({ nestedRelations: { owner: {} } });
+    const serialized = animal.toBackendAll({ nestedRelations: {owner: {}} });
     expect(serialized).toMatchSnapshot();
 });
 
@@ -683,7 +681,7 @@ test('toBackendAll with store relation', () => {
         { id: 10, name: 'R' },
     ]);
 
-    const serialized = animal.toBackendAll({ nestedRelations: { pastOwners: {} } });
+    const serialized = animal.toBackendAll({ nestedRelations: {pastOwners: {}} });
     expect(serialized).toMatchSnapshot();
 });
 
@@ -700,7 +698,7 @@ test('toBackendAll should de-duplicate relations', () => {
     expect(animalBar.cid).toBe(animal.pastOwners.at(1).cid);
 
     const serialized = animal.toBackendAll({
-        nestedRelations: { pastOwners: { town: {} } },
+        nestedRelations: {pastOwners: {town: {}}},
     });
     expect(serialized).toMatchSnapshot();
 });
@@ -719,7 +717,7 @@ test('toBackendAll with deep nested relation', () => {
     });
 
     const serialized = animal.toBackendAll({
-        nestedRelations: { kind: { location: {}, breed: { location: {} } } },
+        nestedRelations: {kind: { location: {}, breed: { location: {} }}},
     });
     expect(serialized).toMatchSnapshot();
 });
@@ -744,7 +742,7 @@ test('toBackendAll with nested store relation', () => {
     ]);
 
     const serialized = animal.toBackendAll({
-        nestedRelations: { pastOwners: { town: {} } },
+        nestedRelations: {pastOwners: { town: {} }},
     });
     expect(serialized).toMatchSnapshot();
 });
@@ -773,7 +771,7 @@ test('toBackendAll with `backendResourceName` property model', () => {
     });
 
     const serialized = animal.toBackendAll({
-        nestedRelations: { blaat: {}, owners: {}, pastOwners: {} },
+        nestedRelations: {blaat: {}, owners: {}, pastOwners: {}},
     });
     expect(serialized).toMatchSnapshot();
 });
@@ -822,6 +820,7 @@ test('toBackend with observable array', () => {
 
     expect(animal.toBackend()).toEqual({
         foo: ['q', 'a'],
+        id: -1,
     });
 });
 
@@ -833,7 +832,7 @@ test('clear with basic attribute', () => {
 
     animal.clear();
 
-    expect(animal.id).toBe(null);
+    expect(animal.id).toBeLessThan(0);
     expect(animal.name).toBe('');
 });
 
@@ -957,7 +956,6 @@ test('setInput to clear backend validation errors', () => {
 test('allow custom validationErrorFormatter', () => {
     const location = new class extends Location {
         static backendResourceName = 'location';
-
         validationErrorFormatter(obj) {
             return obj.msg;
         }
@@ -1043,6 +1041,73 @@ describe('requests', () => {
         return animal.fetch().then(() => {
             expect(animal.id).toBe(2);
         });
+    });
+
+    test('Save model with file', () => {
+        const file = new File({ id: 5 });
+        const dataFile = new Blob(['foo'], { type: 'text/plain' });
+        file.setInput('dataFile', dataFile);
+
+        mock.onAny().replyOnce(config => {
+            expect(config.method).toBe('patch');
+
+            expect(config.data).toBeInstanceOf(FormData);
+
+            const keys = Array.from(config.data.keys()).sort();
+            expect(keys).toEqual(['data', 'file:data_file']);
+
+            const data = JSON.parse(config.data.get('data'));
+            expect(data).toEqual({
+                data_file: null,
+                id: 5,
+            });
+            return [200, { id: 5, data_file: '/api/dataFile' } ];
+        });
+
+        file.save().then(() => {
+            expect(file.id).toBe(5);
+            expect(file.dataFile).toBe('/api/dataFile');
+        });
+    });
+
+    test('Save model with relations and multiple files', () => {
+        const fileCabinet = new FileCabinet({ id: 5 },{relations: ['files']});
+        fileCabinet.files.add([
+            { dataFile: new Blob(['bar'], { type: 'text/plain' }) },
+            { dataFile: new Blob(['foo'], { type: 'text/plain' }) },
+            { dataFile: new Blob(['baz'], { type: 'text/plain' }) },
+        ]);
+
+        mock.onAny().replyOnce(config => {
+            expect(config.method).toBe('put');
+
+            expect(config.data).toBeInstanceOf(FormData);
+
+            const keys = Array.from(config.data.keys()).sort();
+            expect(keys).toEqual([
+                'data',
+                'file:with.files.0.data_file',
+                'file:with.files.1.data_file',
+                'file:with.files.2.data_file']);
+
+            const data = JSON.parse(config.data.get('data'));
+            expect(data).toEqual({
+                data: [{
+                    id: 5,
+                    files: [-2, -3, -4],
+                }],
+                with: {
+                    files: [
+                        { id: -2, data_file: null },
+                        { id: -3, data_file: null },
+                        { id: -4, data_file: null },
+                    ],
+                },
+            });
+            return [200, {}];
+        });
+
+        fileCabinet.save({ relations: ['files'] });
     });
 
     test('fetch with relations', () => {
@@ -1160,7 +1225,7 @@ describe('requests', () => {
         mock.onAny().replyOnce(config => {
             expect(config.url).toBe('/api/animal/');
             expect(config.method).toBe('post');
-            expect(config.data).toBe('{"id":null,"name":"Doggo"}');
+            expect(config.data).toBe('{"id":-1,"name":"Doggo"}');
             return [201, { id: 10, name: 'Doggo' }];
         });
 
@@ -1180,12 +1245,12 @@ describe('requests', () => {
             expect(config.params).toEqual({ validate: true });
             expect(config.url).toBe('/api/animal/');
             expect(config.method).toBe('post');
-            expect(config.data).toBe('{"id":null,"name":"Doggo"}');
+            expect(config.data).toBe('{"id":-1,"name":"Doggo"}');
             return [201, { id: 10, name: 'Doggo' }];
         });
 
         return animal.validate().then(() => {
-            expect(animal.id).toBe(null);
+            expect(animal.id).toBe(-1);
             expect(spy).not.toHaveBeenCalled();
 
             spy.mockReset();
@@ -1297,7 +1362,7 @@ describe('requests', () => {
     test('save with custom data', () => {
         const animal = new Animal();
         mock.onAny().replyOnce(config => {
-            expect(JSON.parse(config.data)).toEqual({ id: null, name: '', extra_data: 'can be saved' });
+            expect(JSON.parse(config.data)).toEqual({ id: -1, name: '', extra_data: 'can be saved' });
             return [201, {}];
         });
 
@@ -1570,6 +1635,27 @@ describe('requests', () => {
 
         return animal.save({ relations: ['kind'] });
     });
+
+    test('save all with not defined relation error', () => {
+        const animal = new Animal(
+            { id: 10, name: 'Doggo', kind: { name: 'Dog' } },
+            { relations: ['kind'] }
+        );
+
+        mock.onAny().replyOnce(config => {
+            expect(config.url).toBe('/api/animal/');
+            expect(config.method).toBe('put');
+            const putData = JSON.parse(config.data);
+            expect(putData).toMatchSnapshot();
+            return [201, animalMultiPutResponse];
+        });
+
+        return animal.save({ relations: ['kind', 'owner'] }).catch((e) => {
+            const error = 'Relation \'owner\' is not defined in relations'
+            expect(e.message).toEqual(error);
+        })
+    });
+
 
     test('save all with empty response from backend', () => {
         const animal = new Animal(
@@ -2510,46 +2596,102 @@ describe('copy with changes', () => {
     });
 });
 
-// test('validate', () => {
-//     const customer = new Customer(null, {
-//         relations: ['oldTowns.bestCook.workPlaces'],
-//     });
-//
-//     customer.fromBackend({
-//         data: customersWithTownCookRestaurant.data,
-//         repos: customersWithTownCookRestaurant.with,
-//         relMapping: customersWithTownCookRestaurant.with_mapping,
-//     });
-//
-//     customer.oldTowns.models[0].bestCook.workPlaces.models[0].setInput('name', "Italian");
-//
-//     const customerCopyNoChanges = new Customer();
-//     customerCopyNoChanges.copy(customer, {copyChanges: true})
-//
-//
-//     // Clone without changes should give the same toBackend result as the cloned object when only changes is false
-//     expect(customerCopyNoChanges.toBackendAll({onlyChanges: false})).toEqual(customer.toBackendAll({onlyChanges: false}))
-// });
-//
-// test('validateAll', () => {
-//     const customer = new Customer(null, {
-//         relations: ['oldTowns.bestCook.workPlaces'],
-//     });
-//
-//     customer.fromBackend({
-//         data: customersWithTownCookRestaurant.data,
-//         repos: customersWithTownCookRestaurant.with,
-//         relMapping: customersWithTownCookRestaurant.with_mapping,
-//     });
-//
-//     customer.oldTowns.models[0].bestCook.workPlaces.models[0].setInput('name', "Italian");
-//
-//     const customerCopyNoChanges = new Customer();
-//     customerCopyNoChanges.copy(customer, {copyChanges: true})
-//
-//
-//     // Clone without changes should give the same toBackend result as the cloned object when only changes is false
-//     expect(customerCopyNoChanges.toBackendAll({onlyChanges: false})).toEqual(customer.toBackendAll({onlyChanges: false}))
-// });
+describe('negative id instead of null', () => {
 
+    test('new model instance should have a negative id instead of null', () => {
+        const animal = new Animal();
+        expect(animal.id).toBeLessThan(0);
+    });
 
+    test('new model instance should have a null id instead of negative when supplied in data', () => {
+        const animal = new Animal({ id: null });
+        expect(animal.id).toBeNull();
+    });
+
+    test('new model instance should not have negative id if a positive id was supplied in data', () => {
+        const animal = new Animal({ id: 5 });
+        expect(animal.id).toBe(5);
+    });
+
+    test('new model should keep negative id on clear', () => {
+        const animal = new Animal();
+        animal.clear();
+        expect(animal.id).toBeLessThan(0);
+    });
+
+    test('new model should keep null id on clear when created with id null', () => {
+        const animal = new Animal({id: null});
+        animal.clear();
+        expect(animal.id).toBeNull();
+    });
+
+    test('new model should keep negative id on clear, when created with an id', () => {
+        const animal = new Animal({id: 5});
+        animal.clear();
+        expect(animal.id).toBeLessThan(0);
+    });
+
+    test('related model should get null id if not initialized', () => {
+        const animal = new Animal({id: 5}, {relations: ['kind']});
+
+        expect(animal.kind.id).toBeNull();
+    });
+
+    test('related model should get null id on clear', () => {
+        const animal = new Animal({id: 5, kind: {id: 5}}, {relations: ['kind']});
+
+        expect(animal.kind.id).toBe(5);
+        animal.clear();
+        expect(animal.kind.id).toBeNull();
+    });
+
+    test('related model should get null id on related model clear', () => {
+        const animal = new Animal({id: 5, kind: {id: 5}}, {relations: ['kind']});
+
+        expect(animal.kind.id).toBe(5);
+        animal.kind.clear();
+        expect(animal.kind.id).toBeNull();
+    });
+
+    test('model initialized with null should get negative id when clearing after copy', () => {
+        const animal = new Animal({id: null});
+
+        const copiedAnimal = animal.copy()
+        copiedAnimal.clear();
+        expect(copiedAnimal.id).toBeLessThan(0);
+    });
+
+    test('model should get negative id when clearing after copy', () => {
+        const animal = new Animal();
+
+        const copiedAnimal = animal.copy()
+        copiedAnimal.clear();
+        expect(copiedAnimal.id).toBeLessThan(0);
+    });
+
+    test('model should get null id when clearing after copy if it is instantiated with a null id', () => {
+        const animal = new Animal();
+
+        const copiedAnimal = new Animal({id: null});
+        copiedAnimal.copy(animal)
+        copiedAnimal.clear();
+        expect(copiedAnimal.id).toBeNull();
+    });
+
+    test('related model should get null id on clear after copy', () => {
+        const animal = new Animal({ id: 5, kind: { id: 5 } }, { relations: ['kind'] });
+
+        const copiedAnimal = animal.copy()
+        copiedAnimal.clear();
+        expect(copiedAnimal.kind.id).toBeNull();
+    });
+
+    test('copying a related model should get a negative id when clear() is called on copied model', () => {
+        const animal = new Animal({ id: 5, kind: { id: 5 } }, { relations: ['kind'] });
+
+        const copiedKind = animal.kind.copy()
+        copiedKind.clear();
+        expect(copiedKind.id).toBeLessThan(0);
+    });
+
+});

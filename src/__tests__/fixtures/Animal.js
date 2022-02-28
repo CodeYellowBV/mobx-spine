@@ -7,6 +7,32 @@ export class Location extends Model {
     @observable name = '';
 }
 
+export class File extends Model {
+    urlRoot = '/api/file/';
+    api = new BinderApi();
+    static backendResourceName = 'file';
+    @observable id = null;
+    @observable dataFile = null;
+}
+
+export class FileStore extends Store {
+    Model = File
+}
+
+export class FileCabinet extends Model {
+    urlRoot = '/api/file_cabinet/';
+    api = new BinderApi();
+    static backendResourceName = 'file_cabinet';
+    @observable id = null;
+
+    relations() {
+        return {
+            files: FileStore,
+        }
+    }
+}
+
+
 export class Breed extends Model {
     @observable id = null;
     @observable name = '';

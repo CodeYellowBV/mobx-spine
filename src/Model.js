@@ -14,7 +14,6 @@ import {
     mapValues,
     find,
     filter,
-    get,
     isPlainObject,
     isArray,
     omit,
@@ -23,7 +22,6 @@ import {
     uniqBy,
     mapKeys,
     result,
-    pick,
 } from 'lodash';
 import Store from './Store';
 import { invariant, snakeToCamel, camelToSnake, relationsToNestedKeys, forNestedRelations } from './utils';
@@ -111,7 +109,7 @@ export default class Model {
 
     /**
      * Get InternalId returns the id of a model or a negative id if the id is not set
-     * @returns {*}    - the id of a model or a negative id if the id is not set
+     * @returns {*}    the id of a model or a negative id if the id is not set
      */
     getInternalId() {
         if (!this[this.constructor.primaryKey]) {
@@ -121,8 +119,9 @@ export default class Model {
     }
 
     /**
-     * Gives the model the internal id. This is useful if you have a new model that you want to give an id so
-     * that it can be referred to in a relation.
+     * Gives the model the internal id, meaning that it will keep the set id of the model or will receive a negative
+     * id if the id is null. This is useful if you have a new model that you want to give an id so that it can be
+     * referred to in a relation.
      */
     assignInternalId() {
         this[this.constructor.primaryKey] = this.getInternalId()
@@ -132,7 +131,7 @@ export default class Model {
      * The get url returns the url for a model., it appends the id if there is one. If the model is new it should not
      * append an id.
      *
-     * @returns {string}    - the url for a model
+     * @returns {string}  the url for a model
      */
     @computed
     get url() {
@@ -142,7 +141,7 @@ export default class Model {
 
     /**
      * A model is considered new if it does not have an id, or if the id is a negative integer.
-     * @returns {boolean}   True if the model id is not set or a negative integer
+     * @returns {boolean} True if the model id is not set or a negative integer
      */
     @computed
     get isNew() {
@@ -212,6 +211,16 @@ export default class Model {
         if (options.relations) {
             this.__parseRelations(options.relations);
         }
+
+        // The model will automatically be assigned a negative id, the id will still be overridden if it is supplied in the data
+        this.assignInternalId()
+
+        // We want our id to remain negative on a clear, only if it was not created with the id set to null
+        // which is usually the case when the object is a related model in which case we want the id to be reset to null
+        if ((data && data[this.constructor.primaryKey] !== null) || !data){
+            this.__originalAttributes[this.constructor.primaryKey] = this[this.constructor.primaryKey]
+        }
+
         if (data) {
             this.parse(data);
         }
@@ -265,7 +274,8 @@ export default class Model {
                 if (RelModel.prototype instanceof Store) {
                     return new RelModel(options);
                 }
-                return new RelModel(null, options);
+                // If we have a related model, we want to force the related model to have id null as that means there is no model set
+                return new RelModel({ [RelModel.primaryKey]: null }, options);
             })
         );
     }
@@ -442,8 +452,8 @@ export default class Model {
      * Cloning the changes requires recursion over all related models that have changes or are related to a model with changes.
      * Cloning
      *
-     * @param source {Model}    - The model that should be copied
-     * @param options {{}}      - Options, {copyChanges - only copy the changed attributes, requires recursion over all related objects with changes}
+     * @param source {Model}   The model that should be copied
+     * @param options {{}}     Options, {copyChanges - only copy the changed attributes, requires recursion over all related objects with changes}
      */
     copy(source= undefined, options = {copyChanges: true}){
         let copiedModel;
@@ -484,8 +494,8 @@ export default class Model {
     /**
      * Goes over model and all related models to set the changed values and notify the store
      *
-     * @param source - the model to copy
-     * @param store  - the store of the current model, to setChanged if there are changes
+     * @param source the model to copy
+     * @param store  the store of the current model, to setChanged if there are changes
      * @private
      */
     __copyChanges(source, store) {
@@ -846,7 +856,7 @@ export default class Model {
      * Validates a model by sending a save request to binder with the validate header set. Binder will return the validation
      * errors without actually committing the save
      *
-     * @param options - same as for a normal save request, example: {onlyChanges: true}
+     * @param options same as for a normal save request, example: {onlyChanges: true}
      */
     validate(options = {}){
         // Add the validate parameter
@@ -1090,7 +1100,13 @@ export default class Model {
     @action
     clear() {
         forIn(this.__originalAttributes, (value, key) => {
-            this[key] = value;
+            // If it is our primary key, and the primary key is negative, we generate a new negative pk, else we set it
+            // to the value
+            if (key === this.constructor.primaryKey && value < 0){
+                this[key] = -1 * uniqueId();
+            } else {
+                this[key] = value;
+            }
         });
 
         this.__activeCurrentRelations.forEach(currentRel => {
