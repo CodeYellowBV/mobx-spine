@@ -143,7 +143,7 @@ export default class Model {
 
     /**
      * A model is considered new if it does not have an id, or if the id is a negative integer.
-     * @returns {boolean}   True if the model id is not set or a negative integer
+     * @returns {boolean} True if the model id is not set or a negative integer
      */
     @computed
     get isNew() {
@@ -496,8 +496,8 @@ export default class Model {
     /**
      * Goes over model and all related models to set the changed values and notify the store
      *
-     * @param source - the model to copy
-     * @param store  - the store of the current model, to setChanged if there are changes
+     * @param source the model to copy
+     * @param store  the store of the current model, to setChanged if there are changes
      * @private
      */
     __copyChanges(source, store) {
@@ -801,7 +801,7 @@ export default class Model {
      * Validates a model by sending a save request to binder with the validate header set. Binder will return the validation
      * errors without actually committing the save
      *
-     * @param options - same as for a normal save request, example: {onlyChanges: true}
+     * @param options same as for a normal save request, example: {onlyChanges: true}
      */
     validate(options = {}){
         // Add the validate parameter
@@ -914,7 +914,7 @@ export default class Model {
      * Validates a model and relations by sending a save request to binder with the validate header set. Binder will return the validation
      * errors without actually committing the save
      *
-     * @param options - same as for a normal saveAll request, example {relations:['foo'], onlyChanges: true}
+     * @param options same as for a normal saveAll request, example {relations:['foo'], onlyChanges: true}
      */
     validateAll(options = {}){
         // Add the validate option

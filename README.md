@@ -96,6 +96,8 @@ A new model is a model that exists in the store, but not on the backend. A new m
 
 By default, a new model will be initialized with a negative id, this way the model can be used as a related model. When a model is initialized with a negative id it will automatically generate a new negative id for the model on a clear. In some cases a `null` id might be preferred, in this case a model can be forced to get a `null` id by passing `{id: null}` in the constructor. In this case the id will also be reset to `null` on a clear. A model with a `null` id functions the same as a model with a negative id other than that the model cannot be used in a relation.
 
+Some projects might still use the legacy method of checking for new models by checking if `!model.id`. This does not work with the default negative IDs. To migrate a project to the default negative IDs implementation you should search and replace the whole project for occurrences of `.id` and fix all lines that check if an id is set to use the `isNew()` property.
+
 ### Constructor: options
 
 |key|default| | |
