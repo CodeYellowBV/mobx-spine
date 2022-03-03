@@ -33,6 +33,7 @@ import customerWithoutTownRestaurants from './fixtures/customer-without-town-res
 import customersLocationBestCookWorkPlaces from './fixtures/customers-location-best-cook-work-places.json';
 import saveFailData from './fixtures/save-fail.json';
 import saveNewFailData from './fixtures/save-new-fail.json';
+import inconsistentOrderingWith from './fixtures/inconsistent-ordering-with.json';
 
 beforeEach(() => {
     // Refresh lodash's `_.uniqueId` internal state for every test
@@ -1921,4 +1922,42 @@ describe('changes', () => {
 
         expect(animal.hasUserChanges).toBe(true);
     });
+});
+
+/**
+ * Test that for withs, the ordering is taken from the ids on the main model, and not in the withs.
+ *
+ * i.e.
+ *
+ * data {
+ *      "past_owners": [
+ *       55,
+ *       66
+ *     ],
+ * }
+ * with: {past_owners: [
+ *  {id:66},
+ *  {id:55}
+ * ])
+ *
+ * Past owners will be sorted 55, 66, and not the other way around
+ *
+ *
+ */
+test('Parsing inconsistent ordering of withs', () => {
+
+    const animal = new Animal(null, {
+        relations: ['pastOwners.town'],
+    });
+
+    expect(animal.pastOwners).not.toBeUndefined();
+    expect(animal.pastOwners).toBeInstanceOf(PersonStore);
+
+    animal.fromBackend({
+        data: inconsistentOrderingWith.data,
+        repos: inconsistentOrderingWith.with,
+        relMapping: inconsistentOrderingWith.with_mapping,
+    });
+
+    expect(animal.pastOwners.map('id')).toEqual([55, 66]);
 });
