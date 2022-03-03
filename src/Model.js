@@ -440,7 +440,8 @@ export default class Model {
 
     __parseRepositoryToData(key, repository) {
         if (isArray(key)) {
-            return filter(repository, m => key.includes(m.id));
+            const models = key.map(k => find(repository, { id: k }));
+            return filter(models, m => m);
         }
         return find(repository, { id: key });
     }
