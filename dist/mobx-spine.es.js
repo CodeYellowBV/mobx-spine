@@ -901,14 +901,40 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function getNegativeId() {
             return -parseInt(this.cid.replace('m', ''));
         }
+
+        /**
+         * Get InternalId returns the id of a model or a negative id if the id is not set
+         * @returns {*}    the id of a model or a negative id if the id is not set
+         */
+
     }, {
         key: 'getInternalId',
         value: function getInternalId() {
-            if (this.isNew) {
+            if (!this[this.constructor.primaryKey]) {
                 return this.getNegativeId();
             }
             return this[this.constructor.primaryKey];
         }
+
+        /**
+         * Gives the model the internal id, meaning that it will keep the set id of the model or will receive a negative
+         * id if the id is null. This is useful if you have a new model that you want to give an id so that it can be
+         * referred to in a relation.
+         */
+
+    }, {
+        key: 'assignInternalId',
+        value: function assignInternalId() {
+            this[this.constructor.primaryKey] = this.getInternalId();
+        }
+
+        /**
+         * The get url returns the url for a model., it appends the id if there is one. If the model is new it should not
+         * append an id.
+         *
+         * @returns {string}  the url for a model
+         */
+
     }, {
         key: 'casts',
         value: function casts() {
@@ -939,12 +965,18 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         key: 'url',
         get: function get$$1() {
             var id = this[this.constructor.primaryKey];
-            return '' + result(this, 'urlRoot') + (id ? id + '/' : '');
+            return '' + result(this, 'urlRoot') + (!this.isNew ? id + '/' : '');
         }
+
+        /**
+         * A model is considered new if it does not have an id, or if the id is a negative integer.
+         * @returns {boolean} True if the model id is not set or a negative integer
+         */
+
     }, {
         key: 'isNew',
         get: function get$$1() {
-            return !this[this.constructor.primaryKey];
+            return !this[this.constructor.primaryKey] || this[this.constructor.primaryKey] < 0;
         }
     }, {
         key: 'isLoading',
@@ -1010,6 +1042,16 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         if (options.relations) {
             this.__parseRelations(options.relations);
         }
+
+        // The model will automatically be assigned a negative id, the id will still be overridden if it is supplied in the data
+        this.assignInternalId();
+
+        // We want our id to remain negative on a clear, only if it was not created with the id set to null
+        // which is usually the case when the object is a related model in which case we want the id to be reset to null
+        if (data && data[this.constructor.primaryKey] !== null || !data) {
+            this.__originalAttributes[this.constructor.primaryKey] = this[this.constructor.primaryKey];
+        }
+
         if (data) {
             this.parse(data);
         }
@@ -1030,7 +1072,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             activeRelations.forEach(function (aRel) {
                 // If aRel is null, this relation is already defined by another aRel
                 // IE.: town.restaurants.chef && town
-                if (aRel === null) {
+                if (aRel === null || !!_this3[aRel]) {
                     return;
                 }
                 var relNames = aRel.match(RE_SPLIT_FIRST_RELATION);
@@ -1048,14 +1090,18 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     _this3.__activeCurrentRelations.push(currentRel);
                 }
             });
-            extendObservable(this, mapValues(relModels, function (otherRelNames, relName) {
+            // extendObservable where we omit the fields that are already created from other relations
+            extendObservable(this, mapValues(omit(relModels, Object.keys(relModels).filter(function (rel) {
+                return !!_this3[rel];
+            })), function (otherRelNames, relName) {
                 var RelModel = relations[relName];
                 invariant(RelModel, 'Specified relation "' + relName + '" does not exist on model.');
                 var options = { relations: otherRelNames };
                 if (RelModel.prototype instanceof Store) {
                     return new RelModel(options);
                 }
-                return new RelModel(null, options);
+                // If we have a related model, we want to force the related model to have id null as that means there is no model set
+                return new RelModel(defineProperty({}, RelModel.primaryKey, null), options);
             }));
         }
 
@@ -1084,15 +1130,15 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function toBackend() {
             var _this4 = this;
 
-            var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+            var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-            var _ref$data = _ref.data,
-                data = _ref$data === undefined ? {} : _ref$data,
-                _ref$mapData = _ref.mapData,
-                mapData = _ref$mapData === undefined ? function (x) {
+            var _ref2$data = _ref2.data,
+                data = _ref2$data === undefined ? {} : _ref2$data,
+                _ref2$mapData = _ref2.mapData,
+                mapData = _ref2$mapData === undefined ? function (x) {
                 return x;
-            } : _ref$mapData,
-                options = objectWithoutProperties(_ref, ['data', 'mapData']);
+            } : _ref2$mapData,
+                options = objectWithoutProperties(_ref2, ['data', 'mapData']);
 
             var output = {};
             // By default we'll include all fields (attributes+relations), but sometimes you might want to specify the fields to be included.
@@ -1202,18 +1248,129 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             return { data: [data], relations: relations };
         }
+
+        /**
+         * Makes this model a copy of the specified model
+         * or returns a copy of the current model when no model to copy is given
+         * It also clones the changes that were in the specified model.
+         * Cloning the changes requires recursion over all related models that have changes or are related to a model with changes.
+         * Cloning
+         *
+         * @param source {Model}   The model that should be copied
+         * @param options {{}}     Options, {copyChanges - only copy the changed attributes, requires recursion over all related objects with changes}
+         */
+
+    }, {
+        key: 'copy',
+        value: function copy() {
+            var source = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
+            var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { copyChanges: true };
+
+            var copiedModel = void 0;
+            // If our source is not a model it is 'probably' the options
+            if (source !== undefined && !(source instanceof Model)) {
+                options = source;
+                source = undefined;
+            }
+
+            // Make sure that we have the correct model
+            if (source === undefined) {
+                source = this;
+                copiedModel = new source.constructor({ relations: source.__activeRelations });
+            } else if (this.constructor !== source.constructor) {
+                copiedModel = new source.constructor({ relations: source.__activeRelations });
+            } else {
+                copiedModel = this;
+            }
+
+            var copyChanges = options.copyChanges;
+
+            // Maintain the relations after copy
+            // this.__activeRelations = source.__activeRelations;
+
+            copiedModel.__parseRelations(source.__activeRelations);
+            // Copy all fields and values from the specified model
+            copiedModel.parse(source.toJS());
+
+            // Set only the changed attributes
+            if (copyChanges) {
+                copiedModel.__copyChanges(source);
+            }
+
+            return copiedModel;
+        }
+
+        /**
+         * Goes over model and all related models to set the changed values and notify the store
+         *
+         * @param source the model to copy
+         * @param store  the store of the current model, to setChanged if there are changes
+         * @private
+         */
+
+    }, {
+        key: '__copyChanges',
+        value: function __copyChanges(source, store) {
+            var _this6 = this;
+
+            // Maintain the relations after copy
+            this.__parseRelations(source.__activeRelations);
+
+            // Copy all changed fields and notify the store that there are changes
+            if (source.__changes.length > 0) {
+                if (store) {
+                    store.__setChanged = true;
+                } else if (this.__store) {
+                    this.__store.__setChanged = true;
+                }
+
+                source.__changes.forEach(function (changedAttribute) {
+                    _this6.setInput(changedAttribute, source[changedAttribute]);
+                });
+            }
+            // Undefined safety
+            if (source.__activeCurrentRelations.length > 0) {
+                // Set the changes for all related models with changes
+                source.__activeCurrentRelations.forEach(function (relation) {
+                    if (relation && source[relation]) {
+                        if (_this6[relation]) {
+                            if (source[relation].hasUserChanges) {
+                                if (source[relation].models) {
+                                    // If related item is a store
+                                    if (source[relation].models.length === _this6[relation].models.length) {
+                                        // run only if the store shares the same amount of items
+                                        // Check if the store has some changes
+                                        _this6[relation].__setChanged = source[relation].__setChanged;
+                                        // Set the changes for all related models with changes
+                                        source[relation].models.forEach(function (relatedModel, index) {
+                                            _this6[relation].models[index].__copyChanges(relatedModel, _this6[relation]);
+                                        });
+                                    }
+                                } else {
+                                    // Set the changes for the related model
+                                    _this6[relation].__copyChanges(source[relation], undefined);
+                                }
+                            }
+                        } else {
+                            // Related object not in relations of the model we are copying
+                            console.warn('Found related object ' + source.constructor.backendResourceName + ' with relation ' + relation + ',\n                        which is not defined in the relations of the model you are copying. Skipping ' + relation + '.');
+                        }
+                    }
+                });
+            }
+        }
     }, {
         key: 'toJS',
         value: function toJS$$1() {
-            var _this6 = this;
+            var _this7 = this;
 
             var output = {};
             this.__attributes.forEach(function (attr) {
-                output[attr] = _this6.__toJSAttr(attr, _this6[attr]);
+                output[attr] = _this7.__toJSAttr(attr, _this7[attr]);
             });
 
             this.__activeCurrentRelations.forEach(function (currentRel) {
-                var model = _this6[currentRel];
+                var model = _this7[currentRel];
                 if (model) {
                     output[currentRel] = model.toJS();
                 }
@@ -1239,12 +1396,17 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         key: '__parseRepositoryToData',
         value: function __parseRepositoryToData(key, repository) {
             if (isArray(key)) {
-                var models = key.map(function (k) {
-                    return find(repository, { id: k });
+                var idIndexes = Object.fromEntries(key.map(function (id, index) {
+                    return [id, index];
+                }));
+                var models = repository.filter(function (_ref3) {
+                    var id = _ref3.id;
+                    return idIndexes[id] !== undefined;
                 });
-                return filter(models, function (m) {
-                    return m;
+                models.sort(function (l, r) {
+                    return idIndexes[l.id] - idIndexes[r.id];
                 });
+                return models;
             }
             return find(repository, { id: key });
         }
@@ -1270,14 +1432,14 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
     }, {
         key: '__scopeBackendResponse',
-        value: function __scopeBackendResponse(_ref2) {
-            var _this7 = this;
+        value: function __scopeBackendResponse(_ref4) {
+            var _this8 = this;
 
-            var data = _ref2.data,
-                targetRelName = _ref2.targetRelName,
-                repos = _ref2.repos,
-                mapping = _ref2.mapping,
-                reverseMapping = _ref2.reverseMapping;
+            var data = _ref4.data,
+                targetRelName = _ref4.targetRelName,
+                repos = _ref4.repos,
+                mapping = _ref4.mapping,
+                reverseMapping = _ref4.reverseMapping;
 
             var scopedData = null;
             var relevant = false;
@@ -1293,18 +1455,18 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 var repository = repos[repoName];
                 // For backwards compatibility, reverseMapping is optional (for now)
                 var reverseRelName = reverseMapping ? reverseMapping[backendRelName] : null;
-                var relName = _this7.constructor.fromBackendAttrKey(backendRelName);
+                var relName = _this8.constructor.fromBackendAttrKey(backendRelName);
 
                 if (targetRelName === relName) {
-                    var relKey = data[_this7.constructor.toBackendAttrKey(relName)];
+                    var relKey = data[_this8.constructor.toBackendAttrKey(relName)];
                     if (relKey !== undefined) {
                         relevant = true;
-                        scopedData = _this7.__parseRepositoryToData(relKey, repository);
+                        scopedData = _this8.__parseRepositoryToData(relKey, repository);
                     } else if (repository && reverseRelName) {
-                        var pk = data[_this7.constructor.primaryKey];
+                        var pk = data[_this8.constructor.primaryKey];
                         relevant = true;
-                        scopedData = _this7.__parseReverseRepositoryToData(reverseRelName, pk, repository);
-                        if (_this7.relations(relName).prototype instanceof Model) {
+                        scopedData = _this8.__parseReverseRepositoryToData(reverseRelName, pk, repository);
+                        if (_this8.relations(relName).prototype instanceof Model) {
                             if (scopedData.length === 0) {
                                 scopedData = null;
                             } else if (scopedData.length === 1) {
@@ -1343,13 +1505,13 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
     }, {
         key: 'fromBackend',
-        value: function fromBackend(_ref3) {
-            var _this8 = this;
+        value: function fromBackend(_ref5) {
+            var _this9 = this;
 
-            var data = _ref3.data,
-                repos = _ref3.repos,
-                relMapping = _ref3.relMapping,
-                reverseRelMapping = _ref3.reverseRelMapping;
+            var data = _ref5.data,
+                repos = _ref5.repos,
+                relMapping = _ref5.relMapping,
+                reverseRelMapping = _ref5.reverseRelMapping;
 
             // We handle the fromBackend recursively. On each relation of the source model
             // fromBackend gets called as well, but with data scoped for itself
@@ -1357,8 +1519,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             // So when we have a model with a `town.restaurants.chef` relation,
             // we call fromBackend on the `town` relation.
             each(this.__activeCurrentRelations, function (relName) {
-                var rel = _this8[relName];
-                var resScoped = _this8.__scopeBackendResponse({
+                var rel = _this9[relName];
+                var resScoped = _this9.__scopeBackendResponse({
                     data: data,
                     targetRelName: relName,
                     repos: repos,
@@ -1400,22 +1562,22 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'parse',
         value: function parse(data) {
-            var _this9 = this;
+            var _this10 = this;
 
             invariant(isPlainObject(data), 'Parameter supplied to `parse()` is not an object, got: ' + JSON.stringify(data));
 
             forIn(data, function (value, key) {
-                var attr = _this9.constructor.fromBackendAttrKey(key);
-                if (_this9.__attributes.includes(attr)) {
-                    _this9[attr] = _this9.__parseAttr(attr, value);
-                } else if (_this9.__activeCurrentRelations.includes(attr)) {
+                var attr = _this10.constructor.fromBackendAttrKey(key);
+                if (_this10.__attributes.includes(attr)) {
+                    _this10[attr] = _this10.__parseAttr(attr, value);
+                } else if (_this10.__activeCurrentRelations.includes(attr)) {
                     // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                     // However, it can also be an object if there are nested relations (non flattened).
                     if (isPlainObject(value) || Array.isArray(value) && value.every(isPlainObject)) {
-                        _this9[attr].parse(value);
+                        _this10[attr].parse(value);
                     } else if (value === null) {
                         // The relation is cleared.
-                        _this9[attr].clear();
+                        _this10[attr].clear();
                     }
                 }
             });
@@ -1435,7 +1597,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'saveFile',
         value: function saveFile(name) {
-            var _this10 = this;
+            var _this11 = this;
 
             var snakeName = camelToSnake(name);
 
@@ -1446,16 +1608,16 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 data.append(name, file, file.name);
 
                 return this.api.post('' + this.url + snakeName + '/', data, { headers: { 'Content-Type': 'multipart/form-data' } }).then(action(function (res) {
-                    _this10.__fileExists[name] = true;
-                    delete _this10.__fileChanges[name];
-                    _this10.saveFromBackend(res);
+                    _this11.__fileExists[name] = true;
+                    delete _this11.__fileChanges[name];
+                    _this11.saveFromBackend(res);
                 }));
             } else if (this.__fileDeletions[name]) {
                 if (this.__fileExists[name]) {
                     return this.api.delete('' + this.url + snakeName + '/').then(action(function () {
-                        _this10.__fileExists[name] = false;
-                        delete _this10.__fileDeletions[name];
-                        _this10.saveFromBackend({ data: defineProperty({}, snakeName, null) });
+                        _this11.__fileExists[name] = false;
+                        delete _this11.__fileDeletions[name];
+                        _this11.saveFromBackend({ data: defineProperty({}, snakeName, null) });
                     }));
                 } else {
                     delete this.__fileDeletions[name];
@@ -1545,6 +1707,30 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
             return Promise.all(promises);
         }
+
+        /**
+        * Validates a model by sending a save request to binder with the validate header set. Binder will return the validation
+        * errors without actually committing the save
+        *
+        * @param options same as for a normal save request, example: {onlyChanges: true}
+        */
+
+    }, {
+        key: 'validate',
+        value: function validate() {
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+            // Add the validate parameter
+            if (options.params) {
+                options.params.validate = true;
+            } else {
+                options.params = { validate: true };
+            }
+
+            return this.save(options).catch(function (err) {
+                throw err;
+            });
+        }
     }, {
         key: 'save',
         value: function save() {
@@ -1559,7 +1745,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: '_save',
         value: function _save() {
-            var _this11 = this;
+            var _this12 = this;
 
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -1575,17 +1761,20 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 isNew: this.isNew,
                 requestOptions: omit(options, 'url', 'data', 'mapData')
             }).then(action(function (res) {
-                _this11.saveFromBackend(_extends({}, res, {
-                    data: omit(res.data, _this11.fileFields().map(camelToSnake))
-                }));
-                _this11.clearUserFieldChanges();
-                return _this11.saveFiles().then(function () {
-                    _this11.clearUserFileChanges();
-                    return Promise.resolve(res);
-                });
+                // Only update the model when we are actually trying to save
+                if (!options.params || !options.params.validate) {
+                    _this12.saveFromBackend(_extends({}, res, {
+                        data: omit(res.data, _this12.fileFields().map(camelToSnake))
+                    }));
+                    _this12.clearUserFieldChanges();
+                    return _this12.saveFiles().then(function () {
+                        _this12.clearUserFileChanges();
+                        return Promise.resolve(res);
+                    });
+                }
             })).catch(action(function (err) {
                 if (err.valErrors) {
-                    _this11.parseValidationErrors(err.valErrors);
+                    _this12.parseValidationErrors(err.valErrors);
                 }
                 throw err;
             })));
@@ -1593,7 +1782,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: '_saveAll',
         value: function _saveAll() {
-            var _this12 = this;
+            var _this13 = this;
 
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -1609,31 +1798,34 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 }),
                 requestOptions: omit(options, 'relations', 'data', 'mapData')
             }).then(action(function (res) {
-                _this12.saveFromBackend(res);
-                _this12.clearUserFieldChanges();
+                // Only update the models if we are actually trying to save
+                if (!options.params || !options.params.validate) {
+                    _this13.saveFromBackend(res);
+                    _this13.clearUserFieldChanges();
 
-                forNestedRelations(_this12, relationsToNestedKeys(options.relations || []), function (relation) {
-                    if (relation instanceof Model) {
-                        relation.clearUserFieldChanges();
-                    } else {
-                        relation.clearSetChanges();
-                    }
-                });
-
-                return _this12.saveAllFiles(relationsToNestedKeys(options.relations || [])).then(function () {
-                    _this12.clearUserFileChanges();
-
-                    forNestedRelations(_this12, relationsToNestedKeys(options.relations || []), function (relation) {
+                    forNestedRelations(_this13, relationsToNestedKeys(options.relations || []), function (relation) {
                         if (relation instanceof Model) {
-                            relation.clearUserFileChanges();
+                            relation.clearUserFieldChanges();
+                        } else {
+                            relation.clearSetChanges();
                         }
                     });
 
-                    return res;
-                });
+                    return _this13.saveAllFiles(relationsToNestedKeys(options.relations || [])).then(function () {
+                        _this13.clearUserFileChanges();
+
+                        forNestedRelations(_this13, relationsToNestedKeys(options.relations || []), function (relation) {
+                            if (relation instanceof Model) {
+                                relation.clearUserFileChanges();
+                            }
+                        });
+
+                        return res;
+                    });
+                }
             })).catch(action(function (err) {
                 if (err.valErrors) {
-                    _this12.parseValidationErrors(err.valErrors);
+                    _this13.parseValidationErrors(err.valErrors);
                 }
                 throw err;
             })));
@@ -1645,19 +1837,19 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: '__parseNewIds',
         value: function __parseNewIds(idMaps) {
-            var _this13 = this;
+            var _this14 = this;
 
             var bName = this.constructor.backendResourceName;
             if (bName && idMaps[bName]) {
                 var idMap = idMaps[bName].find(function (ids) {
-                    return ids[0] === _this13.getInternalId();
+                    return ids[0] === _this14.getInternalId();
                 });
                 if (idMap) {
                     this[this.constructor.primaryKey] = idMap[1];
                 }
             }
             each(this.__activeCurrentRelations, function (relName) {
-                var rel = _this13[relName];
+                var rel = _this14[relName];
                 rel.__parseNewIds(idMaps);
             });
         }
@@ -1669,7 +1861,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'parseValidationErrors',
         value: function parseValidationErrors(valErrors) {
-            var _this14 = this;
+            var _this15 = this;
 
             var bname = this.constructor.backendResourceName;
 
@@ -1682,24 +1874,24 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                         return snakeToCamel(key);
                     });
                     var formattedErrors = mapValues(camelCasedErrors, function (valError) {
-                        return valError.map(_this14.validationErrorFormatter);
+                        return valError.map(_this15.validationErrorFormatter);
                     });
                     this.__backendValidationErrors = formattedErrors;
                 }
             }
 
             this.__activeCurrentRelations.forEach(function (currentRel) {
-                _this14[currentRel].parseValidationErrors(valErrors);
+                _this15[currentRel].parseValidationErrors(valErrors);
             });
         }
     }, {
         key: 'clearValidationErrors',
         value: function clearValidationErrors() {
-            var _this15 = this;
+            var _this16 = this;
 
             this.__backendValidationErrors = {};
             this.__activeCurrentRelations.forEach(function (currentRel) {
-                _this15[currentRel].clearValidationErrors();
+                _this16[currentRel].clearValidationErrors();
             });
         }
 
@@ -1717,12 +1909,12 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'delete',
         value: function _delete() {
-            var _this16 = this;
+            var _this17 = this;
 
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
             var removeFromStore = function removeFromStore() {
-                return _this16.__store ? _this16.__store.remove(_this16) : null;
+                return _this17.__store ? _this17.__store.remove(_this17) : null;
             };
             if (options.immediate || this.isNew) {
                 removeFromStore();
@@ -1748,7 +1940,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'fetch',
         value: function fetch() {
-            var _this17 = this;
+            var _this18 = this;
 
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -1760,7 +1952,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 data: data,
                 requestOptions: omit(options, ['data', 'url'])
             }).then(action(function (res) {
-                _this17.fromBackend(res);
+                _this18.fromBackend(res);
             })));
 
             return promise;
@@ -1768,26 +1960,32 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
     }, {
         key: 'clear',
         value: function clear() {
-            var _this18 = this;
+            var _this19 = this;
 
             forIn(this.__originalAttributes, function (value, key) {
-                _this18[key] = value;
+                // If it is our primary key, and the primary key is negative, we generate a new negative pk, else we set it
+                // to the value
+                if (key === _this19.constructor.primaryKey && value < 0) {
+                    _this19[key] = -1 * uniqueId();
+                } else {
+                    _this19[key] = value;
+                }
             });
 
             this.__activeCurrentRelations.forEach(function (currentRel) {
-                _this18[currentRel].clear();
+                _this19[currentRel].clear();
             });
         }
     }, {
         key: 'hasUserChanges',
         get: function get$$1() {
-            var _this19 = this;
+            var _this20 = this;
 
             if (this.__changes.length > 0) {
                 return true;
             }
             return this.__activeCurrentRelations.some(function (rel) {
-                return _this19[rel].hasUserChanges;
+                return _this20[rel].hasUserChanges;
             });
         }
     }, {
