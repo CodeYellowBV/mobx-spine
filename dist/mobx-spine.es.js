@@ -55,8 +55,8 @@ function forNestedRelations(model, nestedRelations, fn) {
     Object.keys(nestedRelations).forEach(function (key) {
 
         if (!model[key]) {
-
-            throw new Error('Relation \'' + key + '\' is not there');
+            //check if passed relation is defined in relations
+            throw new Error('Relation \'' + key + '\' is not defined in relations');
         } else {
             if (Object.keys(nestedRelations[key]).length > 0) {
                 if (model[key].forEach) {
@@ -1239,8 +1239,11 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         key: '__parseRepositoryToData',
         value: function __parseRepositoryToData(key, repository) {
             if (isArray(key)) {
-                return filter(repository, function (m) {
-                    return key.includes(m.id);
+                var models = key.map(function (k) {
+                    return find(repository, { id: k });
+                });
+                return filter(models, function (m) {
+                    return m;
                 });
             }
             return find(repository, { id: key });

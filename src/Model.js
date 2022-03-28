@@ -575,7 +575,10 @@ export default class Model {
 
     __parseRepositoryToData(key, repository) {
         if (isArray(key)) {
-            return filter(repository, m => key.includes(m.id));
+            const idIndexes = Object.fromEntries(key.map((id, index) => [id, index]));
+            const models = repository.filter(({ id }) => idIndexes[id] !== undefined);
+            models.sort((l, r) => idIndexes[l.id] - idIndexes[r.id]);
+            return models;
         }
         return find(repository, { id: key });
     }
