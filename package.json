@@ -54,7 +54,7 @@
     "lodash": "4.17.21",
     "luxon": "1.24.1",
     "mobx": "4.9.4",
-    "moment": "2.24.0",
+    "moment": "2.29.2",
     "prettier": "1.17.0",
     "rollup": "0.59.1",
     "rollup-plugin-babel": "3.0.4"
