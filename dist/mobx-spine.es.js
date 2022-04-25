@@ -1132,7 +1132,13 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         invariant(['tree', 'graph'].includes(this.__linkRelations), 'Unknown relation linking method: ' + this.__linkRelations);
         // Find all attributes. Not all observables are an attribute.
         forIn(this, function (value, key) {
-            if (!key.startsWith('__') && isObservableProp(_this2, key)) {
+            var keyIsObservable = _this2.constructor.__observableCache[key];
+            if (keyIsObservable === undefined) {
+                keyIsObservable = isObservableProp(_this2, key);
+                _this2.constructor.__observableCache[key] = keyIsObservable;
+            }
+
+            if (!key.startsWith('__') && keyIsObservable) {
                 invariant(!FORBIDDEN_ATTRS.includes(key), 'Forbidden attribute key used: `' + key + '`');
                 _this2.__attributes.push(key);
                 var newValue = value;
@@ -1994,7 +2000,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         }
     }]);
     return Model;
-}(), _class2$1.primaryKey = 'id', _class2$1.backendResourceName = '', _class2$1.fileFields = [], _class2$1.pickFields = undefined, _class2$1.omitFields = [], _temp$1), (_descriptor$1 = _applyDecoratedDescriptor$1(_class$1.prototype, '__backendValidationErrors', [observable], {
+}(), _class2$1.primaryKey = 'id', _class2$1.backendResourceName = '', _class2$1.fileFields = [], _class2$1.pickFields = undefined, _class2$1.omitFields = [], _class2$1.__observableCache = {}, _temp$1), (_descriptor$1 = _applyDecoratedDescriptor$1(_class$1.prototype, '__backendValidationErrors', [observable], {
     enumerable: true,
     initializer: function initializer() {
         return {};
