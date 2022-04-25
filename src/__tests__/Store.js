@@ -1013,7 +1013,7 @@ describe('Pagination', () => {
     });
 });
 
-describe('Graph parse', () => {
+describe('Linking relations', () => {
     let mock;
     beforeEach(() => {
         mock = new MockAdapter(axios);
@@ -1025,7 +1025,35 @@ describe('Graph parse', () => {
         }
     });
 
-    test('animals with owner & town', () => {
+    test('instantiate', () => {
+        new AnimalStore();
+        new AnimalStore({ linkRelations: 'tree' });
+        new AnimalStore({ linkRelations: 'graph' });
+        expect(() => new AnimalStore({ linkRelations: 'foo' })).toThrow(new Error('[mobx-spine] Unknown relation linking method: foo'));
+    })
+
+    test('fetch animals with owner & town as tree', () => {
+        mock.onAny().replyOnce(() => [200, animalsGraphData]);
+
+        const animalStore = new AnimalStore({
+            linkRelations: 'tree',
+            relations: ['owner.town'],
+        });
+
+        return animalStore.fetch().then(() => {
+            expect(animalStore.map('id')).toEqual([1, 2, 3]);
+
+            expect(animalStore.at(0).owner).not.toBe(animalStore.at(1).owner);
+            expect(animalStore.at(0).owner).not.toBe(animalStore.at(2).owner);
+            expect(animalStore.at(1).owner).not.toBe(animalStore.at(2).owner);
+
+            expect(animalStore.at(0).owner.town).not.toBe(animalStore.at(1).owner.town);
+            expect(animalStore.at(0).owner.town).not.toBe(animalStore.at(2).owner.town);
+            expect(animalStore.at(1).owner.town).not.toBe(animalStore.at(2).owner.town);
+        });
+    });
+
+    test('fetch animals with owner & town as graph', () => {
         mock.onAny().replyOnce(() => [200, animalsGraphData]);
 
         const animalStore = new AnimalStore({
