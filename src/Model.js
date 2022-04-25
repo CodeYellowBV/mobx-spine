@@ -244,7 +244,7 @@ export default class Model {
                 this.__activeCurrentRelations.push(currentRel);
             }
         });
-        const relModels = mapValues(relModels, (otherRelNames, relName) => {
+        const createdModels = mapValues(relModels, (otherRelNames, relName) => {
             const RelModel = relations[relName];
             invariant(
                 RelModel,
@@ -269,8 +269,8 @@ export default class Model {
             }
             return new RelModel(null, options);
         });
-        Object.assign(this, relModels);
-        return relModels;
+        Object.assign(this, createdModels);
+        return createdModels;
     }
 
     // Many backends use snake_case for attribute names, so we convert to snake_case by default.

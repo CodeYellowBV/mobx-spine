@@ -1152,13 +1152,17 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 _this2.__originalAttributes[key] = newValue;
             }
         });
+        var relations = [];
         if (options.relations) {
-            this.__parseRelations(options.relations, options.relsFromCache);
+            relations = Object.keys(this.__parseRelations(options.relations, options.relsFromCache));
         }
         if (data) {
             this.parse(data, options.relsFromCache);
         }
         this.initialize();
+        extendObservable(this, Object.fromEntries(relations.map(function (rel) {
+            return [rel, _this2[rel]];
+        })));
 
         this.saveFile = this.saveFile.bind(this);
     }
@@ -1195,7 +1199,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     _this3.__activeCurrentRelations.push(currentRel);
                 }
             });
-            extendObservable(this, mapValues(relModels, function (otherRelNames, relName) {
+            var createdModels = mapValues(relModels, function (otherRelNames, relName) {
                 var RelModel = relations[relName];
                 invariant(RelModel, 'Specified relation "' + relName + '" does not exist on model.');
 
@@ -1216,7 +1220,9 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     return new RelModel(options);
                 }
                 return new RelModel(null, options);
-            }));
+            });
+            Object.assign(this, createdModels);
+            return createdModels;
         }
 
         // Many backends use snake_case for attribute names, so we convert to snake_case by default.
