@@ -1150,7 +1150,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             this.__parseRelations(options.relations, options.relsFromCache);
         }
         if (data) {
-            this.parse(data);
+            this.parse(data, options.relsFromCache);
         }
         this.initialize();
 
@@ -1567,6 +1567,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function parse(data) {
             var _this9 = this;
 
+            var relsFromCache = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
             invariant(isPlainObject(data), 'Parameter supplied to `parse()` is not an object, got: ' + JSON.stringify(data));
 
             forIn(data, function (value, key) {
@@ -1574,10 +1576,17 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 if (_this9.__attributes.includes(attr)) {
                     _this9[attr] = _this9.__parseAttr(attr, value);
                 } else if (_this9.__activeCurrentRelations.includes(attr)) {
+                    var cacheData = relsFromCache[attr];
+
+                    // Model came from cache so we do not have to parse it again
+                    if (cacheData && cacheData.model) {
+                        return;
+                    }
+
                     // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                     // However, it can also be an object if there are nested relations (non flattened).
                     if (isPlainObject(value) || Array.isArray(value) && value.every(isPlainObject)) {
-                        _this9[attr].parse(value);
+                        _this9[attr].parse(value, cacheData && cacheData.rels);
                     } else if (value === null) {
                         // The relation is cleared.
                         _this9[attr].clear();
