@@ -185,13 +185,15 @@ export default class Model {
                 this.__originalAttributes[key] = newValue;
             }
         });
+        let relations = [];
         if (options.relations) {
-            this.__parseRelations(options.relations);
+            relations = Object.keys(this.__parseRelations(options.relations));
         }
         if (data) {
             this.parse(data);
         }
         this.initialize();
+        extendObservable(this, Object.fromEntries(relations.map((rel) => [rel, this[rel]])));
 
         this.saveFile = this.saveFile.bind(this);
     }
@@ -228,21 +230,20 @@ export default class Model {
                 this.__activeCurrentRelations.push(currentRel);
             }
         });
-        extendObservable(
-            this,
-            mapValues(relModels, (otherRelNames, relName) => {
-                const RelModel = relations[relName];
-                invariant(
-                    RelModel,
-                    `Specified relation "${relName}" does not exist on model.`
-                );
-                const options = { relations: otherRelNames };
-                if (RelModel.prototype instanceof Store) {
-                    return new RelModel(options);
-                }
-                return new RelModel(null, options);
-            })
-        );
+        const relModels = mapValues(relModels, (otherRelNames, relName) => {
+            const RelModel = relations[relName];
+            invariant(
+                RelModel,
+                `Specified relation "${relName}" does not exist on model.`
+            );
+            const options = { relations: otherRelNames };
+            if (RelModel.prototype instanceof Store) {
+                return new RelModel(options);
+            }
+            return new RelModel(null, options);
+        });
+        Object.assign(this, relModels);
+        return relModels;
     }
 
     // Many backends use snake_case for attribute names, so we convert to snake_case by default.
