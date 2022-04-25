@@ -163,12 +163,20 @@ export default class Model {
     // Empty function, but can be overridden if you want to do something after initializing the model.
     initialize() {}
 
+    static __observableCache = {};
+
     constructor(data, options = {}) {
         this.__store = options.store;
         this.__repository = options.repository;
         // Find all attributes. Not all observables are an attribute.
         forIn(this, (value, key) => {
-            if (!key.startsWith('__') && isObservableProp(this, key)) {
+            let keyIsObservable = this.constructor.__observableCache[key]
+            if (keyIsObservable === undefined) {
+                keyIsObservable = isObservableProp(this, key);
+                this.constructor.__observableCache[key] = keyIsObservable;
+            }
+
+            if (!key.startsWith('__') && keyIsObservable) {
                 invariant(
                     !FORBIDDEN_ATTRS.includes(key),
                     `Forbidden attribute key used: \`${key}\``
