@@ -199,13 +199,15 @@ export default class Model {
                 this.__originalAttributes[key] = newValue;
             }
         });
+        let relations = [];
         if (options.relations) {
-            this.__parseRelations(options.relations, options.relsFromCache);
+            relations = Object.keys(this.__parseRelations(options.relations, options.relsFromCache));
         }
         if (data) {
             this.parse(data, options.relsFromCache);
         }
         this.initialize();
+        extendObservable(this, Object.fromEntries(relations.map((rel) => [rel, this[rel]])));
 
         this.saveFile = this.saveFile.bind(this);
     }
@@ -242,34 +244,33 @@ export default class Model {
                 this.__activeCurrentRelations.push(currentRel);
             }
         });
-        extendObservable(
-            this,
-            mapValues(relModels, (otherRelNames, relName) => {
-                const RelModel = relations[relName];
-                invariant(
-                    RelModel,
-                    `Specified relation "${relName}" does not exist on model.`
-                );
+        const relModels = mapValues(relModels, (otherRelNames, relName) => {
+            const RelModel = relations[relName];
+            invariant(
+                RelModel,
+                `Specified relation "${relName}" does not exist on model.`
+            );
 
-                const cacheData = relsFromCache[relName];
-                if (cacheData && cacheData.model) {
-                    return cacheData.model;
-                }
+            const cacheData = relsFromCache[relName];
+            if (cacheData && cacheData.model) {
+                return cacheData.model;
+            }
 
-                const options = {
-                    relations: otherRelNames,
-                    linkRelations: this.__linkRelations,
-                };
-                if (cacheData && cacheData.rels) {
-                    options.relsFromCache = cacheData.rels;
-                }
+            const options = {
+                relations: otherRelNames,
+                linkRelations: this.__linkRelations,
+            };
+            if (cacheData && cacheData.rels) {
+                options.relsFromCache = cacheData.rels;
+            }
 
-                if (RelModel.prototype instanceof Store) {
-                    return new RelModel(options);
-                }
-                return new RelModel(null, options);
-            })
-        );
+            if (RelModel.prototype instanceof Store) {
+                return new RelModel(options);
+            }
+            return new RelModel(null, options);
+        });
+        Object.assign(this, relModels);
+        return relModels;
     }
 
     // Many backends use snake_case for attribute names, so we convert to snake_case by default.
