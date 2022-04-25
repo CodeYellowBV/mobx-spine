@@ -95,6 +95,7 @@ console.log(cat.undefinedProperty); // undefined
 |key|default| | |
 |---|---|---|---|
 |relations|undefined|Relations to be instantiated when instantiating this model as well. Should be an array of strings.| `['location', 'owner.parents']`
+|linkRelations|'tree'|There are 2 ways of linking relations, 'tree' and 'graph'. When using tree every model is guaranteed to be a contained tree itself, so all its relations are unique instances. With a graph instances that occur in a similar path will be reused. For example if you have 2 animals with the same owner the owner would be a different model with tree linking, but the same model with graph linking.|`animalStore = new AnimalStore({ linkRelations: 'tree' });`|
 
 
 ### Properties
@@ -402,6 +403,7 @@ A Store (Collection in Backbone) is holds multiple instances of models and have 
 |limit|25|Page size per fetch, also able to set using `setLimit()`. By default a limit is always set, but there are occations where you want to fetch everything. In this case, set limit to false. | `animalStore = new AnimalStore({ limit: false })`
 |comparator|undefined| The models in the store will be sorted by comparator. When it's a string, the models will be sorted by that property name. If it's a function, the models will be sorted using the [default array sort](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort). | `animalStore = new AnimalStore({ comparator: 'name' })`
 |params|undefined| All params will be converted to GET params. This is used for quering the server to fill the store with models. | `animalStore = new AnimalStore({ params: { 'search': 'Gizmo' } })`
+|linkRelations|'tree'|There are 2 ways of linking relations, 'tree' and 'graph'. When using tree every model is guaranteed to be a contained tree itself, so all its relations are unique instances. With a graph instances that occur in a similar path will be reused. For example if you have 2 animals with the same owner the owner would be a different model with tree linking, but the same model with graph linking.|`animalStore = new AnimalStore({ linkRelations: 'tree' });`|
 
 ### Adding models
 

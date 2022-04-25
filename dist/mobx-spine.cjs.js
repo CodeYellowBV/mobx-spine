@@ -234,11 +234,82 @@ function _applyDecoratedDescriptor(target, property, decorators, descriptor, con
 
     return desc;
 }
-var AVAILABLE_CONST_OPTIONS = ['relations', 'limit', 'comparator', 'params', 'repository'];
+var AVAILABLE_CONST_OPTIONS = ['relations', 'limit', 'comparator', 'params', 'repository', 'linkRelations'];
+
+function getRelsFromCache(record, rels, repos, relMapping, relPath, relCache) {
+    var relsFromCache = {};
+
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
+
+    try {
+        var _loop = function _loop() {
+            var _step$value = slicedToArray(_step.value, 2),
+                rel = _step$value[0],
+                subRels = _step$value[1];
+
+            // First we try to get the related id
+            var backendRel = camelToSnake(rel);
+            var relId = record[backendRel];
+            // We only care about numbers since that means that it
+            // is filled and is a direct relation.
+            if (typeof relId !== 'number') {
+                return 'continue';
+            }
+
+            // Then we see if we can find the model in the cache.
+            var subRelPath = relPath + '.' + rel;
+            var cachedModel = relCache[subRelPath + ':' + relId];
+            if (cachedModel) {
+                relsFromCache[rel] = { model: cachedModel };
+                // If we found it we don't have to dive deeper.
+                return 'continue';
+            }
+
+            // Then we search for the related data in the repos
+            var subRecord = repos[relMapping[camelToSnake(subRelPath.slice('root.'.length))]].find(function (_ref) {
+                var id = _ref.id;
+                return id === relId;
+            });
+            if (!subRecord) {
+                return 'continue';
+            }
+
+            // Now we recurse to see if we can find relations in the cache for this model
+            relsFromCache[rel] = { rels: getRelsFromCache(subRecord, subRels, repos, relMapping, subRelPath, relCache) };
+        };
+
+        for (var _iterator = Object.entries(rels)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var _ret = _loop();
+
+            if (_ret === 'continue') continue;
+        }
+    } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+    } finally {
+        try {
+            if (!_iteratorNormalCompletion && _iterator.return) {
+                _iterator.return();
+            }
+        } finally {
+            if (_didIteratorError) {
+                throw _iteratorError;
+            }
+        }
+    }
+
+    return relsFromCache;
+}
 
 var Store = (_class = (_temp = _class2 = function () {
     createClass(Store, [{
         key: 'url',
+
+        // The set of models has changed
+
+        // Holds the fetch parameters
         value: function url() {
             // Try to auto-generate the URL.
             var bname = this.constructor.backendResourceName;
@@ -247,10 +318,6 @@ var Store = (_class = (_temp = _class2 = function () {
             }
             return null;
         }
-        // The set of models has changed
-
-        // Holds the fetch parameters
-
     }, {
         key: 'initialize',
 
@@ -297,6 +364,8 @@ var Store = (_class = (_temp = _class2 = function () {
             invariant(AVAILABLE_CONST_OPTIONS.includes(option), 'Unknown option passed to store: ' + option);
         });
         this.__repository = options.repository;
+        this.__linkRelations = options.linkRelations || 'tree';
+        invariant(['tree', 'graph'].includes(this.__linkRelations), 'Unknown relation linking method: ' + this.__linkRelations);
         if (options.relations) {
             this.__parseRelations(options.relations);
         }
@@ -326,26 +395,86 @@ var Store = (_class = (_temp = _class2 = function () {
         }
     }, {
         key: 'fromBackend',
-        value: function fromBackend(_ref) {
+        value: function fromBackend(_ref2) {
             var _this = this;
 
-            var data = _ref.data,
-                repos = _ref.repos,
-                relMapping = _ref.relMapping,
-                reverseRelMapping = _ref.reverseRelMapping;
+            var data = _ref2.data,
+                repos = _ref2.repos,
+                relMapping = _ref2.relMapping,
+                reverseRelMapping = _ref2.reverseRelMapping,
+                _ref2$relCache = _ref2.relCache,
+                relCache = _ref2$relCache === undefined ? {} : _ref2$relCache,
+                _ref2$relPath = _ref2.relPath,
+                relPath = _ref2$relPath === undefined ? 'root' : _ref2$relPath;
 
             invariant(data, 'Backend error. Data is not set. HINT: DID YOU FORGET THE M2M again?');
 
             this.models.replace(data.map(function (record) {
+                var options = {};
+
+                if (_this.__linkRelations === 'graph') {
+                    // Return from cache if available
+                    var _model = relCache[relPath + ':' + record.id];
+                    if (_model !== undefined) {
+                        return _model;
+                    }
+
+                    options.relsFromCache = getRelsFromCache(record, relationsToNestedKeys(_this.__activeRelations), repos, relMapping, relPath, relCache);
+                }
+
                 // TODO: I'm not happy at all about how this looks.
                 // We'll need to finetune some things, but hey, for now it works.
-                var model = _this._newModel();
+
+                var model = _this._newModel(null, options);
                 model.fromBackend({
                     data: record,
                     repos: repos,
                     relMapping: relMapping,
-                    reverseRelMapping: reverseRelMapping
+                    reverseRelMapping: reverseRelMapping,
+                    relCache: relCache,
+                    relPath: relPath
                 });
+
+                if (_this.__linkRelations === 'graph') {
+                    var toAdd = [[relPath, model]];
+                    while (toAdd.length > 0) {
+                        var _toAdd$pop = toAdd.pop(),
+                            _toAdd$pop2 = slicedToArray(_toAdd$pop, 2),
+                            _relPath = _toAdd$pop2[0],
+                            _model2 = _toAdd$pop2[1];
+
+                        relCache[_relPath + ':' + _model2.id] = _model2;
+
+                        var _iteratorNormalCompletion2 = true;
+                        var _didIteratorError2 = false;
+                        var _iteratorError2 = undefined;
+
+                        try {
+                            for (var _iterator2 = _model2.__activeCurrentRelations[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                                var _rel = _step2.value;
+
+                                var relModel = _model2[_rel];
+                                if (relModel instanceof Model && !relModel.isNew) {
+                                    toAdd.push([_relPath + '.' + _rel, relModel]);
+                                }
+                            }
+                        } catch (err) {
+                            _didIteratorError2 = true;
+                            _iteratorError2 = err;
+                        } finally {
+                            try {
+                                if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                                    _iterator2.return();
+                                }
+                            } finally {
+                                if (_didIteratorError2) {
+                                    throw _iteratorError2;
+                                }
+                            }
+                        }
+                    }
+                }
+
                 return model;
             }));
             this.sort();
@@ -354,11 +483,13 @@ var Store = (_class = (_temp = _class2 = function () {
         key: '_newModel',
         value: function _newModel() {
             var model = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+            var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
-            return new this.Model(model, {
+            return new this.Model(model, _extends({}, options, {
                 store: this,
-                relations: this.__activeRelations
-            });
+                relations: this.__activeRelations,
+                linkRelations: this.__linkRelations
+            }));
         }
     }, {
         key: 'sort',
@@ -379,10 +510,14 @@ var Store = (_class = (_temp = _class2 = function () {
     }, {
         key: 'parse',
         value: function parse(models) {
+            var _this2 = this;
+
             invariant(lodash.isArray(models), 'Parameter supplied to `parse()` is not an array, got: ' + JSON.stringify(models));
             // Parse does not mutate __setChanged, as it is used in
             // fromBackend in the model...
-            this.models.replace(models.map(this._newModel.bind(this)));
+            this.models.replace(models.map(function (data) {
+                return _this2._newModel(data);
+            }));
             this.sort();
 
             return this;
@@ -404,18 +539,20 @@ var Store = (_class = (_temp = _class2 = function () {
     }, {
         key: 'add',
         value: function add(models) {
-            var _this2 = this;
+            var _this3 = this;
 
             var singular = !lodash.isArray(models);
             models = singular ? [models] : models.slice();
 
-            var modelInstances = models.map(this._newModel.bind(this));
+            var modelInstances = models.map(function (data) {
+                return _this3._newModel(data);
+            });
 
             modelInstances.forEach(function (modelInstance) {
-                var primaryValue = modelInstance[_this2.Model.primaryKey];
-                invariant(!primaryValue || !_this2.get(primaryValue), 'A model with the same primary key value "' + primaryValue + '" already exists in this store.');
-                _this2.__setChanged = true;
-                _this2.models.push(modelInstance);
+                var primaryValue = modelInstance[_this3.Model.primaryKey];
+                invariant(!primaryValue || !_this3.get(primaryValue), 'A model with the same primary key value "' + primaryValue + '" already exists in this store.');
+                _this3.__setChanged = true;
+                _this3.models.push(modelInstance);
             });
             this.sort();
 
@@ -424,13 +561,13 @@ var Store = (_class = (_temp = _class2 = function () {
     }, {
         key: 'remove',
         value: function remove(models) {
-            var _this3 = this;
+            var _this4 = this;
 
             var singular = !lodash.isArray(models);
             models = singular ? [models] : models.slice();
 
             models.forEach(function (model) {
-                return _this3.models.remove(model);
+                return _this4.models.remove(model);
             });
             if (models.length > 0) {
                 this.__setChanged = true;
@@ -440,20 +577,20 @@ var Store = (_class = (_temp = _class2 = function () {
     }, {
         key: 'removeById',
         value: function removeById(ids) {
-            var _this4 = this;
+            var _this5 = this;
 
             var singular = !lodash.isArray(ids);
             ids = singular ? [ids] : ids.slice();
             invariant(!ids.some(isNaN), 'Cannot remove a model by id that is not a number: ' + JSON.stringify(ids));
 
             var models = ids.map(function (id) {
-                return _this4.get(id);
+                return _this5.get(id);
             });
 
             models.forEach(function (model) {
                 if (model) {
-                    _this4.models.remove(model);
-                    _this4.__setChanged = true;
+                    _this5.models.remove(model);
+                    _this5.__setChanged = true;
                 }
             });
 
@@ -477,7 +614,7 @@ var Store = (_class = (_temp = _class2 = function () {
     }, {
         key: 'fetch',
         value: function fetch() {
-            var _this5 = this;
+            var _this6 = this;
 
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -488,8 +625,8 @@ var Store = (_class = (_temp = _class2 = function () {
                 data: data,
                 requestOptions: lodash.omit(options, 'data')
             }).then(mobx.action(function (res) {
-                _this5.__state.totalRecords = res.totalRecords;
-                _this5.fromBackend(res);
+                _this6.__state.totalRecords = res.totalRecords;
+                _this6.fromBackend(res);
 
                 return res.response;
             })));
@@ -562,7 +699,7 @@ var Store = (_class = (_temp = _class2 = function () {
     }, {
         key: 'toBackendAll',
         value: function toBackendAll() {
-            var _this6 = this;
+            var _this7 = this;
 
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -581,7 +718,7 @@ var Store = (_class = (_temp = _class2 = function () {
                 lodash.forIn(model.relations, function (relModel, key) {
                     relations[key] = relations[key] ? relations[key].concat(relModel) : relModel;
                     // TODO: this primaryKey is not the primaryKey of the relation we're de-duplicating...
-                    relations[key] = lodash.uniqBy(relations[key], _this6.Model.primaryKey);
+                    relations[key] = lodash.uniqBy(relations[key], _this7.Model.primaryKey);
                 });
             });
 
@@ -593,11 +730,11 @@ var Store = (_class = (_temp = _class2 = function () {
 
     }, {
         key: 'virtualStore',
-        value: function virtualStore(_ref2) {
-            var _this7 = this;
+        value: function virtualStore(_ref3) {
+            var _this8 = this;
 
-            var filter = _ref2.filter,
-                comparator = _ref2.comparator;
+            var filter = _ref3.filter,
+                comparator = _ref3.comparator;
 
             var store = new this.constructor({
                 relations: this.__activeRelations,
@@ -606,13 +743,13 @@ var Store = (_class = (_temp = _class2 = function () {
 
             // Oh gawd MobX is so awesome.
             var events = mobx.autorun(function () {
-                var models = _this7.filter(filter);
+                var models = _this8.filter(filter);
                 store.models.replace(models);
                 store.sort();
 
                 // When the parent store is busy, make sure the virtual store is
                 // also busy.
-                store.__pendingRequestCount = _this7.__pendingRequestCount;
+                store.__pendingRequestCount = _this8.__pendingRequestCount;
             });
 
             store.unsubscribeVirtualStore = events;
@@ -687,15 +824,15 @@ var Store = (_class = (_temp = _class2 = function () {
     }, {
         key: 'wrapPendingRequestCount',
         value: function wrapPendingRequestCount(promise) {
-            var _this8 = this;
+            var _this9 = this;
 
             this.__pendingRequestCount++;
 
             return promise.then(function (res) {
-                _this8.__pendingRequestCount--;
+                _this9.__pendingRequestCount--;
                 return res;
             }).catch(function (err) {
-                _this8.__pendingRequestCount--;
+                _this9.__pendingRequestCount--;
                 throw err;
             });
         }
@@ -705,27 +842,27 @@ var Store = (_class = (_temp = _class2 = function () {
             var relations = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
             var promises = [];
-            var _iteratorNormalCompletion = true;
-            var _didIteratorError = false;
-            var _iteratorError = undefined;
+            var _iteratorNormalCompletion3 = true;
+            var _didIteratorError3 = false;
+            var _iteratorError3 = undefined;
 
             try {
-                for (var _iterator = this.models[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                    var model = _step.value;
+                for (var _iterator3 = this.models[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                    var model = _step3.value;
 
                     promises.push(model.saveAllFiles(relations));
                 }
             } catch (err) {
-                _didIteratorError = true;
-                _iteratorError = err;
+                _didIteratorError3 = true;
+                _iteratorError3 = err;
             } finally {
                 try {
-                    if (!_iteratorNormalCompletion && _iterator.return) {
-                        _iterator.return();
+                    if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                        _iterator3.return();
                     }
                 } finally {
-                    if (_didIteratorError) {
-                        throw _iteratorError;
+                    if (_didIteratorError3) {
+                        throw _iteratorError3;
                     }
                 }
             }
@@ -997,6 +1134,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
         this.__store = options.store;
         this.__repository = options.repository;
+        this.__linkRelations = options.linkRelations || 'tree';
+        invariant(['tree', 'graph'].includes(this.__linkRelations), 'Unknown relation linking method: ' + this.__linkRelations);
         // Find all attributes. Not all observables are an attribute.
         lodash.forIn(this, function (value, key) {
             if (!key.startsWith('__') && mobx.isObservableProp(_this2, key)) {
@@ -1014,10 +1153,10 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             }
         });
         if (options.relations) {
-            this.__parseRelations(options.relations);
+            this.__parseRelations(options.relations, options.relsFromCache);
         }
         if (data) {
-            this.parse(data);
+            this.parse(data, options.relsFromCache);
         }
         this.initialize();
 
@@ -1028,6 +1167,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         key: '__parseRelations',
         value: function __parseRelations(activeRelations) {
             var _this3 = this;
+
+            var relsFromCache = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
             this.__activeRelations = activeRelations;
             // TODO: No idea why getting the relations only works when it's a Function.
@@ -1057,7 +1198,20 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             mobx.extendObservable(this, lodash.mapValues(relModels, function (otherRelNames, relName) {
                 var RelModel = relations[relName];
                 invariant(RelModel, 'Specified relation "' + relName + '" does not exist on model.');
-                var options = { relations: otherRelNames };
+
+                var cacheData = relsFromCache[relName];
+                if (cacheData && cacheData.model) {
+                    return cacheData.model;
+                }
+
+                var options = {
+                    relations: otherRelNames,
+                    linkRelations: _this3.__linkRelations
+                };
+                if (cacheData && cacheData.rels) {
+                    options.relsFromCache = cacheData.rels;
+                }
+
                 if (RelModel.prototype instanceof Store) {
                     return new RelModel(options);
                 }
@@ -1245,12 +1399,17 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         key: '__parseRepositoryToData',
         value: function __parseRepositoryToData(key, repository) {
             if (lodash.isArray(key)) {
-                var models = key.map(function (k) {
-                    return lodash.find(repository, { id: k });
+                var idIndexes = Object.fromEntries(key.map(function (id, index) {
+                    return [id, index];
+                }));
+                var models = repository.filter(function (_ref2) {
+                    var id = _ref2.id;
+                    return idIndexes[id] !== undefined;
                 });
-                return lodash.filter(models, function (m) {
-                    return m;
+                models.sort(function (l, r) {
+                    return idIndexes[l.id] - idIndexes[r.id];
                 });
+                return models;
             }
             return lodash.find(repository, { id: key });
         }
@@ -1276,14 +1435,14 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
     }, {
         key: '__scopeBackendResponse',
-        value: function __scopeBackendResponse(_ref2) {
+        value: function __scopeBackendResponse(_ref3) {
             var _this7 = this;
 
-            var data = _ref2.data,
-                targetRelName = _ref2.targetRelName,
-                repos = _ref2.repos,
-                mapping = _ref2.mapping,
-                reverseMapping = _ref2.reverseMapping;
+            var data = _ref3.data,
+                targetRelName = _ref3.targetRelName,
+                repos = _ref3.repos,
+                mapping = _ref3.mapping,
+                reverseMapping = _ref3.reverseMapping;
 
             var scopedData = null;
             var relevant = false;
@@ -1349,13 +1508,17 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
     }, {
         key: 'fromBackend',
-        value: function fromBackend(_ref3) {
+        value: function fromBackend(_ref4) {
             var _this8 = this;
 
-            var data = _ref3.data,
-                repos = _ref3.repos,
-                relMapping = _ref3.relMapping,
-                reverseRelMapping = _ref3.reverseRelMapping;
+            var data = _ref4.data,
+                repos = _ref4.repos,
+                relMapping = _ref4.relMapping,
+                reverseRelMapping = _ref4.reverseRelMapping,
+                _ref4$relCache = _ref4.relCache,
+                relCache = _ref4$relCache === undefined ? {} : _ref4$relCache,
+                _ref4$relPath = _ref4.relPath,
+                relPath = _ref4$relPath === undefined ? 'root' : _ref4$relPath;
 
             // We handle the fromBackend recursively. On each relation of the source model
             // fromBackend gets called as well, but with data scoped for itself
@@ -1386,7 +1549,9 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                     data: scopedData,
                     repos: scopedRepos,
                     relMapping: scopedRelMapping,
-                    reverseRelMapping: scopedReverseRelMapping
+                    reverseRelMapping: scopedReverseRelMapping,
+                    relCache: relCache,
+                    relPath: relPath + '.' + relName
                 });
             });
 
@@ -1408,6 +1573,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function parse(data) {
             var _this9 = this;
 
+            var relsFromCache = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
             invariant(lodash.isPlainObject(data), 'Parameter supplied to `parse()` is not an object, got: ' + JSON.stringify(data));
 
             lodash.forIn(data, function (value, key) {
@@ -1415,10 +1582,17 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 if (_this9.__attributes.includes(attr)) {
                     _this9[attr] = _this9.__parseAttr(attr, value);
                 } else if (_this9.__activeCurrentRelations.includes(attr)) {
+                    var cacheData = relsFromCache[attr];
+
+                    // Model came from cache so we do not have to parse it again
+                    if (cacheData && cacheData.model) {
+                        return;
+                    }
+
                     // In Binder, a relation property is an `int` or `[int]`, referring to its ID.
                     // However, it can also be an object if there are nested relations (non flattened).
                     if (lodash.isPlainObject(value) || Array.isArray(value) && value.every(lodash.isPlainObject)) {
-                        _this9[attr].parse(value);
+                        _this9[attr].parse(value, cacheData && cacheData.rels);
                     } else if (value === null) {
                         // The relation is cleared.
                         _this9[attr].clear();
