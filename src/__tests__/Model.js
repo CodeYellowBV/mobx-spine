@@ -1187,7 +1187,7 @@ describe('requests', () => {
         expect(spy).toHaveBeenCalledWith(
             '/zebra/1/',
             { with: null },
-            { skipRequestErrors: true }
+            expect.objectContaining({ skipRequestErrors: true })
         );
     });
 
@@ -1200,6 +1200,34 @@ describe('requests', () => {
 
         return kind.fetch();
     });
+
+
+    test('cancel previous fetch', () => {
+        const animal = new Animal({ id: 2 });
+        mock.onAny().reply(config => {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    if (config.signal.aborted) {
+                        reject({ __CANCEL__: true })
+                    }
+                    resolve([200, { data: { id: 2, name: 'Madagascar' } }])
+                }, 1000)
+            })
+        });
+        /**
+         * Here we are testing that the first request gets cancelled before it is resolved
+         * causing the animal object to not get hydrated, while the second request resolves
+         * successfully later, and the name attribute is hydrated properly
+         */
+        return Promise.all([
+            animal.fetch().then(() => {
+                expect(animal.name).toBe('');
+            }),
+            animal.fetch({ cancelPreviousFetch: true }).then(() => {
+                expect(animal.name).toBe('Madagascar');
+            })
+        ]);
+    })
 
     test('save new with basic properties', () => {
         const animal = new Animal({ name: 'Doggo' });
