@@ -76,6 +76,7 @@ export default class BinderApi {
             url,
             data: method !== 'get' && data ? data : undefined,
             params: method === 'get' && data ? data : options.params,
+            signal: options.abortSignal
         };
 
         Object.assign(axiosOptions, options);

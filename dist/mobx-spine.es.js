@@ -1,6 +1,6 @@
 import { observable, computed, action, autorun, isObservableProp, extendObservable, isObservableArray, isObservableObject, toJS } from 'mobx';
 import { isArray, map, filter, find, sortBy, forIn, omit, isPlainObject, result, uniqBy, each, mapValues, uniqueId, uniq, mapKeys, get, range } from 'lodash';
-import axios from 'axios';
+import Axios from 'axios';
 import moment from 'moment';
 import { DateTime } from 'luxon';
 
@@ -991,6 +991,8 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
         this.__store = options.store;
         this.__repository = options.repository;
+        this.abortController = new AbortController();
+
         // Find all attributes. Not all observables are an attribute.
         forIn(this, function (value, key) {
             if (!key.startsWith('__') && isObservableProp(_this2, key)) {
@@ -1239,12 +1241,17 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         key: '__parseRepositoryToData',
         value: function __parseRepositoryToData(key, repository) {
             if (isArray(key)) {
-                var models = key.map(function (k) {
-                    return find(repository, { id: k });
+                var idIndexes = Object.fromEntries(key.map(function (id, index) {
+                    return [id, index];
+                }));
+                var models = repository.filter(function (_ref2) {
+                    var id = _ref2.id;
+                    return idIndexes[id] !== undefined;
                 });
-                return filter(models, function (m) {
-                    return m;
+                models.sort(function (l, r) {
+                    return idIndexes[l.id] - idIndexes[r.id];
                 });
+                return models;
             }
             return find(repository, { id: key });
         }
@@ -1270,14 +1277,14 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
     }, {
         key: '__scopeBackendResponse',
-        value: function __scopeBackendResponse(_ref2) {
+        value: function __scopeBackendResponse(_ref3) {
             var _this7 = this;
 
-            var data = _ref2.data,
-                targetRelName = _ref2.targetRelName,
-                repos = _ref2.repos,
-                mapping = _ref2.mapping,
-                reverseMapping = _ref2.reverseMapping;
+            var data = _ref3.data,
+                targetRelName = _ref3.targetRelName,
+                repos = _ref3.repos,
+                mapping = _ref3.mapping,
+                reverseMapping = _ref3.reverseMapping;
 
             var scopedData = null;
             var relevant = false;
@@ -1343,13 +1350,13 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
     }, {
         key: 'fromBackend',
-        value: function fromBackend(_ref3) {
+        value: function fromBackend(_ref4) {
             var _this8 = this;
 
-            var data = _ref3.data,
-                repos = _ref3.repos,
-                relMapping = _ref3.relMapping,
-                reverseRelMapping = _ref3.reverseRelMapping;
+            var data = _ref4.data,
+                repos = _ref4.repos,
+                relMapping = _ref4.relMapping,
+                reverseRelMapping = _ref4.reverseRelMapping;
 
             // We handle the fromBackend recursively. On each relation of the source model
             // fromBackend gets called as well, but with data scoped for itself
@@ -1753,7 +1760,11 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
             invariant(!this.isNew, 'Trying to fetch model without id!');
-
+            if (options.cancelPreviousFetch) {
+                this.abortController.abort();
+                this.abortController = new AbortController();
+            }
+            options.abortSignal = this.abortController.signal;
             var data = this.buildFetchData(options);
             var promise = this.wrapPendingRequestCount(this.__getApi().fetchModel({
                 url: options.url || this.url,
@@ -1761,7 +1772,13 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
                 requestOptions: omit(options, ['data', 'url'])
             }).then(action(function (res) {
                 _this17.fromBackend(res);
-            })));
+            })).catch(function (e) {
+                if (Axios.isCancel(e)) {
+                    return null;
+                } else {
+                    throw e;
+                }
+            }));
 
             return promise;
         }
@@ -1913,7 +1930,7 @@ var BinderApi = function () {
         this.baseUrl = null;
         this.csrfToken = null;
         this.defaultHeaders = {};
-        this.axios = axios.create();
+        this.axios = Axios.create();
 
         this.__initializeCsrfHandling();
     }
@@ -1949,7 +1966,8 @@ var BinderApi = function () {
                 baseURL: this.baseUrl,
                 url: url,
                 data: method !== 'get' && data ? data : undefined,
-                params: method === 'get' && data ? data : options.params
+                params: method === 'get' && data ? data : options.params,
+                signal: options.abortSignal
             };
 
             Object.assign(axiosOptions, options);

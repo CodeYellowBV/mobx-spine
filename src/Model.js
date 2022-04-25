@@ -25,6 +25,7 @@ import {
 } from 'lodash';
 import Store from './Store';
 import { invariant, snakeToCamel, camelToSnake, relationsToNestedKeys, forNestedRelations } from './utils';
+import Axios from 'axios';
 
 function concatInDict(dict, key, value) {
     dict[key] = dict[key] ? dict[key].concat(value) : value;
@@ -74,6 +75,7 @@ export default class Model {
     __repository;
     __store;
     api = null;
+    abortController;
     // A `cid` can be used to identify the model locally.
     cid = `m${uniqueId()}`;
     @observable __backendValidationErrors = {};
@@ -166,6 +168,8 @@ export default class Model {
     constructor(data, options = {}) {
         this.__store = options.store;
         this.__repository = options.repository;
+        this.abortController = new AbortController();
+
         // Find all attributes. Not all observables are an attribute.
         forIn(this, (value, key) => {
             if (!key.startsWith('__') && isObservableProp(this, key)) {
@@ -924,7 +928,11 @@ export default class Model {
     @action
     fetch(options = {}) {
         invariant(!this.isNew, 'Trying to fetch model without id!');
-
+        if (options.cancelPreviousFetch) {
+            this.abortController.abort()
+            this.abortController = new AbortController();
+        }
+        options.abortSignal = this.abortController.signal;
         const data = this.buildFetchData(options);
         const promise = this.wrapPendingRequestCount(
             this.__getApi()
@@ -936,6 +944,13 @@ export default class Model {
             .then(action(res => {
                 this.fromBackend(res);
             }))
+            .catch(e => {
+                if (Axios.isCancel(e)) {
+                    return null;
+                } else {
+                    throw e;
+                }
+            })
         );
 
         return promise;

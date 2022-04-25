@@ -178,6 +178,12 @@ animal.fetch().then(() => {
 
 
 ```
+You can also cancel the previous request by passing `{ cancelPreviousFetch: true }` to fetch
+
+```js
+animal.fetch(); // request cancelled
+animal.fetch({cancelPreviousFetch: true});
+```
 
 #### Backend request: save
 
