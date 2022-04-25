@@ -73,6 +73,7 @@ export default class Model {
     __activeCurrentRelations = [];
     __repository;
     __store;
+    __linkRelations;
     api = null;
     // A `cid` can be used to identify the model locally.
     cid = `m${uniqueId()}`;
@@ -166,6 +167,11 @@ export default class Model {
     constructor(data, options = {}) {
         this.__store = options.store;
         this.__repository = options.repository;
+        this.__linkRelations = options.linkRelations || 'tree';
+        invariant(
+            ['tree', 'graph'].includes(this.__linkRelations),
+            `Unknown relation linking method: ${this.__linkRelations}`,
+        );
         // Find all attributes. Not all observables are an attribute.
         forIn(this, (value, key) => {
             if (!key.startsWith('__') && isObservableProp(this, key)) {
@@ -236,7 +242,10 @@ export default class Model {
                     RelModel,
                     `Specified relation "${relName}" does not exist on model.`
                 );
-                const options = { relations: otherRelNames };
+                const options = {
+                    relations: otherRelNames,
+                    linkRelations: this.__linkRelations,
+                };
                 if (RelModel.prototype instanceof Store) {
                     return new RelModel(options);
                 }
@@ -528,7 +537,7 @@ export default class Model {
     // e.g. "animal_kind", while the relation name would be "kind".
     // `relMapping` maps relation names to repositories.
     @action
-    fromBackend({ data, repos, relMapping, reverseRelMapping, }) {
+    fromBackend({ data, repos, relMapping, reverseRelMapping, relCache = {}, relPath = 'root' }) {
         // We handle the fromBackend recursively. On each relation of the source model
         // fromBackend gets called as well, but with data scoped for itself
         //
@@ -555,6 +564,8 @@ export default class Model {
                 repos: scopedRepos,
                 relMapping: scopedRelMapping,
                 reverseRelMapping: scopedReverseRelMapping,
+                relCache,
+                relPath: `${relPath}.${relName}`,
             });
         });
 

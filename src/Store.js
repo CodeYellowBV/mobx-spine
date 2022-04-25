@@ -18,6 +18,7 @@ const AVAILABLE_CONST_OPTIONS = [
     'comparator',
     'params',
     'repository',
+    'linkRelations',
 ];
 
 export default class Store {
@@ -38,6 +39,7 @@ export default class Store {
     Model = null;
     api = null;
     __repository;
+    __linkRelations;
     static backendResourceName = '';
 
     url() {
@@ -81,6 +83,11 @@ export default class Store {
             );
         });
         this.__repository = options.repository;
+        this.__linkRelations = options.linkRelations || 'tree';
+        invariant(
+            ['tree', 'graph'].includes(this.__linkRelations),
+            `Unknown relation linking method: ${this.__linkRelations}`,
+        );
         if (options.relations) {
             this.__parseRelations(options.relations);
         }
@@ -113,7 +120,7 @@ export default class Store {
     }
 
     @action
-    fromBackend({ data, repos, relMapping, reverseRelMapping }) {
+    fromBackend({ data, repos, relMapping, reverseRelMapping, relCache = {}, relPath = 'root' }) {
         invariant(
             data,
             'Backend error. Data is not set. HINT: DID YOU FORGET THE M2M again?'
@@ -121,25 +128,44 @@ export default class Store {
 
         this.models.replace(
             data.map(record => {
+                const relCacheKey = `${relPath}:${record.id}`
+
+                if (this.__linkRelations === 'graph') {
+                    const model = relCache[relCacheKey];
+                    if (model !== undefined) {
+                        return model;
+                    }
+                }
+
                 // TODO: I'm not happy at all about how this looks.
                 // We'll need to finetune some things, but hey, for now it works.
-                const model = this._newModel();
+
+                const model = this._newModel(null);
                 model.fromBackend({
                     data: record,
                     repos,
                     relMapping,
                     reverseRelMapping,
+                    relCache,
+                    relPath,
                 });
+
+                if (this.__linkRelations === 'graph') {
+                    relCache[relCacheKey] = model;
+                }
+
                 return model;
             })
         );
         this.sort();
     }
 
-    _newModel(model = null) {
+    _newModel(model = null, options = {}) {
         return new this.Model(model, {
+            ...options,
             store: this,
             relations: this.__activeRelations,
+            linkRelations: this.__linkRelations,
         });
     }
 
@@ -170,7 +196,7 @@ export default class Store {
         );
         // Parse does not mutate __setChanged, as it is used in
         // fromBackend in the model...
-        this.models.replace(models.map(this._newModel.bind(this)));
+        this.models.replace(models.map((data) => this._newModel(data)));
         this.sort();
 
         return this;
@@ -193,7 +219,7 @@ export default class Store {
         const singular = !isArray(models);
         models = singular ? [models] : models.slice();
 
-        const modelInstances = models.map(this._newModel.bind(this));
+        const modelInstances = models.map((data) => this._newModel(data));
 
         modelInstances.forEach(modelInstance => {
             const primaryValue = modelInstance[this.Model.primaryKey];
