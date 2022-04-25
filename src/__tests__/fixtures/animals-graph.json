@@ -1,0 +1,46 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Foo",
+      "owner": 1
+    },
+    {
+      "id": 2,
+      "name": "Bar",
+      "owner": 1
+    },
+    {
+      "id": 3,
+      "name": "Baz",
+      "owner": 2
+    }
+  ],
+  "with": {
+    "person": [
+      {
+        "id": 1,
+        "name": "FOO",
+        "town": 1
+      },
+      {
+        "id": 2,
+        "name": "BAR",
+        "town": 1
+      }
+    ],
+    "town": [
+      {
+        "id": 1,
+        "name": "Eindhoven"
+      }
+    ]
+  },
+  "with_mapping": {
+    "owner": "person",
+    "owner.town": "town"
+  },
+  "meta": {
+    "total_records": 3
+  }
+}

@@ -192,7 +192,7 @@ export default class Model {
             }
         });
         if (options.relations) {
-            this.__parseRelations(options.relations);
+            this.__parseRelations(options.relations, options.relsFromCache);
         }
         if (data) {
             this.parse(data);
@@ -203,7 +203,7 @@ export default class Model {
     }
 
     @action
-    __parseRelations(activeRelations) {
+    __parseRelations(activeRelations, relsFromCache = {}) {
         this.__activeRelations = activeRelations;
         // TODO: No idea why getting the relations only works when it's a Function.
         const relations = this.relations && this.relations();
@@ -242,10 +242,20 @@ export default class Model {
                     RelModel,
                     `Specified relation "${relName}" does not exist on model.`
                 );
+
+                const cacheData = relsFromCache[relName];
+                if (cacheData && cacheData.model) {
+                    return cacheData.model;
+                }
+
                 const options = {
                     relations: otherRelNames,
                     linkRelations: this.__linkRelations,
                 };
+                if (cacheData && cacheData.rels) {
+                    options.relsFromCache = cacheData.rels;
+                }
+
                 if (RelModel.prototype instanceof Store) {
                     return new RelModel(options);
                 }

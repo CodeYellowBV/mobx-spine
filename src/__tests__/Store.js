@@ -24,11 +24,13 @@ import customersWithTownRestaurantsUnbalanced from './fixtures/customers-with-to
 import townsWithRestaurantsAndCustomersNoIdList from './fixtures/towns-with-restaurants-and-customers-no-id-list.json';
 import customersWithOldTowns from './fixtures/customers-with-old-towns.json';
 import animalsData from './fixtures/animals.json';
+import animalsGraphData from './fixtures/animals-graph.json';
 import pagination0Data from './fixtures/pagination/0.json';
 import pagination1Data from './fixtures/pagination/1.json';
 import pagination2Data from './fixtures/pagination/2.json';
 import pagination3Data from './fixtures/pagination/3.json';
 import pagination4Data from './fixtures/pagination/4.json';
+
 
 const simpleData = [
     {
@@ -1008,5 +1010,36 @@ describe('Pagination', () => {
             .then(() => {
                 expect(animalStore.map('id')).toEqual([1, 2, 3]);
             });
+    });
+});
+
+describe('Graph parse', () => {
+    let mock;
+    beforeEach(() => {
+        mock = new MockAdapter(axios);
+    });
+    afterEach(() => {
+        if (mock) {
+            mock.restore();
+            mock = null;
+        }
+    });
+
+    test('animals with owner & town', () => {
+        mock.onAny().replyOnce(() => [200, animalsGraphData]);
+
+        const animalStore = new AnimalStore({
+            linkRelations: 'graph',
+            relations: ['owner.town'],
+        });
+
+        return animalStore.fetch().then(() => {
+            expect(animalStore.map('id')).toEqual([1, 2, 3]);
+
+            expect(animalStore.at(0).owner).toBe(animalStore.at(1).owner);
+            expect(animalStore.at(0).owner).not.toBe(animalStore.at(2).owner);
+
+            expect(animalStore.at(0).owner.town).toBe(animalStore.at(2).owner.town);
+        });
     });
 });

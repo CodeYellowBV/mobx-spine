@@ -11,7 +11,8 @@ import {
     result,
     uniqBy,
 } from 'lodash';
-import { invariant } from './utils';
+import { invariant, relationsToNestedKeys, camelToSnake } from './utils';
+import Model from './Model';
 const AVAILABLE_CONST_OPTIONS = [
     'relations',
     'limit',
@@ -20,6 +21,45 @@ const AVAILABLE_CONST_OPTIONS = [
     'repository',
     'linkRelations',
 ];
+
+function getRelsFromCache(record, rels, repos, relMapping, relPath, relCache) {
+    const relsFromCache = {};
+
+    for (const [rel, subRels] of Object.entries(rels)) {
+        // First we try to get the related id
+        const backendRel = camelToSnake(rel);
+        const relId = record[backendRel];
+        // We only care about numbers since that means that it
+        // is filled and is a direct relation.
+        if (typeof relId !== 'number') {
+            continue;
+        }
+
+        // Then we see if we can find the model in the cache.
+        const subRelPath = `${relPath}.${rel}`;
+        const cachedModel = relCache[`${subRelPath}:${relId}`];
+        if (cachedModel) {
+            relsFromCache[rel] = { model: cachedModel };
+            // If we found it we don't have to dive deeper.
+            continue;
+        }
+
+        // Then we search for the related data in the repos
+        const subRecord = repos[relMapping[camelToSnake(subRelPath.slice('root.'.length))]].find(({ id }) => id === relId);
+        if (!subRecord) {
+            continue;
+        }
+
+        // Now we recurse to see if we can find relations in the cache for this model
+        relsFromCache[rel] = { rels: getRelsFromCache(
+            subRecord, subRels,
+            repos, relMapping,
+            subRelPath, relCache,
+        ) };
+    }
+
+    return relsFromCache;
+}
 
 export default class Store {
     // Holds all models
@@ -128,19 +168,26 @@ export default class Store {
 
         this.models.replace(
             data.map(record => {
-                const relCacheKey = `${relPath}:${record.id}`
+                const options = {};
 
                 if (this.__linkRelations === 'graph') {
-                    const model = relCache[relCacheKey];
+                    // Return from cache if available
+                    const model = relCache[`${relPath}:${record.id}`];
                     if (model !== undefined) {
                         return model;
                     }
+
+                    options.relsFromCache = getRelsFromCache(
+                        record, relationsToNestedKeys(this.__activeRelations),
+                        repos, relMapping,
+                        relPath, relCache,
+                    );
                 }
 
                 // TODO: I'm not happy at all about how this looks.
                 // We'll need to finetune some things, but hey, for now it works.
 
-                const model = this._newModel(null);
+                const model = this._newModel(null, options);
                 model.fromBackend({
                     data: record,
                     repos,
@@ -151,7 +198,18 @@ export default class Store {
                 });
 
                 if (this.__linkRelations === 'graph') {
-                    relCache[relCacheKey] = model;
+                    const toAdd = [[relPath, model]];
+                    while (toAdd.length > 0) {
+                        const [relPath, model] = toAdd.pop();
+                        relCache[`${relPath}:${model.id}`] = model;
+
+                        for (const rel of model.__activeCurrentRelations) {
+                            const relModel = model[rel];
+                            if (relModel instanceof Model && !relModel.isNew) {
+                                toAdd.push([`${relPath}.${rel}`, relModel]);
+                            }
+                        }
+                    }
                 }
 
                 return model;
