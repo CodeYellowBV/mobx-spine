@@ -11,7 +11,8 @@ import {
     result,
     uniqBy,
 } from 'lodash';
-import { invariant } from './utils';
+import { invariant, relationsToNestedKeys } from './utils';
+
 const AVAILABLE_CONST_OPTIONS = [
     'relations',
     'limit',
@@ -499,5 +500,43 @@ export default class Store {
             promises.push(model.saveAllFiles(relations));
         }
         return Promise.all(promises);
+    }
+
+    save(options = {}) {
+        return this._saveAll(options);
+    }
+
+    @action
+    _saveAll(options = {}) {
+        this.clearValidationErrors();
+        return this.wrapPendingRequestCount(
+            this.__getApi()
+                .saveAllModels({
+                    url: result(this, 'url'),
+                    model: this,
+                    data: this.toBackendAll({
+                        data: options.data,
+                        mapData: options.mapData,
+                        nestedRelations: relationsToNestedKeys(options.relations || []),
+                        onlyChanges: options.onlyChanges,
+                    }),
+                    requestOptions: omit(options, 'relations', 'data', 'mapData'),
+                })
+                .then(action(res => {
+                    const promises = [];
+                    for (const model of this.models) {
+                        promises.push(model._afterSaveAll(res, options));
+                    }
+                    return Promise.all(promises);
+                }))
+                .catch(
+                    action(err => {
+                        if (err.valErrors) {
+                            this.parseValidationErrors(err.valErrors);
+                        }
+                        throw err;
+                    })
+                )
+        );
     }
 }
