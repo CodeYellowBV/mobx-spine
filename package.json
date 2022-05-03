@@ -74,6 +74,7 @@
     ],
     "testPathIgnorePatterns": [
       "/fixtures/"
-    ]
+    ],
+    "testURL": "https://localhost"
   }
 }
