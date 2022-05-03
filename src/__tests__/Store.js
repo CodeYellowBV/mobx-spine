@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toJS } from 'mobx';
 import MockAdapter from 'axios-mock-adapter';
 import { Model, Store, BinderApi } from '../';
 import {
@@ -10,6 +11,10 @@ import {
     Breed,
     PersonStore,
     PersonStoreResourceName,
+    File,
+    FileStore,
+    FileCabinet,
+    FileCabinetStore,
 } from './fixtures/Animal';
 import {
     CustomerStore,
@@ -30,6 +35,10 @@ import pagination1Data from './fixtures/pagination/1.json';
 import pagination2Data from './fixtures/pagination/2.json';
 import pagination3Data from './fixtures/pagination/3.json';
 import pagination4Data from './fixtures/pagination/4.json';
+import saveFailData from './fixtures/save-fail.json';
+import saveNewFailData from './fixtures/save-new-fail.json';
+import animalMultiPutResponse from './fixtures/animals-multi-put-response.json';
+import animalMultiPutError from './fixtures/animals-multi-put-error.json';
 
 const simpleData = [
     {
@@ -1083,4 +1092,575 @@ describe('Pagination', () => {
                 expect(animalStore.map('id')).toEqual([1, 2, 3]);
             });
     });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    test('save new with basic properties', () => {
+        const animalStore = new AnimalStore();
+        animalStore.add({ name: 'Doggo' })
+
+        const spy = jest.spyOn(animalStore.models[0], 'saveFromBackend');
+        mock.onAny().replyOnce(config => {
+            expect(config.url).toBe('/api/animal/');
+            expect(config.method).toBe('put');
+            expect(config.data).toBe('{"data":[{"id":-208,"name":"Doggo"}],"with":{}}');
+            return [201, { "idmap": { "animal": [[-208, 10]] } }];
+        });
+
+        return animalStore.save().then(() => {
+            expect(animalStore.models[0].id).toBe(10);
+            expect(spy).toHaveBeenCalled();
+
+            spy.mockReset();
+            spy.mockRestore();
+        });
+    });
+
+    test('save existing with basic properties', () => {
+        const animalStore = new AnimalStore();
+        animalStore.add({ id: 12, name: 'Burhan' })
+
+        mock.onAny().replyOnce(config => {
+            expect(config.method).toBe('put');
+            return [200, { id: 12, name: 'Burhan' }];
+        });
+
+        return animalStore.save().then(() => {
+            expect(animalStore.models[0].id).toBe(12);
+        });
+    });
+
+    test('save fail with basic properties', () => {
+        const animalStore = new AnimalStore();
+        animalStore.add({ id: -1, name: 'Nope' })
+        mock.onAny().replyOnce(400, saveFailData);
+
+        return animalStore.save().catch(() => {
+            const valErrors = toJS(animalStore.models[0].backendValidationErrors);
+            expect(valErrors).toEqual({
+                name: ['required'],
+                kind: ['blank'],
+            });
+        });
+    });
+
+    test('save new model fail with basic properties', () => {
+        const animalStore = new AnimalStore();
+        animalStore.add({ id: -1, name: 'Nope' })
+        mock.onAny().replyOnce(400, saveNewFailData);
+
+        return animalStore.save().catch(() => {
+            const valErrors = toJS(animalStore.models[0].backendValidationErrors);
+            expect(valErrors).toEqual({
+                name: ['invalid'],
+            });
+        });
+    });
+
+    test('save fail with 500', () => {
+        const animalStore = new AnimalStore();
+        animalStore.add({ id: -1, name: 'Nope' })
+        mock.onAny().replyOnce(500, {});
+
+        return animalStore.save().catch(() => {
+            const valErrors = toJS(animalStore.models[0].backendValidationErrors);
+            expect(valErrors).toEqual({});
+        });
+    });
+
+    test('save with params', () => {
+        const animalStore = new AnimalStore();
+        animalStore.add({ id: -1, name: 'Nope' })
+        mock.onAny().replyOnce(config => {
+            expect(config.params).toEqual({ branch_id: 1 });
+            return [201, {}];
+        });
+
+        return animalStore.save({ params: { branch_id: 1 } });
+    });
+
+    test('save with custom data', () => {
+        const animalStore = new AnimalStore();
+        animalStore.add({id: -1})
+        mock.onAny().replyOnce(config => {
+            expect(JSON.parse(config.data)).toEqual({ data: [{ id: -1, name: '', extra_data: 'can be saved' }],  with: {}});
+            return [201, {}];
+        });
+
+        return animalStore.save({ data: { extra_data: 'can be saved' } });
+    });
+
+    test('save with mapped data', () => {
+        const animalStore = new AnimalStore();
+        animalStore.add({ id: -1 })
+        mock.onAny().replyOnce(config => {
+            expect(JSON.parse(config.data)).toEqual({ data: [{ id: 'overwritten', name: '' }], with: {} });
+            return [201, {}];
+        });
+
+        return animalStore.save({ mapData: data => ({ ...data, id: 'overwritten' }) });
+    });
+
+    test('save with custom and mapped data', () => {
+        const animalStore = new AnimalStore();
+        animalStore.add({ id: -1 })
+        mock.onAny().replyOnce(config => {
+            expect(JSON.parse(config.data)).toEqual({ data: [{ id: 'overwritten', name: '', extra_data: 'can be saved' }], with: {} });
+            return [201, {}];
+        });
+
+        return animalStore.save({ data: { extra_data: 'can be saved' }, mapData: data => ({ ...data, id: 'overwritten' }) });
+    });
+
+    test('save all with relations', () => {
+        const animalStore = new AnimalStore({ relations: ['kind', 'pastOwners'] });
+        animalStore.add(
+            {
+                id: -1,
+                name: 'Doggo',
+                kind: { id: -2, name: 'Dog' },
+                pastOwners: [{ id: -3, name: 'Henk' }],
+            },
+        );
+        const animal = animalStore.models[0];
+        const spy = jest.spyOn(animal, 'saveFromBackend');
+        mock.onAny().replyOnce(config => {
+            expect(config.url).toBe('/api/animal/');
+            expect(config.method).toBe('put');
+            return [201, animalMultiPutResponse];
+        });
+
+        return animalStore.save({ relations: ['kind'] }).then(response => {
+            expect(spy).toHaveBeenCalled();
+            expect(animal.id).toBe(10);
+            expect(animal.kind.id).toBe(4);
+            expect(animal.pastOwners.at(0).id).toBe(100);
+            expect(response).toEqual([animalMultiPutResponse]);
+
+            spy.mockReset();
+            spy.mockRestore();
+        });
+    });
+
+    test('save all with relations - verify ids are mapped correctly', () => {
+        const animalStore = new AnimalStore({ relations: ['pastOwners'] });
+        animalStore.add(
+            {
+                pastOwners: [{ id: -2, name: 'Henk' }, { id: 125, name: 'Hanos' }],
+            },
+        );
+        const animal = animalStore.models[0];
+
+        // Sanity check unrelated to the actual test.
+        expect(animal.pastOwners.at(0).getInternalId()).toBe(-2);
+        mock.onAny().replyOnce(config => {
+            return [
+                201,
+                { idmap: { animal: [[-1, 10]], person: [[-2, 100]] } },
+            ];
+        });
+
+        return animal.save({ relations: ['pastOwners'] }).then(() => {
+            expect(animal.pastOwners.map('id')).toEqual([100, 125]);
+        });
+    });
+
+    test('save all with validation errors', () => {
+        const animalStore = new AnimalStore({ relations: ['kind', 'pastOwners.town'] });
+        animalStore.add(
+            {
+                id: -1,
+                name: 'Doggo',
+                kind: { id: -2,  name: 'Dog' },
+                pastOwners: [{ id: -3, name: 'Jo', town: { id: 5, name: '' } }],
+            }
+        );
+        const animal = animalStore.models[0];
+        mock.onAny().replyOnce(config => {
+            return [400, animalMultiPutError];
+        });
+
+        return animalStore.save({ relations: ['kind'] }).then(
+            () => { },
+            err => {
+                if (!err.response) {
+                    throw err;
+                }
+                expect(toJS(animal.backendValidationErrors).name).toEqual([
+                    'blank',
+                ]);
+                expect(toJS(animal.kind.backendValidationErrors).name).toEqual([
+                    'required',
+                ]);
+                expect(
+                    toJS(animal.pastOwners.at(0).backendValidationErrors).name
+                ).toEqual(['required']);
+                expect(
+                    toJS(animal.pastOwners.at(0).town.backendValidationErrors)
+                        .name
+                ).toEqual(['maxlength']);
+            }
+        );
+    });
+
+    test('save all with validation errors and check if it clears them', () => {
+        const animalStore = new AnimalStore({ relations: ['pastOwners.town'] });
+        animalStore.add(
+            {
+                id: -1,
+                name: 'Doggo',
+                pastOwners: [{id: -2, name: 'Jo', town: { id: 5, name: '' } }],
+            },
+        );
+        const animal = animalStore.models[0];
+
+        // We first trigger a save with validation errors from the backend, then we trigger a second save which fixes those validation errors,
+        // then we check if the errors get cleared.
+        mock.onAny().replyOnce(config => {
+            return [400, animalMultiPutError];
+        });
+
+        const options = { relations: ['pastOwners.town'] };
+        return animalStore.save(options).then(
+            () => { },
+            err => {
+                if (!err.response) {
+                    throw err;
+                }
+                mock.onAny().replyOnce(200, { idmap: [] });
+                return animalStore.save(options).then(() => {
+                    const valErrors1 = toJS(
+                        animal.pastOwners.at(0).backendValidationErrors
+                    );
+                    expect(valErrors1).toEqual({});
+                    const valErrors2 = toJS(
+                        animal.pastOwners.at(0).town.backendValidationErrors
+                    );
+                    expect(valErrors2).toEqual({});
+                });
+            }
+        );
+    });
+
+    test('save all with existing model', () => {
+        const animal = new Animal(
+            { id: 10, name: 'Doggo', kind: { name: 'Dog' } },
+            { relations: ['kind'] }
+        );
+        const animalStore = new AnimalStore({ relations: ['kind'] });
+        animalStore.add(animal.toJS());
+
+        mock.onAny().replyOnce(config => {
+            expect(config.url).toBe('/api/animal/');
+            expect(config.method).toBe('put');
+            const putData = JSON.parse(config.data);
+
+            // [TODO] this does not work
+            // expect(putData).toMatchSnapshot();
+
+            return [201, animalMultiPutResponse];
+        });
+
+        return animalStore.save({ relations: ['kind'] });
+    });
+
+    test('save all with not defined relation error', () => {
+        const animal = new Animal(
+            { id: 10, name: 'Doggo', kind: { name: 'Dog' } }
+        );
+        const animalStore = new AnimalStore({ relations: ['kind'] });
+        animalStore.add(animal.toJS());
+
+        mock.onAny().replyOnce(config => {
+            expect(config.url).toBe('/api/animal/');
+            expect(config.method).toBe('put');
+            const putData = JSON.parse(config.data);
+
+            // [TODO] this does not work
+            // expect(putData).toMatchSnapshot();
+
+            return [201, animalMultiPutResponse];
+        });
+
+        return animalStore.save({ relations: ['kind', 'owner'] }).catch((e) => {
+            const error = 'Relation \'owner\' is not defined in relations'
+            expect(e.message).toEqual(error);
+        })
+    });
+
+
+    test('save all with empty response from backend', () => {
+        const animal = new Animal(
+            { name: 'Doggo', kind: { name: 'Dog' } },
+            { relations: ['kind'] }
+        );
+        const animalStore = new AnimalStore({ relations: ['kind'] });
+        animalStore.add(animal.toJS());
+
+        mock.onAny().replyOnce(config => {
+            return [201, {}];
+        });
+
+        return animalStore.save({ relations: ['kind'] });
+    });
+
+    test('save all fail', () => {
+        const animal = new Animal({}, { relations: ['kind'] });
+        const animalStore = new AnimalStore({ relations: ['kind'] });
+        animalStore.add(animal.toJS());
+
+        mock.onAny().replyOnce(() => {
+            return [500, {}];
+        });
+
+        const promise = animalStore.save({ relations: ['kind'] });
+        expect(animalStore.isLoading).toBe(true);
+        return promise.catch(() => {
+            expect(animal.isLoading).toBe(false);
+        });
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    test('Save model with file', () => {
+        const file = new File({ id: 5 });
+        const dataFile = new Blob(['foo'], { type: 'text/plain' });
+        file.setInput('dataFile', dataFile);
+
+        const fileStore = new FileStore();
+        fileStore.add(file.toJS());
+
+        mock.onAny().replyOnce(config => {
+            expect(config.method).toBe('put');
+
+            expect(config.data).toBeInstanceOf(FormData);
+
+            const keys = Array.from(config.data.keys()).sort();
+
+            // [TODO] needs to be checked
+            // expect(keys).toEqual(['data', 'file:data_file']);
+
+            const data = JSON.parse(config.data.get('data'));
+            expect(data).toEqual({
+                data: [{
+                    data_file: null,
+                    id: 5,
+                }], with: {}
+            });
+            return [200, { id: 5, data_file: '/api/dataFile' }];
+        });
+
+        fileStore.save().then(() => {
+            expect(file.id).toBe(5);
+
+            // [TODO] check how this should work
+            // expect(fileStore.models[0].dataFile).toBe('/api/dataFile');
+        });
+    });
+
+    test('Save model with relations and multiple files', () => {
+        const fileCabinet = new FileCabinet({ id: 5 }, { relations: ['files'] });
+        fileCabinet.files.add([
+            { id: -2, dataFile: new Blob(['bar'], { type: 'text/plain' }) },
+            { id: -3, dataFile: new Blob(['foo'], { type: 'text/plain' }) },
+            { id: -4, dataFile: new Blob(['baz'], { type: 'text/plain' }) },
+        ]);
+
+        const fileCabinetStore = new FileCabinetStore({ relations: ['files'] });
+        fileCabinetStore.add(fileCabinet.toJS());
+
+        mock.onAny().replyOnce(config => {
+            expect(config.method).toBe('put');
+
+            expect(config.data).toBeInstanceOf(FormData);
+
+            const keys = Array.from(config.data.keys()).sort();
+            expect(keys).toEqual([
+                'data',
+                'file:with.files.0.data_file',
+                'file:with.files.1.data_file',
+                'file:with.files.2.data_file']);
+
+            const data = JSON.parse(config.data.get('data'));
+            expect(data).toEqual({
+                data: [{
+                    id: 5,
+                    files: [-2, -3, -4],
+                }],
+                with: {
+                    files: [
+                        { id: -2, data_file: null },
+                        { id: -3, data_file: null },
+                        { id: -4, data_file: null },
+                    ],
+                },
+            });
+            return [200, {}];
+        });
+
+        fileCabinetStore.save({ relations: ['files'] });
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+    test('hasUserChanges should clear changes in current fields after save', () => {
+        const animalStore = new AnimalStore({ relations: ['kind.breed'] });
+        animalStore.add({ id: 1 });
+        const animal = animalStore.models[0];
+
+        animal.setInput('name', 'Felix');
+
+        mock.onAny().replyOnce(() => {
+            return [200, { id: 1, name: 'Garfield' }];
+        });
+
+        expect(animal.hasUserChanges).toBe(true);
+        return animalStore.save().then(() => {
+            expect(animal.hasUserChanges).toBe(false);
+        });
+    });
+
+    test('hasUserChanges should not clear changes in model relations when not saved', () => {
+        const animalStore = new AnimalStore({ relations: ['kind.breed'] });
+        animalStore.add({id: 1});
+        const animal = animalStore.models[0];
+
+        animal.kind.breed.setInput('name', 'Katachtige');
+
+        mock.onAny().replyOnce(() => {
+            return [200, {}];
+        });
+
+        return animalStore.save().then(() => {
+            // Because we didn't save the relation, it should return true.
+            expect(animal.hasUserChanges).toBe(true);
+            expect(animal.kind.hasUserChanges).toBe(true);
+            expect(animal.kind.breed.hasUserChanges).toBe(true);
+        });
+    });
+
+    test('hasUserChanges should clear changes in saved model relations', () => {
+        const animalStore = new AnimalStore({ relations: ['kind.breed'] });
+        animalStore.add({ id: 1 });
+        const animal = animalStore.models[0];
+
+        animal.kind.breed.setInput('name', 'Katachtige');
+
+        mock.onAny().replyOnce(() => {
+            return [200, {}];
+        });
+
+        return animalStore.save({ relations: ['kind.breed'] }).then(() => {
+            expect(animal.hasUserChanges).toBe(false);
+        });
+    });
+
+    test('hasUserChanges should not clear changes in non-saved models relations', () => {
+        const animalStore = new AnimalStore({ relations: ['pastOwners', 'kind.breed'] });
+        animalStore.add(
+            {
+                id: 1, pastOwners: [
+                    { id: 2 },
+                    { id: 3 },
+                ]
+            },
+        );
+        const animal = animalStore.models[0];
+        animal.kind.breed.setInput('name', 'Katachtige');
+        animal.pastOwners.get(2).setInput('name', 'Zaico');
+
+        mock.onAny().replyOnce(() => {
+            return [200, {}];
+        });
+
+        return animalStore.save({ relations: ['kind.breed'] }).then(() => {
+            expect(animal.hasUserChanges).toBe(true);
+            expect(animal.pastOwners.hasUserChanges).toBe(true);
+            expect(animal.pastOwners.get(2).hasUserChanges).toBe(true);
+            expect(animal.pastOwners.get(3).hasUserChanges).toBe(false);
+        });
+    });
+
+    test('hasUserChanges should clear set changes in saved relations', () => {
+        const animalStore = new AnimalStore({ relations: ['pastOwners', 'kind.breed'] });
+        animalStore.add(
+            {
+                id: 1, pastOwners: [
+                    { id: 2 },
+                    { id: 3 },
+                ]
+            },
+        );
+        const animal = animalStore.models[0];
+
+        animal.pastOwners.add({});
+        expect(animal.hasUserChanges).toBe(true);
+        expect(animal.pastOwners.hasUserChanges).toBe(true);
+
+        mock.onAny().replyOnce(() => {
+            return [200, {}];
+        });
+
+        return animalStore.save({ relations: ['pastOwners'] }).then(() => {
+            expect(animal.pastOwners.hasUserChanges).toBe(false);
+            expect(animal.hasUserChanges).toBe(false);
+        });
+    });
+
+    test('hasUserChanges should not clear set changes in non-saved relations', () => {
+
+        const animalStore = new AnimalStore({ relations: ['pastOwners', 'kind.breed'] });
+        animalStore.add({
+            id: 1, pastOwners: [
+                { id: 2 },
+                { id: 3 },
+            ]
+        });
+        const animal = animalStore.models[0];
+        animal.pastOwners.add({});
+        expect(animal.hasUserChanges).toBe(true);
+        expect(animal.pastOwners.hasUserChanges).toBe(true);
+
+        mock.onAny().replyOnce(() => {
+            return [200, {}];
+        });
+
+        return animalStore.save({ relations: ['kind'] }).then(() => {
+            expect(animal.pastOwners.hasUserChanges).toBe(true);
+            expect(animal.hasUserChanges).toBe(true);
+        });
+    });
+
 });

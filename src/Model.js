@@ -764,14 +764,7 @@ export default class Model {
                     return Promise.resolve(res);
                 });
             }))
-            .catch(
-                action(err => {
-                    if (err.valErrors) {
-                        this.parseValidationErrors(err.valErrors);
-                    }
-                    throw err;
-                })
-            )
+            .catch(err => this._catchSave(err))
         );
     }
 
@@ -791,39 +784,48 @@ export default class Model {
                 }),
                 requestOptions: omit(options, 'relations', 'data', 'mapData'),
             })
-            .then(action(res => {
-                this.saveFromBackend(res);
-                this.clearUserFieldChanges();
-
-                forNestedRelations(this, relationsToNestedKeys(options.relations || []), relation => {
-                    if (relation instanceof Model) {
-                        relation.clearUserFieldChanges();
-                    } else {
-                        relation.clearSetChanges();
-                    }
-                });
-
-                return this.saveAllFiles(relationsToNestedKeys(options.relations || [])).then(() => {
-                    this.clearUserFileChanges();
-
-                    forNestedRelations(this, relationsToNestedKeys(options.relations || []), relation => {
-                        if (relation instanceof Model) {
-                            relation.clearUserFileChanges();
-                        }
-                    });
-
-                    return res;
-                });
-            }))
-            .catch(
-                action(err => {
-                    if (err.valErrors) {
-                        this.parseValidationErrors(err.valErrors);
-                    }
-                    throw err;
-                })
-            )
+            .then(res => this._afterSaveAll(res, options))
+            .catch(err => this._catchSave(err))
         );
+    }
+
+    @action
+    _afterSaveAll(res, options) {
+        this.saveFromBackend(res);
+        this.clearUserFieldChanges();
+
+        forNestedRelations(this, relationsToNestedKeys(options.relations || []), relation => {
+            if (relation instanceof Model) {
+                relation.clearUserFieldChanges();
+            } else {
+                relation.clearSetChanges();
+            }
+        });
+
+        return this.saveAllFiles(relationsToNestedKeys(options.relations || []))
+            .then(() => this._afterSaveAllFiles(options))
+            .then(() => res);
+    }
+
+    @action
+    _afterSaveAllFiles(options) {
+        this.clearUserFileChanges();
+
+        forNestedRelations(this, relationsToNestedKeys(options.relations || []), relation => {
+            if (relation instanceof Model) {
+                relation.clearUserFileChanges();
+            }
+        });
+
+        return;
+    }
+
+    @action
+    _catchSave(err) {
+        if (err.valErrors) {
+            this.parseValidationErrors(err.valErrors);
+        }
+        throw err;
     }
 
     // After saving a model, we should get back an ID mapping from the backend which looks like:
