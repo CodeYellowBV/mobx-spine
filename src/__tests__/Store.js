@@ -36,6 +36,7 @@ import pagination2Data from './fixtures/pagination/2.json';
 import pagination3Data from './fixtures/pagination/3.json';
 import pagination4Data from './fixtures/pagination/4.json';
 import saveFailData from './fixtures/save-fail.json';
+import storeSaveFailData from './fixtures/store-save-fail.json';
 import saveNewFailData from './fixtures/save-new-fail.json';
 import animalMultiPutResponse from './fixtures/animals-multi-put-response.json';
 import animalMultiPutError from './fixtures/animals-multi-put-error.json';
@@ -1092,35 +1093,35 @@ describe('Pagination', () => {
                 expect(animalStore.map('id')).toEqual([1, 2, 3]);
             });
     });
+});
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+describe('Save', () => {
+    let mock;
+    beforeEach(() => {
+        mock = new MockAdapter(axios);
+    });
+    afterEach(() => {
+        if (mock) {
+            mock.restore();
+            mock = null;
+        }
+    });
 
     test('save new with basic properties', () => {
         const animalStore = new AnimalStore();
-        animalStore.add({ name: 'Doggo' })
+        animalStore.add([{ name: 'Doggo' }, { name: 'Catty' }]);
 
         const spy = jest.spyOn(animalStore.models[0], 'saveFromBackend');
         mock.onAny().replyOnce(config => {
             expect(config.url).toBe('/api/animal/');
             expect(config.method).toBe('put');
-            expect(config.data).toBe('{"data":[{"id":-208,"name":"Doggo"}],"with":{}}');
-            return [201, { "idmap": { "animal": [[-208, 10]] } }];
+            expect(config.data).toBe('{"data":[{"id":-208,"name":"Doggo"},{"id":-209,"name":"Catty"}],"with":{}}');
+            return [201, { "idmap": { "animal": [[-208, 10], [-209, 11]] } }];
         });
 
         return animalStore.save().then(() => {
             expect(animalStore.models[0].id).toBe(10);
+            expect(animalStore.models[1].id).toBe(11);
             expect(spy).toHaveBeenCalled();
 
             spy.mockReset();
@@ -1130,28 +1131,50 @@ describe('Pagination', () => {
 
     test('save existing with basic properties', () => {
         const animalStore = new AnimalStore();
-        animalStore.add({ id: 12, name: 'Burhan' })
+        animalStore.add([{ id: 12, name: 'Burhan' }, { id: 11, name: 'Maciej' }])
 
         mock.onAny().replyOnce(config => {
             expect(config.method).toBe('put');
-            return [200, { id: 12, name: 'Burhan' }];
+            expect(config.data).toBe('{"data":[{"id":12,"name":"Burhan"},{"id":11,"name":"Maciej"}],"with":{}}');
+            return [200, { "idmap": {}}];
         });
 
         return animalStore.save().then(() => {
             expect(animalStore.models[0].id).toBe(12);
+            expect(animalStore.models[1].id).toBe(11);
         });
     });
 
     test('save fail with basic properties', () => {
         const animalStore = new AnimalStore();
-        animalStore.add({ id: -1, name: 'Nope' })
+        animalStore.add([{ id: -1, name: 'Nope' }, { id: -2, name: 'Nope' }])
         mock.onAny().replyOnce(400, saveFailData);
 
         return animalStore.save().catch(() => {
-            const valErrors = toJS(animalStore.models[0].backendValidationErrors);
-            expect(valErrors).toEqual({
+            const valErrors1 = toJS(animalStore.models[0].backendValidationErrors);
+            const valErrors2 = toJS(animalStore.models[1].backendValidationErrors);
+            expect(valErrors1).toEqual({
                 name: ['required'],
                 kind: ['blank'],
+            });
+            expect(valErrors2).toEqual({});
+        });
+    });
+
+    test('save fail with basic properties multiple', () => {
+        const animalStore = new AnimalStore();
+        animalStore.add([{ id: -1, name: 'Nope' }, { id: -2, name: 'Nope' }])
+        mock.onAny().replyOnce(400, storeSaveFailData);
+
+        return animalStore.save().catch(() => {
+            const valErrors1 = toJS(animalStore.models[0].backendValidationErrors);
+            const valErrors2 = toJS(animalStore.models[1].backendValidationErrors);
+            expect(valErrors1).toEqual({
+                name: ['required'],
+                kind: ['blank'],
+            });
+            expect(valErrors2).toEqual({
+                name: ['required'],
             });
         });
     });
@@ -1193,9 +1216,9 @@ describe('Pagination', () => {
 
     test('save with custom data', () => {
         const animalStore = new AnimalStore();
-        animalStore.add({id: -1})
+        animalStore.add({ id: -1 })
         mock.onAny().replyOnce(config => {
-            expect(JSON.parse(config.data)).toEqual({ data: [{ id: -1, name: '', extra_data: 'can be saved' }],  with: {}});
+            expect(JSON.parse(config.data)).toEqual({ data: [{ id: -1, name: '', extra_data: 'can be saved' }], with: {} });
             return [201, {}];
         });
 
@@ -1272,7 +1295,7 @@ describe('Pagination', () => {
             ];
         });
 
-        return animal.save({ relations: ['pastOwners'] }).then(() => {
+        return animalStore.save({ relations: ['pastOwners'] }).then(() => {
             expect(animal.pastOwners.map('id')).toEqual([100, 125]);
         });
     });
@@ -1283,7 +1306,7 @@ describe('Pagination', () => {
             {
                 id: -1,
                 name: 'Doggo',
-                kind: { id: -2,  name: 'Dog' },
+                kind: { id: -2, name: 'Dog' },
                 pastOwners: [{ id: -3, name: 'Jo', town: { id: 5, name: '' } }],
             }
         );
@@ -1321,7 +1344,7 @@ describe('Pagination', () => {
             {
                 id: -1,
                 name: 'Doggo',
-                pastOwners: [{id: -2, name: 'Jo', town: { id: 5, name: '' } }],
+                pastOwners: [{ id: -2, name: 'Jo', town: { id: 5, name: '' } }],
             },
         );
         const animal = animalStore.models[0];
@@ -1366,10 +1389,7 @@ describe('Pagination', () => {
             expect(config.url).toBe('/api/animal/');
             expect(config.method).toBe('put');
             const putData = JSON.parse(config.data);
-
-            // [TODO] this does not work
-            // expect(putData).toMatchSnapshot();
-
+            expect(putData).toMatchSnapshot();
             return [201, animalMultiPutResponse];
         });
 
@@ -1387,10 +1407,7 @@ describe('Pagination', () => {
             expect(config.url).toBe('/api/animal/');
             expect(config.method).toBe('put');
             const putData = JSON.parse(config.data);
-
-            // [TODO] this does not work
-            // expect(putData).toMatchSnapshot();
-
+            expect(putData).toMatchSnapshot();
             return [201, animalMultiPutResponse];
         });
 
@@ -1399,7 +1416,6 @@ describe('Pagination', () => {
             expect(e.message).toEqual(error);
         })
     });
-
 
     test('save all with empty response from backend', () => {
         const animal = new Animal(
@@ -1433,18 +1449,6 @@ describe('Pagination', () => {
     });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     test('Save model with file', () => {
         const file = new File({ id: 5 });
         const dataFile = new Blob(['foo'], { type: 'text/plain' });
@@ -1460,8 +1464,7 @@ describe('Pagination', () => {
 
             const keys = Array.from(config.data.keys()).sort();
 
-            // [TODO] needs to be checked
-            // expect(keys).toEqual(['data', 'file:data_file']);
+            expect(keys).toEqual(['data', 'file:data_file']);
 
             const data = JSON.parse(config.data.get('data'));
             expect(data).toEqual({
@@ -1475,9 +1478,7 @@ describe('Pagination', () => {
 
         fileStore.save().then(() => {
             expect(file.id).toBe(5);
-
-            // [TODO] check how this should work
-            // expect(fileStore.models[0].dataFile).toBe('/api/dataFile');
+            expect(fileStore.models[0].dataFile).toBe('/api/dataFile');
         });
     });
 
@@ -1525,16 +1526,6 @@ describe('Pagination', () => {
     });
 
 
-
-
-
-
-
-
-
-
-
-
     test('hasUserChanges should clear changes in current fields after save', () => {
         const animalStore = new AnimalStore({ relations: ['kind.breed'] });
         animalStore.add({ id: 1 });
@@ -1554,7 +1545,7 @@ describe('Pagination', () => {
 
     test('hasUserChanges should not clear changes in model relations when not saved', () => {
         const animalStore = new AnimalStore({ relations: ['kind.breed'] });
-        animalStore.add({id: 1});
+        animalStore.add({ id: 1 });
         const animal = animalStore.models[0];
 
         animal.kind.breed.setInput('name', 'Katachtige');
