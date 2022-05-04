@@ -1,0 +1,21 @@
+{
+    "errors": {
+        "animal": {
+            "-1": {
+                "name": [{
+                    "code": "required"
+                }],
+                "kind": [{
+                    "code": "blank"
+                }]
+            },
+            "-2": {
+                "name": [
+                    {
+                        "code": "required"
+                    }
+                ]
+            }
+        }
+    }
+}
