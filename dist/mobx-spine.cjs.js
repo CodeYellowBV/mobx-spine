@@ -259,17 +259,17 @@ var Store = (_class = (_temp = _class2 = function () {
         value: function initialize() {}
     }, {
         key: 'isLoading',
-        get: function get$$1() {
+        get: function get() {
             return this.__pendingRequestCount > 0;
         }
     }, {
         key: 'length',
-        get: function get$$1() {
+        get: function get() {
             return this.models.length;
         }
     }, {
         key: 'backendResourceName',
-        set: function set$$1(v) {
+        set: function set(v) {
             invariant(false, '`backendResourceName` should be a static property on the store.');
         }
     }]);
@@ -624,7 +624,7 @@ var Store = (_class = (_temp = _class2 = function () {
 
     }, {
         key: 'get',
-        value: function get$$1(id) {
+        value: function get(id) {
             // The id can be defined as a string or int, but we want it to work in both cases.
             return this.models.find(function (model) {
                 return model[model.constructor.primaryKey] == id;
@@ -734,7 +734,7 @@ var Store = (_class = (_temp = _class2 = function () {
         }
     }, {
         key: 'totalPages',
-        get: function get$$1() {
+        get: function get() {
             if (!this.__state.limit) {
                 return 0;
             }
@@ -742,22 +742,22 @@ var Store = (_class = (_temp = _class2 = function () {
         }
     }, {
         key: 'currentPage',
-        get: function get$$1() {
+        get: function get() {
             return this.__state.currentPage;
         }
     }, {
         key: 'hasNextPage',
-        get: function get$$1() {
+        get: function get() {
             return this.__state.currentPage + 1 <= this.totalPages;
         }
     }, {
         key: 'hasPreviousPage',
-        get: function get$$1() {
+        get: function get() {
             return this.__state.currentPage > 1;
         }
     }, {
         key: 'hasUserChanges',
-        get: function get$$1() {
+        get: function get() {
             return this.hasSetChanges || this.models.some(function (m) {
                 return m.hasUserChanges;
             });
@@ -768,7 +768,7 @@ var Store = (_class = (_temp = _class2 = function () {
 
     }, {
         key: 'hasSetChanges',
-        get: function get$$1() {
+        get: function get() {
             return this.__setChanged;
         }
     }]);
@@ -943,28 +943,28 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function initialize() {}
     }, {
         key: 'url',
-        get: function get$$1() {
+        get: function get() {
             var id = this[this.constructor.primaryKey];
             return '' + lodash.result(this, 'urlRoot') + (id ? id + '/' : '');
         }
     }, {
         key: 'isNew',
-        get: function get$$1() {
+        get: function get() {
             return !this[this.constructor.primaryKey];
         }
     }, {
         key: 'isLoading',
-        get: function get$$1() {
+        get: function get() {
             return this.__pendingRequestCount > 0;
         }
     }, {
         key: 'primaryKey',
-        set: function set$$1(v) {
+        set: function set(v) {
             invariant(false, '`primaryKey` should be a static property on the model.');
         }
     }, {
         key: 'backendResourceName',
-        set: function set$$1(v) {
+        set: function set(v) {
             invariant(false, '`backendResourceName` should be a static property on the model.');
         }
     }]);
@@ -1803,7 +1803,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         }
     }, {
         key: 'hasUserChanges',
-        get: function get$$1() {
+        get: function get() {
             var _this19 = this;
 
             if (this.__changes.length > 0) {
@@ -1815,7 +1815,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         }
     }, {
         key: 'fieldFilter',
-        get: function get$$1() {
+        get: function get() {
             var pickFields = this.pickFields();
             var omitFields = this.omitFields();
 
@@ -1825,7 +1825,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         }
     }, {
         key: 'backendValidationErrors',
-        get: function get$$1() {
+        get: function get() {
             return this.__backendValidationErrors;
         }
     }], [{
@@ -2063,7 +2063,7 @@ var BinderApi = function () {
         }
     }, {
         key: 'get',
-        value: function get$$1(url, data, options) {
+        value: function get(url, data, options) {
             return this.__request('get', url, data, options);
         }
     }, {
@@ -2340,8 +2340,8 @@ var CASTS = {
     }
 };
 
-exports.Model = Model;
-exports.Store = Store;
 exports.BinderApi = BinderApi;
 exports.Casts = CASTS;
+exports.Model = Model;
+exports.Store = Store;
 exports.configureDateLib = configureDateLib;

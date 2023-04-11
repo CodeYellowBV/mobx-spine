@@ -720,12 +720,11 @@ describe('requests', () => {
     test('isLoading', () => {
         const animalStore = new AnimalStore();
         expect(animalStore.isLoading).toBe(false);
-        mock.onAny().replyOnce(() => {
-            expect(animalStore.isLoading).toBe(true);
-            return [200, animalsData];
-        });
+        mock.onAny().replyOnce(() => [200, animalsData]);
 
-        return animalStore.fetch().then(() => {
+        const promise = animalStore.fetch();
+        expect(animalStore.isLoading).toBe(true);
+        return promise.then(() => {
             expect(animalStore.isLoading).toBe(false);
         });
     });
@@ -733,12 +732,11 @@ describe('requests', () => {
     test('isLoading with failed request', () => {
         const animalStore = new AnimalStore();
 
-        mock.onAny().replyOnce(() => {
-            expect(animalStore.isLoading).toBe(true);
-            return [404];
-        });
+        mock.onAny().replyOnce(() => [404]);
 
-        return animalStore.fetch().catch(() => {
+        const promise = animalStore.fetch();
+        expect(animalStore.isLoading).toBe(true);
+        return promise.catch(() => {
             expect(animalStore.isLoading).toBe(false);
         });
     });
