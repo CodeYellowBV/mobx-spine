@@ -1596,12 +1596,11 @@ describe('requests', () => {
     test('isLoading', () => {
         const animal = new Animal({ id: 2 });
         expect(animal.isLoading).toBe(false);
-        mock.onAny().replyOnce(() => {
-            expect(animal.isLoading).toBe(true);
-            return [200, { id: 2 }];
-        });
+        mock.onAny().replyOnce(() => [200, { id: 2 }]);
 
-        return animal.fetch().then(() => {
+        const promise = animal.fetch();
+        expect(animal.isLoading).toBe(true);
+        return promise.then(() => {
             expect(animal.isLoading).toBe(false);
         });
     });
@@ -1609,12 +1608,11 @@ describe('requests', () => {
     test('isLoading with failed request', () => {
         const animal = new Animal({ id: 2 });
 
-        mock.onAny().replyOnce(() => {
-            expect(animal.isLoading).toBe(true);
-            return [404];
-        });
+        mock.onAny().replyOnce(() => [404]);
 
-        return animal.fetch().catch(() => {
+        const promise = animal.fetch();
+        expect(animal.isLoading).toBe(true);
+        return promise.catch(() => {
             expect(animal.isLoading).toBe(false);
         });
     });

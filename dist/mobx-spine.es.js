@@ -1,5 +1,5 @@
-import { observable, computed, action, autorun, isObservableProp, extendObservable, isObservableArray, isObservableObject, toJS } from 'mobx';
-import { isArray, map, filter, find, sortBy, forIn, omit, isPlainObject, result, uniqBy, each, mapValues, uniqueId, uniq, mapKeys, get, range } from 'lodash';
+import { action, autorun, computed, observable, isObservableProp, isObservableArray, isObservableObject, extendObservable, toJS } from 'mobx';
+import { isPlainObject, forIn, result, isArray, omit, uniqBy, map, filter, find, sortBy, uniqueId, mapValues, uniq, each, mapKeys, get, range } from 'lodash';
 import Axios from 'axios';
 import moment from 'moment';
 import { DateTime } from 'luxon';
@@ -253,17 +253,17 @@ var Store = (_class = (_temp = _class2 = function () {
         value: function initialize() {}
     }, {
         key: 'isLoading',
-        get: function get$$1() {
+        get: function get() {
             return this.__pendingRequestCount > 0;
         }
     }, {
         key: 'length',
-        get: function get$$1() {
+        get: function get() {
             return this.models.length;
         }
     }, {
         key: 'backendResourceName',
-        set: function set$$1(v) {
+        set: function set(v) {
             invariant(false, '`backendResourceName` should be a static property on the store.');
         }
     }]);
@@ -499,7 +499,7 @@ var Store = (_class = (_temp = _class2 = function () {
         }
     }, {
         key: 'toJS',
-        value: function toJS$$1() {
+        value: function toJS() {
             return this.models.map(function (model) {
                 return model.toJS();
             });
@@ -590,7 +590,7 @@ var Store = (_class = (_temp = _class2 = function () {
         value: function virtualStore(_ref2) {
             var _this7 = this;
 
-            var filter$$1 = _ref2.filter,
+            var filter = _ref2.filter,
                 comparator = _ref2.comparator;
 
             var store = new this.constructor({
@@ -600,7 +600,7 @@ var Store = (_class = (_temp = _class2 = function () {
 
             // Oh gawd MobX is so awesome.
             var events = autorun(function () {
-                var models = _this7.filter(filter$$1);
+                var models = _this7.filter(filter);
                 store.models.replace(models);
                 store.sort();
 
@@ -618,7 +618,7 @@ var Store = (_class = (_temp = _class2 = function () {
 
     }, {
         key: 'get',
-        value: function get$$1(id) {
+        value: function get(id) {
             // The id can be defined as a string or int, but we want it to work in both cases.
             return this.models.find(function (model) {
                 return model[model.constructor.primaryKey] == id;
@@ -635,7 +635,7 @@ var Store = (_class = (_temp = _class2 = function () {
         }
     }, {
         key: 'map',
-        value: function map$$1(predicate) {
+        value: function map$1(predicate) {
             return map(this.models, predicate);
         }
     }, {
@@ -645,17 +645,17 @@ var Store = (_class = (_temp = _class2 = function () {
         }
     }, {
         key: 'filter',
-        value: function filter$$1(predicate) {
+        value: function filter$1(predicate) {
             return filter(this.models, predicate);
         }
     }, {
         key: 'find',
-        value: function find$$1(predicate) {
+        value: function find$1(predicate) {
             return find(this.models, predicate);
         }
     }, {
         key: 'each',
-        value: function each$$1(predicate) {
+        value: function each(predicate) {
             return this.models.forEach(predicate);
         }
     }, {
@@ -665,7 +665,7 @@ var Store = (_class = (_temp = _class2 = function () {
         }
     }, {
         key: 'sortBy',
-        value: function sortBy$$1(iteratees) {
+        value: function sortBy$1(iteratees) {
             return sortBy(this.models, iteratees);
         }
     }, {
@@ -728,7 +728,7 @@ var Store = (_class = (_temp = _class2 = function () {
         }
     }, {
         key: 'totalPages',
-        get: function get$$1() {
+        get: function get() {
             if (!this.__state.limit) {
                 return 0;
             }
@@ -736,22 +736,22 @@ var Store = (_class = (_temp = _class2 = function () {
         }
     }, {
         key: 'currentPage',
-        get: function get$$1() {
+        get: function get() {
             return this.__state.currentPage;
         }
     }, {
         key: 'hasNextPage',
-        get: function get$$1() {
+        get: function get() {
             return this.__state.currentPage + 1 <= this.totalPages;
         }
     }, {
         key: 'hasPreviousPage',
-        get: function get$$1() {
+        get: function get() {
             return this.__state.currentPage > 1;
         }
     }, {
         key: 'hasUserChanges',
-        get: function get$$1() {
+        get: function get() {
             return this.hasSetChanges || this.models.some(function (m) {
                 return m.hasUserChanges;
             });
@@ -762,7 +762,7 @@ var Store = (_class = (_temp = _class2 = function () {
 
     }, {
         key: 'hasSetChanges',
-        get: function get$$1() {
+        get: function get() {
             return this.__setChanged;
         }
     }]);
@@ -937,28 +937,28 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         value: function initialize() {}
     }, {
         key: 'url',
-        get: function get$$1() {
+        get: function get() {
             var id = this[this.constructor.primaryKey];
             return '' + result(this, 'urlRoot') + (id ? id + '/' : '');
         }
     }, {
         key: 'isNew',
-        get: function get$$1() {
+        get: function get() {
             return !this[this.constructor.primaryKey];
         }
     }, {
         key: 'isLoading',
-        get: function get$$1() {
+        get: function get() {
             return this.__pendingRequestCount > 0;
         }
     }, {
         key: 'primaryKey',
-        set: function set$$1(v) {
+        set: function set(v) {
             invariant(false, '`primaryKey` should be a static property on the model.');
         }
     }, {
         key: 'backendResourceName',
-        set: function set$$1(v) {
+        set: function set(v) {
             invariant(false, '`backendResourceName` should be a static property on the model.');
         }
     }]);
@@ -1206,7 +1206,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         }
     }, {
         key: 'toJS',
-        value: function toJS$$1() {
+        value: function toJS() {
             var _this6 = this;
 
             var output = {};
@@ -1797,7 +1797,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         }
     }, {
         key: 'hasUserChanges',
-        get: function get$$1() {
+        get: function get() {
             var _this19 = this;
 
             if (this.__changes.length > 0) {
@@ -1809,7 +1809,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         }
     }, {
         key: 'fieldFilter',
-        get: function get$$1() {
+        get: function get() {
             var pickFields = this.pickFields();
             var omitFields = this.omitFields();
 
@@ -1819,7 +1819,7 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
         }
     }, {
         key: 'backendValidationErrors',
-        get: function get$$1() {
+        get: function get() {
             return this.__backendValidationErrors;
         }
     }], [{
@@ -2057,7 +2057,7 @@ var BinderApi = function () {
         }
     }, {
         key: 'get',
-        value: function get$$1(url, data, options) {
+        value: function get(url, data, options) {
             return this.__request('get', url, data, options);
         }
     }, {
@@ -2222,7 +2222,7 @@ var CASTS = {
             }
             return moment(value, 'YYYY-MM-DD');
         },
-        toJS: function toJS$$1(attr, value) {
+        toJS: function toJS(attr, value) {
             if (value === null || value === undefined) {
                 return null;
             }
@@ -2239,7 +2239,7 @@ var CASTS = {
             }
             return moment(value);
         },
-        toJS: function toJS$$1(attr, value) {
+        toJS: function toJS(attr, value) {
             if (value === null) {
                 return null;
             }
@@ -2256,7 +2256,7 @@ var CASTS = {
             }
             return DateTime.fromISO(value);
         },
-        toJS: function toJS$$1(attr, value) {
+        toJS: function toJS(attr, value) {
             if (value === null || value === undefined) {
                 return null;
             }
@@ -2274,7 +2274,7 @@ var CASTS = {
 
             return DateTime.fromISO(value);
         },
-        toJS: function toJS$$1(attr, value) {
+        toJS: function toJS(attr, value) {
             if (value === null) {
                 return null;
             }
@@ -2290,7 +2290,7 @@ var CASTS = {
 
             return (_CASTS$ = CASTS[DATE_LIB + 'Date']).parse.apply(_CASTS$, arguments);
         },
-        toJS: function toJS$$1() {
+        toJS: function toJS() {
             var _CASTS$2;
 
             return (_CASTS$2 = CASTS[DATE_LIB + 'Date']).toJS.apply(_CASTS$2, arguments);
@@ -2306,7 +2306,7 @@ var CASTS = {
 
             return (_CASTS$3 = CASTS[DATE_LIB + 'Datetime']).parse.apply(_CASTS$3, arguments);
         },
-        toJS: function toJS$$1() {
+        toJS: function toJS() {
             var _CASTS$4;
 
             return (_CASTS$4 = CASTS[DATE_LIB + 'Datetime']).toJS.apply(_CASTS$4, arguments);
@@ -2334,4 +2334,4 @@ var CASTS = {
     }
 };
 
-export { Model, Store, BinderApi, CASTS as Casts, configureDateLib };
+export { BinderApi, CASTS as Casts, Model, Store, configureDateLib };
