@@ -30,7 +30,7 @@ function checkLuxonDateTime(attr, value) {
 }
 
 const LUXON_DATE_FORMAT = 'yyyy-LL-dd';
-const LUXON_DATETIME_FORMAT = "yyyy'-'LL'-'dd'T'HH':'mm':'ssZZ";
+const LUXON_DATETIME_FORMAT = 'yyyy\'-\'LL\'-\'dd\'T\'HH\':\'mm\':\'ssZZ';
 
 const CASTS = {
     momentDate: {
