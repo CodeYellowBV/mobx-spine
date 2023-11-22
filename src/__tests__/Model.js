@@ -616,7 +616,7 @@ test('toBackendAll with model relation', () => {
     animal.kind.parse({ id: 5 });
 
     const serialized = animal.toBackendAll({
-        nestedRelations: {kind: { breed: {}}, owner: {}},
+        nestedRelations: { kind: { breed: {} }, owner: {} },
     });
     expect(serialized).toMatchSnapshot();
 });
@@ -644,7 +644,7 @@ test('toBackendAll with partial relations', () => {
         },
         { relations: ['kind', 'owner.town'] }
     );
-    const serialized = animal.toBackendAll({ nestedRelations: {owner: {}} });
+    const serialized = animal.toBackendAll({ nestedRelations: { owner: {} } });
     expect(serialized).toMatchSnapshot();
 });
 
@@ -665,7 +665,7 @@ test('toBackendAll with store relation', () => {
         { id: 10, name: 'R' },
     ]);
 
-    const serialized = animal.toBackendAll({ nestedRelations: {pastOwners: {}} });
+    const serialized = animal.toBackendAll({ nestedRelations: { pastOwners: {} } });
     expect(serialized).toMatchSnapshot();
 });
 
@@ -682,7 +682,7 @@ test('toBackendAll should de-duplicate relations', () => {
     expect(animalBar.cid).toBe(animal.pastOwners.at(1).cid);
 
     const serialized = animal.toBackendAll({
-        nestedRelations: {pastOwners: {town: {}}},
+        nestedRelations: { pastOwners: { town: {} } },
     });
     expect(serialized).toMatchSnapshot();
 });
@@ -701,7 +701,7 @@ test('toBackendAll with deep nested relation', () => {
     });
 
     const serialized = animal.toBackendAll({
-        nestedRelations: {kind: { location: {}, breed: { location: {} }}},
+        nestedRelations: { kind: { location: {}, breed: { location: {} } } },
     });
     expect(serialized).toMatchSnapshot();
 });
@@ -726,7 +726,7 @@ test('toBackendAll with nested store relation', () => {
     ]);
 
     const serialized = animal.toBackendAll({
-        nestedRelations: {pastOwners: { town: {} }},
+        nestedRelations: { pastOwners: { town: {} } },
     });
     expect(serialized).toMatchSnapshot();
 });
@@ -755,7 +755,7 @@ test('toBackendAll with `backendResourceName` property model', () => {
     });
 
     const serialized = animal.toBackendAll({
-        nestedRelations: {blaat: {}, owners: {}, pastOwners: {}},
+        nestedRelations: { blaat: {}, owners: {}, pastOwners: {} },
     });
     expect(serialized).toMatchSnapshot();
 });
@@ -1054,7 +1054,7 @@ describe('requests', () => {
     });
 
     test('Save model with relations and multiple files', () => {
-        const fileCabinet = new FileCabinet({ id: 5 },{relations: ['files']});
+        const fileCabinet = new FileCabinet({ id: 5 },{ relations: ['files'] });
         fileCabinet.files.add([
             { dataFile: new Blob(['bar'], { type: 'text/plain' }) },
             { dataFile: new Blob(['foo'], { type: 'text/plain' }) },
@@ -1787,7 +1787,7 @@ describe('changes', () => {
 
         const output = animal.toBackendAll({
             // The `owner` relation is just here to verify that it is not included
-            nestedRelations: {kind: {breed: {}}, pastOwners: {}},
+            nestedRelations: { kind: { breed: {} }, pastOwners: {} },
             onlyChanges: true,
         });
         expect(output).toEqual({
@@ -1833,7 +1833,7 @@ describe('changes', () => {
 
         const output = animal.toBackendAll({
             // The `kind` and `breed` relations are just here to verify that they are not included
-            nestedRelations: {kind: {breed: {}}, pastOwners: {}},
+            nestedRelations: { kind: { breed: {} }, pastOwners: {} },
             onlyChanges: true,
         });
         expect(output).toEqual({
@@ -1862,7 +1862,7 @@ describe('changes', () => {
 
         const output = animal.toBackendAll({
             // The `kind` and `breed` relations are just here to verify that they are not included
-            nestedRelations: {kind: {breed: {}}, pastOwners: {}},
+            nestedRelations: { kind: { breed: {} }, pastOwners: {} },
             onlyChanges: true,
         });
         expect(output).toEqual({
@@ -1887,7 +1887,7 @@ describe('changes', () => {
             { relations: ['kind.breed', 'owner', 'pastOwners'] }
         );
         const output = animal.toBackendAll({
-            nestedRelations: {kind: {breed: {}}, pastOwners: {}},
+            nestedRelations: { kind: { breed: {} }, pastOwners: {} },
             onlyChanges: false,
         });
         expect(output).toEqual({
