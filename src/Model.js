@@ -26,6 +26,7 @@ import {
 import Store from './Store';
 import { invariant, snakeToCamel, camelToSnake, relationsToNestedKeys, forNestedRelations } from './utils';
 import Axios from 'axios';
+import { Relation } from './Relations';
 
 function concatInDict(dict, key, value) {
     dict[key] = dict[key] ? dict[key].concat(value) : value;
@@ -172,7 +173,12 @@ export default class Model {
 
         // Find all attributes. Not all observables are an attribute.
         forIn(this, (value, key) => {
-            if (!key.startsWith('__') && isObservableProp(this, key)) {
+
+            // Register relations
+            if (value instanceof Relation) {
+                this.__relations[key] = value.model;
+                this[key] = undefined
+            } else if (!key.startsWith('__') && isObservableProp(this, key)) {
                 invariant(
                     !FORBIDDEN_ATTRS.includes(key),
                     `Forbidden attribute key used: \`${key}\``
@@ -965,5 +971,18 @@ export default class Model {
         this.__activeCurrentRelations.forEach(currentRel => {
             this[currentRel].clear();
         });
+    }
+
+    /**************
+     * New way of doing relations
+     *************/
+    __relations = {}
+
+    relation(modelOrSTore) {
+        return new Relation(modelOrSTore)
+    }
+
+    relations() {
+        return this.__relations;
     }
 }

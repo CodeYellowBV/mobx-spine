@@ -798,6 +798,23 @@ var Store = (_class = (_temp = _class2 = function () {
     }
 }), _applyDecoratedDescriptor(_class.prototype, 'isLoading', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'isLoading'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'length', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'length'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fromBackend', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'fromBackend'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'sort', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'sort'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'parse', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'parse'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'add', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'add'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'remove', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'remove'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'removeById', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'removeById'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'clear', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'clear'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fetch', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'fetch'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'setLimit', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'setLimit'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'totalPages', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'totalPages'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'currentPage', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'currentPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'hasNextPage', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'hasNextPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'hasPreviousPage', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'hasPreviousPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'getNextPage', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'getNextPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'getPreviousPage', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'getPreviousPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'setPage', [action], Object.getOwnPropertyDescriptor(_class.prototype, 'setPage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'hasUserChanges', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'hasUserChanges'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'hasSetChanges', [computed], Object.getOwnPropertyDescriptor(_class.prototype, 'hasSetChanges'), _class.prototype)), _class);
 
+var Relation = function () {
+    function Relation(toModel) {
+        classCallCheck(this, Relation);
+        this.__toModel = null;
+
+        this.__toModel = toModel;
+    }
+
+    createClass(Relation, [{
+        key: "model",
+        get: function get() {
+            return this.__toModel;
+        }
+    }]);
+    return Relation;
+}();
+
 var _class$1, _descriptor$1, _descriptor2$1, _descriptor3$1, _descriptor4$1, _descriptor5$1, _descriptor6, _descriptor7, _class2$1, _temp$1;
 
 function _initDefineProp$1(target, property, descriptor, context) {
@@ -989,13 +1006,20 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
 
         _initDefineProp$1(this, '__fileExists', _descriptor7, this);
 
+        this.__relations = {};
+
         this.__store = options.store;
         this.__repository = options.repository;
         this.abortController = new AbortController();
 
         // Find all attributes. Not all observables are an attribute.
         forIn(this, function (value, key) {
-            if (!key.startsWith('__') && isObservableProp(_this2, key)) {
+
+            // Register relations
+            if (value instanceof Relation) {
+                _this2.__relations[key] = value.model;
+                _this2[key] = undefined;
+            } else if (!key.startsWith('__') && isObservableProp(_this2, key)) {
                 invariant(!FORBIDDEN_ATTRS.includes(key), 'Forbidden attribute key used: `' + key + '`');
                 _this2.__attributes.push(key);
                 var newValue = value;
@@ -1794,6 +1818,21 @@ var Model = (_class$1 = (_temp$1 = _class2$1 = function () {
             this.__activeCurrentRelations.forEach(function (currentRel) {
                 _this18[currentRel].clear();
             });
+        }
+
+        /**************
+         * New way of doing relations
+         *************/
+
+    }, {
+        key: 'relation',
+        value: function relation(modelOrSTore) {
+            return new Relation(modelOrSTore);
+        }
+    }, {
+        key: 'relations',
+        value: function relations() {
+            return this.__relations;
         }
     }, {
         key: 'hasUserChanges',
