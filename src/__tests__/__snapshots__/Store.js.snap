@@ -1,5 +1,45 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Save save all with existing model 1`] = `
+Object {
+  "data": Array [
+    Object {
+      "id": 10,
+      "kind": -238,
+      "name": "Doggo",
+    },
+  ],
+  "with": Object {
+    "kind": Array [
+      Object {
+        "id": -238,
+        "name": "Dog",
+      },
+    ],
+  },
+}
+`;
+
+exports[`Save save all with not defined relation error 1`] = `
+Object {
+  "data": Array [
+    Object {
+      "id": 10,
+      "kind": -241,
+      "name": "Doggo",
+    },
+  ],
+  "with": Object {
+    "kind": Array [
+      Object {
+        "id": -241,
+        "name": "",
+      },
+    ],
+  },
+}
+`;
+
 exports[`requests fetch with complex nested relations 1`] = `
 Array [
   Object {
