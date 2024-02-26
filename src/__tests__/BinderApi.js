@@ -100,8 +100,8 @@ test('POST request', () => {
 });
 
 test('POST request to custom endpoint (#78)', () => {
-    mock.onAny().replyOnce(config => {
-        expect(config.url).toBe('/api/foo/asdf/'); // No double leading slash
+    mock.onPost('/api/foo/asdf/').replyOnce(config => { // No double leading slash
+        expect(config.url).toBe('/asdf/');
         expect(config.method).toBe('post');
         expect(config.params).toEqual(undefined);
         return [200, { }];

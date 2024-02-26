@@ -178,6 +178,12 @@ animal.fetch().then(() => {
 
 
 ```
+You can also cancel the previous request by passing `{ cancelPreviousFetch: true }` to fetch
+
+```js
+animal.fetch(); // request cancelled
+animal.fetch({cancelPreviousFetch: true});
+```
 
 #### Backend request: save
 
@@ -265,15 +271,15 @@ class AnimalStore extends Store {
 class Animal extends Model {
     @observable id = null;
     @observable name = '';
+    
+    @observable breed = this.relation(Bread);
+    @observable relatives = this.relation(AnimalStore);
 
-    relations() {
-        return {
-            breed: Breed, // Define a breed relation to Breed.
-            relatives: AnimalStore, // Define a relatives relation to AnimalStore.
-        };
-    }
 }
 ```
+
+Note that it is really import for relations to be observable, otherwise the parsing of the model data will fail. 
+
 
 You can now instantiate the animal with it's breed & relatives relation recursively:
 
@@ -307,6 +313,37 @@ class animal = new Animal({ id: 2, name: 'Rova', breed: { id: 3, name: 'Main Coo
 
 console.log(animal.breed.name); // Throws cannot read property name from undefined.
 ```
+
+### Alternative legacy relation definition
+
+Alternatively, relations can be defined by overriding the relations(). This is used in old models. Note that this way of defining models has two disadvantages:
+
+- It doesn't allow inheriting relations
+- It doesn't allow for easy type hinting in typescript
+
+```js
+class Breed extends Model {
+    @observable id = null;
+    @observable name = '';
+}
+
+class AnimalStore extends Store {
+    Model = Animal;
+}
+
+class Animal extends Model {
+    @observable id = null;
+    @observable name = '';
+
+    relations() {
+        return {
+            breed: Breed, // Define a breed relation to Breed.
+            relatives: AnimalStore, // Define a relatives relation to AnimalStore.
+        };
+    }
+}
+```
+
 
 ### Pick fields
 

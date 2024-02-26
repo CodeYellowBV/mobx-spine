@@ -34,6 +34,7 @@ import customerWithoutTownRestaurants from './fixtures/customer-without-town-res
 import customersLocationBestCookWorkPlaces from './fixtures/customers-location-best-cook-work-places.json';
 import saveFailData from './fixtures/save-fail.json';
 import saveNewFailData from './fixtures/save-new-fail.json';
+import inconsistentOrderingWith from './fixtures/inconsistent-ordering-with.json';
 
 beforeEach(() => {
     // Refresh lodash's `_.uniqueId` internal state for every test
@@ -1072,7 +1073,7 @@ describe('requests', () => {
     });
 
     test('Save model with relations and multiple files', () => {
-        const fileCabinet = new FileCabinet({ id: 5 },{relations: ['files']});
+        const fileCabinet = new FileCabinet({ id: 5 },{ relations: ['files'] });
         fileCabinet.files.add([
             { dataFile: new Blob(['bar'], { type: 'text/plain' }) },
             { dataFile: new Blob(['foo'], { type: 'text/plain' }) },
@@ -1206,7 +1207,7 @@ describe('requests', () => {
         expect(spy).toHaveBeenCalledWith(
             '/zebra/1/',
             { with: null },
-            { skipRequestErrors: true }
+            expect.objectContaining({ skipRequestErrors: true })
         );
     });
 
@@ -1219,6 +1220,34 @@ describe('requests', () => {
 
         return kind.fetch();
     });
+
+
+    test('cancel previous fetch', () => {
+        const animal = new Animal({ id: 2 });
+        mock.onAny().reply(config => {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    if (config.signal.aborted) {
+                        reject({ __CANCEL__: true })
+                    }
+                    resolve([200, { data: { id: 2, name: 'Madagascar' } }])
+                }, 1000)
+            })
+        });
+        /**
+         * Here we are testing that the first request gets cancelled before it is resolved
+         * causing the animal object to not get hydrated, while the second request resolves
+         * successfully later, and the name attribute is hydrated properly
+         */
+        return Promise.all([
+            animal.fetch().then(() => {
+                expect(animal.name).toBe('');
+            }),
+            animal.fetch({ cancelPreviousFetch: true }).then(() => {
+                expect(animal.name).toBe('Madagascar');
+            })
+        ]);
+    })
 
     test('save new with basic properties', () => {
         const animal = new Animal({ name: 'Doggo' });
@@ -1759,12 +1788,11 @@ describe('requests', () => {
     test('isLoading', () => {
         const animal = new Animal({ id: 2 });
         expect(animal.isLoading).toBe(false);
-        mock.onAny().replyOnce(() => {
-            expect(animal.isLoading).toBe(true);
-            return [200, { id: 2 }];
-        });
+        mock.onAny().replyOnce(() => [200, { id: 2 }]);
 
-        return animal.fetch().then(() => {
+        const promise = animal.fetch();
+        expect(animal.isLoading).toBe(true);
+        return promise.then(() => {
             expect(animal.isLoading).toBe(false);
         });
     });
@@ -1772,12 +1800,11 @@ describe('requests', () => {
     test('isLoading with failed request', () => {
         const animal = new Animal({ id: 2 });
 
-        mock.onAny().replyOnce(() => {
-            expect(animal.isLoading).toBe(true);
-            return [404];
-        });
+        mock.onAny().replyOnce(() => [404]);
 
-        return animal.fetch().catch(() => {
+        const promise = animal.fetch();
+        expect(animal.isLoading).toBe(true);
+        return promise.catch(() => {
             expect(animal.isLoading).toBe(false);
         });
     });
@@ -2640,3 +2667,41 @@ describe('copy with changes', () => {
 // });
 
 
+
+/**
+ * Test that for withs, the ordering is taken from the ids on the main model, and not in the withs.
+ *
+ * i.e.
+ *
+ * data {
+ *      "past_owners": [
+ *       55,
+ *       66
+ *     ],
+ * }
+ * with: {past_owners: [
+ *  {id:66},
+ *  {id:55}
+ * ])
+ *
+ * Past owners will be sorted 55, 66, and not the other way around
+ *
+ *
+ */
+test('Parsing inconsistent ordering of withs', () => {
+
+    const animal = new Animal(null, {
+        relations: ['pastOwners.town'],
+    });
+
+    expect(animal.pastOwners).not.toBeUndefined();
+    expect(animal.pastOwners).toBeInstanceOf(PersonStore);
+
+    animal.fromBackend({
+        data: inconsistentOrderingWith.data,
+        repos: inconsistentOrderingWith.with,
+        relMapping: inconsistentOrderingWith.with_mapping,
+    });
+
+    expect(animal.pastOwners.map('id')).toEqual([55, 66]);
+});

@@ -1,4 +1,8 @@
 {
     "extends": "codeyellow",
-    "root": true
+    "root": true,
+    "rules": {
+        "object-curly-spacing": ["warn", "always"],
+        "quotes": ["warn", "single"]
+    }
 }
