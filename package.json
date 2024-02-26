@@ -72,7 +72,8 @@
       "./src"
     ],
     "testPathIgnorePatterns": [
-      "/fixtures/"
+      "/fixtures/",
+      "/helpers/"
     ]
   }
 }
