@@ -24,6 +24,7 @@ import customersWithTownRestaurantsUnbalanced from './fixtures/customers-with-to
 import townsWithRestaurantsAndCustomersNoIdList from './fixtures/towns-with-restaurants-and-customers-no-id-list.json';
 import customersWithOldTowns from './fixtures/customers-with-old-towns.json';
 import animalsData from './fixtures/animals.json';
+import animalsDataIdOne from './fixtures/animals-id-1.json';
 import pagination0Data from './fixtures/pagination/0.json';
 import pagination1Data from './fixtures/pagination/1.json';
 import pagination2Data from './fixtures/pagination/2.json';
@@ -739,6 +740,81 @@ describe('requests', () => {
         return promise.catch(() => {
             expect(animalStore.isLoading).toBe(false);
         });
+    });
+
+    test('fetch cancelPreviousFetch should update pendingRequestCount', async () => {
+        const animalStore = new AnimalStore();
+
+        mock.onAny().reply(config => {
+            return new Promise((resolve, reject) => {
+                if (config.signal.aborted) {
+                    setTimeout(() => {
+                        // reject after 1 second
+                        reject({ __CANCEL__: true })
+                    }, 1000)
+                }
+                setTimeout(() => {
+                    resolve([200, animalsDataIdOne])
+                }, 100)
+            })
+        });
+        const p1 = animalStore.fetch()
+        const p2 = animalStore.fetch({ cancelPreviousFetch: true, params: { id: 1 } })
+
+        // we ignore previous request, so number of pending = 1
+        expect(animalStore.__pendingRequestCount).toBe(1);
+        expect(animalStore.isLoading).toBe(true);
+        expect(animalStore.models.length).toBe(0);
+
+        // p2 is first to resolve, should mark store as "done"
+        await p2
+        expect(animalStore.__pendingRequestCount).toBe(0);
+        expect(animalStore.isLoading).toBe(false);
+        expect(animalStore.models.length).toBe(1);
+
+        // p1 is cancelled, should not change stuff
+        await p1
+        expect(animalStore.__pendingRequestCount).toBe(0);
+        expect(animalStore.isLoading).toBe(false);
+        expect(animalStore.models.length).toBe(1);
+    });
+
+    test('fetch cancelPreviousFetch when received in order, but canceled', async () => {
+        const animalStore = new AnimalStore();
+
+        mock.onAny().reply(config => {
+            return new Promise((resolve, reject) => {
+                if (config.signal.aborted) {
+                    setTimeout(() => {
+                        // reject after 100 ms
+                        reject({ __CANCEL__: true })
+                    }, 100)
+                }
+                setTimeout(() => {
+                    // resolve other request later
+                    resolve([200, animalsDataIdOne])
+                }, 1000)
+            })
+        });
+        const p1 = animalStore.fetch()
+        const p2 = animalStore.fetch({ cancelPreviousFetch: true, params: { id: 1 } })
+
+        // we ignore previous request, so number of pending = 1
+        expect(animalStore.__pendingRequestCount).toBe(1);
+        expect(animalStore.isLoading).toBe(true);
+        expect(animalStore.models.length).toBe(0);
+
+        // p1 is first to resolve, should be cancelled
+        await p1
+        expect(animalStore.__pendingRequestCount).toBe(1);
+        expect(animalStore.isLoading).toBe(true);
+        expect(animalStore.models.length).toBe(0);
+
+        // p2 is resolved, data should udpate
+        await p2
+        expect(animalStore.__pendingRequestCount).toBe(0);
+        expect(animalStore.isLoading).toBe(false);
+        expect(animalStore.models.length).toBe(1);
     });
 });
 

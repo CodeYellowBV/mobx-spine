@@ -12,6 +12,8 @@ import {
     uniqBy,
 } from 'lodash';
 import { invariant } from './utils';
+import Axios from 'axios';
+
 const AVAILABLE_CONST_OPTIONS = [
     'relations',
     'limit',
@@ -37,6 +39,7 @@ export default class Store {
     __activeRelations = [];
     Model = null;
     api = null;
+    abortController;
     __repository;
     static backendResourceName = '';
 
@@ -80,6 +83,7 @@ export default class Store {
                 `Unknown option passed to store: ${option}`
             );
         });
+        this.abortController = new AbortController();
         this.__repository = options.repository;
         if (options.relations) {
             this.__parseRelations(options.relations);
@@ -264,6 +268,12 @@ export default class Store {
 
     @action
     fetch(options = {}) {
+        if (options.cancelPreviousFetch) {
+            this.abortController.abort();
+            this.abortController = new AbortController();
+            this.__pendingRequestCount = 0;
+        }
+        options.abortSignal = this.abortController.signal;
 
         const data = this.buildFetchData(options);
         const promise = this.wrapPendingRequestCount(
@@ -279,6 +289,15 @@ export default class Store {
 
                 return res.response;
             }))
+            .catch(e => {
+                if (Axios.isCancel(e)) {
+                    // correct __pendingRequestCount
+                    this.__pendingRequestCount++
+                    return null;
+                } else {
+                    throw e;
+                }
+            })
         );
 
         return promise;

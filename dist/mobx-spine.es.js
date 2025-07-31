@@ -228,11 +228,16 @@ function _applyDecoratedDescriptor(target, property, decorators, descriptor, con
 
     return desc;
 }
+
 var AVAILABLE_CONST_OPTIONS = ['relations', 'limit', 'comparator', 'params', 'repository'];
 
 var Store = (_class = (_temp = _class2 = function () {
     createClass(Store, [{
         key: 'url',
+
+        // The set of models has changed
+
+        // Holds the fetch parameters
         value: function url() {
             // Try to auto-generate the URL.
             var bname = this.constructor.backendResourceName;
@@ -241,10 +246,6 @@ var Store = (_class = (_temp = _class2 = function () {
             }
             return null;
         }
-        // The set of models has changed
-
-        // Holds the fetch parameters
-
     }, {
         key: 'initialize',
 
@@ -290,6 +291,7 @@ var Store = (_class = (_temp = _class2 = function () {
         forIn(options, function (value, option) {
             invariant(AVAILABLE_CONST_OPTIONS.includes(option), 'Unknown option passed to store: ' + option);
         });
+        this.abortController = new AbortController();
         this.__repository = options.repository;
         if (options.relations) {
             this.__parseRelations(options.relations);
@@ -475,6 +477,12 @@ var Store = (_class = (_temp = _class2 = function () {
 
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
+            if (options.cancelPreviousFetch) {
+                this.abortController.abort();
+                this.abortController = new AbortController();
+                this.__pendingRequestCount = 0;
+            }
+            options.abortSignal = this.abortController.signal;
 
             var data = this.buildFetchData(options);
             var promise = this.wrapPendingRequestCount(this.__getApi().fetchStore({
@@ -486,7 +494,15 @@ var Store = (_class = (_temp = _class2 = function () {
                 _this5.fromBackend(res);
 
                 return res.response;
-            })));
+            })).catch(function (e) {
+                if (Axios.isCancel(e)) {
+                    // correct __pendingRequestCount
+                    _this5.__pendingRequestCount++;
+                    return null;
+                } else {
+                    throw e;
+                }
+            }));
 
             return promise;
         }
@@ -2251,7 +2267,7 @@ function checkLuxonDateTime(attr, value) {
 }
 
 var LUXON_DATE_FORMAT = 'yyyy-LL-dd';
-var LUXON_DATETIME_FORMAT = "yyyy'-'LL'-'dd'T'HH':'mm':'ssZZ";
+var LUXON_DATETIME_FORMAT = 'yyyy\'-\'LL\'-\'dd\'T\'HH\':\'mm\':\'ssZZ';
 
 var CASTS = {
     momentDate: {
