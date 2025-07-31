@@ -17,6 +17,8 @@ export class File extends Model {
 
 export class FileStore extends Store {
     Model = File
+    api = new BinderApi();
+    url = '/api/file/';
 }
 
 export class FileCabinet extends Model {
@@ -30,6 +32,12 @@ export class FileCabinet extends Model {
             files: FileStore,
         }
     }
+}
+
+export class FileCabinetStore extends Store {
+    Model = FileCabinet;
+    api = new BinderApi();
+    url = '/api/file_cabinet/';
 }
 
 
