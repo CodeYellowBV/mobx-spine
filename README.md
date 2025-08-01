@@ -524,3 +524,10 @@ animalStore.fetch().then(() => {
     console.log(animalStore.at(0).name); // Garfield
 });
 ```
+
+You can also cancel the previous request by passing `{ cancelPreviousFetch: true }` to fetch
+
+```js
+animalStore.fetch(); // request cancelled
+animalStore.fetch({ cancelPreviousFetch: true });
+```
