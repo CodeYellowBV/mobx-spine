@@ -10,6 +10,7 @@ import {
     isPlainObject,
     result,
     uniqBy,
+    debounce,
 } from 'lodash';
 import { invariant } from './utils';
 import Axios from 'axios';
@@ -353,14 +354,16 @@ export default class Store {
     getNextPage() {
         invariant(this.hasNextPage, 'There is no next page.');
         this.__state.currentPage += 1;
-        return this.fetch();
+        const debouncedFetch = debounce(this.fetch, 300)
+        return debouncedFetch();
     }
 
     @action
     getPreviousPage() {
         invariant(this.hasPreviousPage, 'There is no previous page.');
         this.__state.currentPage -= 1;
-        return this.fetch();
+        const debouncedFetch = debounce(this.fetch, 300)
+        return debouncedFetch();
     }
 
     @action
