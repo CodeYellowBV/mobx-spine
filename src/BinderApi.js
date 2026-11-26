@@ -108,6 +108,19 @@ export default class BinderApi {
             }
         }
 
+        // Send a FormData body (built above or passed in) as multipart, not
+        // with the default JSON Content-Type: axios >= 0.28 serializes FormData
+        // to a JSON string when the Content-Type is application/json, and the
+        // file uploads are lost. An explicitly passed Content-Type is kept. In
+        // the browser axios drops the header so that the browser can add the
+        // multipart boundary itself.
+        if (
+            axiosOptions.data instanceof FormData &&
+            headers['Content-Type'] === 'application/json'
+        ) {
+            headers['Content-Type'] = 'multipart/form-data';
+        }
+
         const xhr = this.axios(axiosOptions);
 
         // We fork the promise tree as we want to have the error traverse to the listeners

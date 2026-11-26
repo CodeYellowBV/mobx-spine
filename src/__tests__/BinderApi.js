@@ -1,10 +1,9 @@
-import axios from 'axios';
-import MockAdapter from 'axios-mock-adapter';
+import mockAxios from './fixtures/mockAxios';
 import { BinderApi } from '../';
 
 let mock;
 beforeEach(() => {
-    mock = new MockAdapter(axios);
+    mock = mockAxios();
 });
 afterEach(() => {
     if (mock) {
@@ -279,6 +278,7 @@ test('Blobs in json get converted to form data', () => {
         expect(config.method).toBe('put');
         expect(config.params).toEqual(undefined);
         expect(config.data).toBeInstanceOf(FormData);
+        expect(config.headers['Content-Type']).toBe('multipart/form-data');
 
         const keys = Array.from(config.data.keys()).sort();
         expect(keys).toEqual(['data', 'file:bar.2', 'file:foo']);
@@ -317,6 +317,7 @@ test('FormData is left intact', () => {
         expect(config.method).toBe('put');
         expect(config.params).toEqual(undefined);
         expect(config.data).toBeInstanceOf(FormData);
+        expect(config.headers['Content-Type']).toBe('multipart/form-data');
 
         const keys = Array.from(config.data.keys()).sort();
         expect(keys).toEqual(['bar', 'foo']);
@@ -332,6 +333,33 @@ test('FormData is left intact', () => {
 
     const api = new BinderApi();
     return api.put('/api/test/', data);
+});
+
+test('FormData keeps an explicitly passed Content-Type', () => {
+    const data = new FormData();
+    data.set('foo', new Blob(['foo'], { type: 'text/plain' }));
+
+    mock.onAny().replyOnce(config => {
+        expect(config.data).toBeInstanceOf(FormData);
+        expect(config.headers['Content-Type']).toBe('multipart/mixed');
+        return [200, {}];
+    });
+
+    const api = new BinderApi();
+    return api.put('/api/test/', data, {
+        headers: { 'Content-Type': 'multipart/mixed' },
+    });
+});
+
+test('JSON without files keeps the JSON Content-Type', () => {
+    mock.onAny().replyOnce(config => {
+        expect(config.data).toBe(JSON.stringify({ foo: 'bar' }));
+        expect(config.headers['Content-Type']).toBe('application/json');
+        return [200, {}];
+    });
+
+    const api = new BinderApi();
+    return api.put('/api/test/', { foo: 'bar' });
 });
 
 test('Blob is left intact', () => {

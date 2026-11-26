@@ -1,5 +1,4 @@
-import axios from 'axios';
-import MockAdapter from 'axios-mock-adapter';
+import mockAxios from './fixtures/mockAxios';
 import { Model, Store, BinderApi } from '../';
 import {
     Animal,
@@ -575,7 +574,7 @@ test('clearing an empty store should not register a change', () => {
 describe('requests', () => {
     let mock;
     beforeEach(() => {
-        mock = new MockAdapter(axios);
+        mock = mockAxios();
     });
     afterEach(() => {
         if (mock) {
@@ -821,7 +820,7 @@ describe('requests', () => {
 describe('Pagination', () => {
     let mock;
     beforeEach(() => {
-        mock = new MockAdapter(axios);
+        mock = mockAxios();
     });
     afterEach(() => {
         if (mock) {
