@@ -29,5 +29,9 @@ jobs:
         run: |
           yarn ci
 
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v1
+      # Disabled for now: codecov-action@v1 is the deprecated uploader, and a
+      # third-party step in CI needs a vetted setup (current action pinned to a
+      # commit SHA, minimal permissions, repo-only CODECOV_TOKEN). Coverage is
+      # still printed in the job log by `yarn ci`.
+      # - name: Upload coverage report
+      #   uses: codecov/codecov-action@v1
