@@ -8,7 +8,8 @@ jobs:
 
     strategy:
       matrix:
-        node-version: ['14']
+        # 18 for projects that are still on it; 22 and 24: maintained LTS lines.
+        node-version: ['18', '22', '24']
 
     steps:
       - name: Checkout code
