@@ -18,19 +18,12 @@
     "preversion": "pnpm run -s lint && pnpm test && pnpm run -s build",
     "version": "git add -A dist",
     "build": "rm -f dist/** && BABEL_ENV=production node build.js",
-    "//precommit": "lint-staged",
     "ci": "pnpm run -s lint && pnpm run -s test-coverage"
   },
   "packageManager": "pnpm@10.18.2",
   "pnpm": {
     "ignoredBuiltDependencies": [
       "core-js"
-    ]
-  },
-  "lint-staged": {
-    "*.js": [
-      "prettier --single-quote --trailing-comma es5 --tab-width 4 --write",
-      "git add"
     ]
   },
   "dependencies": {
@@ -54,12 +47,10 @@
     "eslint": "5.16.0",
     "eslint-config-codeyellow": "4.1.5",
     "jest": "23.6.0",
-    "lint-staged": "13.2.0",
     "lodash": "4.18.1",
     "luxon": "3.3.0",
     "mobx": "5.15.7",
     "moment": "2.31.0",
-    "prettier": "2.8.7",
     "rollup": "1.32.1",
     "rollup-plugin-babel": "3.0.7"
   },
