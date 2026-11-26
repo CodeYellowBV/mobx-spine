@@ -1,10 +1,9 @@
-import axios from 'axios';
-import MockAdapter from 'axios-mock-adapter';
+import mockAxios from './fixtures/mockAxios';
 import { BinderApi } from '../';
 
 let mock;
 beforeEach(() => {
-    mock = new MockAdapter(axios);
+    mock = mockAxios();
 });
 afterEach(() => {
     if (mock) {

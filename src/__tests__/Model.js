@@ -1,6 +1,5 @@
-import axios from 'axios';
 import { toJS, observable } from 'mobx';
-import MockAdapter from 'axios-mock-adapter';
+import mockAxios from './fixtures/mockAxios';
 import _ from 'lodash';
 import { Model, BinderApi } from '../';
 import {
@@ -1003,7 +1002,7 @@ test('parse empty list', () => {
 describe('requests', () => {
     let mock;
     beforeEach(() => {
-        mock = new MockAdapter(axios);
+        mock = mockAxios();
     });
     afterEach(() => {
         if (mock) {
