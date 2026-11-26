@@ -4,7 +4,7 @@ const babel = require('rollup-plugin-babel');
 rollup
     .rollup({
         input: './src/index.js',
-        external: ['lodash', 'mobx', 'axios', 'moment'],
+        external: ['lodash', 'mobx', 'axios', 'moment', 'luxon'],
         plugins: [
             babel({
                 exclude: 'node_modules/**',
