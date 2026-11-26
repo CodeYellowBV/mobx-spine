@@ -15,11 +15,17 @@
     "test-dev": "jest --watch",
     "test-coverage": "jest --coverage",
     "lint": "eslint src",
-    "preversion": "npm run -s lint && npm test && npm run -s build",
+    "preversion": "pnpm run -s lint && pnpm test && pnpm run -s build",
     "version": "git add -A dist",
     "build": "rm -f dist/** && BABEL_ENV=production node build.js",
     "//precommit": "lint-staged",
-    "ci": "npm run -s lint && npm run -s test-coverage"
+    "ci": "pnpm run -s lint && pnpm run -s test-coverage"
+  },
+  "packageManager": "pnpm@10.18.2",
+  "pnpm": {
+    "ignoredBuiltDependencies": [
+      "core-js"
+    ]
   },
   "lint-staged": {
     "*.js": [
