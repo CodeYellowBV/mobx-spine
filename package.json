@@ -24,7 +24,21 @@
   "pnpm": {
     "ignoredBuiltDependencies": [
       "core-js"
-    ]
+    ],
+    "overrides": {
+      "ajv@6": "6.15.0",
+      "brace-expansion@1": "1.1.22",
+      "cross-spawn@6": "6.0.6",
+      "diff@3": "3.5.1",
+      "form-data@2": "2.5.6",
+      "handlebars@4": "4.7.10",
+      "js-yaml@3": "3.15.2",
+      "minimatch@3": "3.1.5",
+      "semver@5": "5.7.3",
+      "semver@6": "6.3.2",
+      "word-wrap@1": "1.2.5",
+      "ws@5": "5.2.8"
+    }
   },
   "dependencies": {
     "axios": "0.35.0"
